@@ -13,11 +13,20 @@ def _run_placeholder(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_step1(args: argparse.Namespace) -> int:
+    from ego.step1_action_anticipation import evaluate, infer, prepare, train
+
+    dispatch = {"prepare": prepare, "train": train, "infer": infer, "evaluate": evaluate}
+    dispatch[args.command](args.config)
+    return 0
+
+
 def _add_config_command(
     subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
     name: str,
     stage: str,
     help_text: str,
+    func=_run_placeholder,
 ) -> None:
     parser = subparsers.add_parser(name, help=help_text)
     parser.add_argument(
@@ -25,7 +34,7 @@ def _add_config_command(
         required=True,
         help="Path to a YAML configuration file.",
     )
-    parser.set_defaults(func=_run_placeholder, stage=stage, command=name)
+    parser.set_defaults(func=func, stage=stage, command=name)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -40,10 +49,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="V-JEPA2 action anticipation commands.",
     )
     step1_commands = step1.add_subparsers(dest="command", metavar="command")
-    _add_config_command(step1_commands, "prepare", "step1", "Prepare Step 1 data.")
-    _add_config_command(step1_commands, "train", "step1", "Train Step 1 models.")
-    _add_config_command(step1_commands, "infer", "step1", "Run Step 1 inference.")
-    _add_config_command(step1_commands, "evaluate", "step1", "Evaluate Step 1.")
+    _add_config_command(step1_commands, "prepare", "step1", "Prepare Step 1 data.", func=_run_step1)
+    _add_config_command(step1_commands, "train", "step1", "Train Step 1 models.", func=_run_step1)
+    _add_config_command(step1_commands, "infer", "step1", "Run Step 1 inference.", func=_run_step1)
+    _add_config_command(step1_commands, "evaluate", "step1", "Evaluate Step 1.", func=_run_step1)
 
     step2 = stage_parsers.add_parser(
         "step2",

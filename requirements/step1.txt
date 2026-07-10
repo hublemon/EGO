@@ -1,5 +1,10 @@
-# Step 1 action anticipation dependencies to review before installation.
-# torch
-# torchvision
-# video decoding dependency
-# V-JEPA2 dependencies after official installation instructions are verified
+# Step 1 action anticipation dependencies.
+# V-JEPA2 encoder/predictor source is vendored under third_party/vjepa2 (see
+# third_party/versions.yaml); these are its runtime dependencies plus EGO's
+# own dataset/training code.
+torch>=2
+torchvision
+decord2
+timm
+einops
+Pillow

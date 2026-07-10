@@ -4,15 +4,63 @@ experiment:
   output_dir: outputs/step1/inference
 
 dataset:
-  name: null
-  manifest_path: null
-  video_root: null
+  name: ek100
+  # The label space (verb/noun/action id mapping) is fit on train, so the
+  # train annotation is required at inference time too, even though only the
+  # val split is scored -- see ego.step1_action_anticipation.data.build_samples.
+  annotation_train: data/annotations/EPIC_100_train.csv
+  annotation_val: data/annotations/EPIC_100_validation_subset.csv
+  video_root: data/EPIC-KITCHENS
+  file_format: 0
+  verb_classes_csv: data/annotations/EPIC_100_verb_classes.csv
+  noun_classes_csv: data/annotations/EPIC_100_noun_classes.csv
+  frames_per_clip: 32
+  frames_per_second: 8
+  resolution: 256
+  anticipation_time_sec: [1.0, 1.0]
+  num_workers: 4
 
 model:
-  checkpoint: null
-  repository_dir: null
+  backbone: vjepa2
+  checkpoint: checkpoints/vjepa2/vitl.pt
+  repository_dir: third_party/vjepa2
+  # Produced by `ego step1 train --config configs/step1/ek100_vjepa2.yaml`.
+  # A pre-refactor classifier trained on the same architecture is available at
+  # checkpoints/step1/legacy_ek100_vitl256/best_action.pt for reference only --
+  # its state_dict keys predate AnticipationHead and are not load-compatible.
+  head_checkpoint: checkpoints/step1/ek100_vjepa2/best_action.pt
+  classifier:
+    num_probe_blocks: 4
+    num_heads: 16
+  model_kwargs:
+    use_v2_1: false
+    encoder:
+      model_name: vit_large
+      checkpoint_key: target_encoder
+      tubelet_size: 2
+      patch_size: 16
+      uniform_power: true
+      use_rope: true
+    predictor:
+      model_name: vit_predictor
+      checkpoint_key: predictor
+      num_frames: 64
+      depth: 12
+      num_heads: 12
+      predictor_embed_dim: 384
+      num_mask_tokens: 10
+      uniform_power: true
+      use_mask_tokens: true
+      use_sdpa: true
+      use_silu: false
+      wide_silu: false
+      use_rope: true
+  wrapper_kwargs:
+    no_predictor: false
+    num_output_frames: 2
+    num_steps: 1
 
 inference:
-  top_k: null
-  batch_size: null
-  output_path: outputs/step1/candidates.jsonl
+  top_k: 5
+  batch_size: 8
+  output_path: outputs/step1/ek100_vjepa2/action_candidates.jsonl
