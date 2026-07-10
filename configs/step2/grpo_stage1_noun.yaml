@@ -1,0 +1,25 @@
+experiment:
+  name: grpo_stage1_noun
+  seed: 42
+  output_dir: outputs/step2/grpo_stage1_noun
+
+model:
+  model_name_or_path: Qwen/Qwen3-VL-8B-Instruct
+  revision: null
+  adapter_path: null
+
+reward:
+  config_path: configs/step2/rewards.yaml
+  target: noun
+
+data:
+  train_path: null
+  validation_path: null
+
+training:
+  batch_size: null
+  learning_rate: null
+  epochs: null
+
+checkpoint:
+  output_dir: checkpoints/step2/grpo_stage1_noun

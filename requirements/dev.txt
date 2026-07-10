@@ -1,0 +1,5 @@
+# Development dependencies to review before installation.
+# pytest
+# ruff
+# mypy
+# pre-commit

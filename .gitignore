@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# VS Code local settings
+.vscode/
+.idea/
+
+# Jupyter residue
+.ipynb_checkpoints/
+
+# Raw datasets and generated data
+data/raw/
+data/processed/
+data/frames/
+data/videos/
+data/features/
+data/cache/
+
+# Outputs
+outputs/*
+!outputs/.gitkeep
+runs/
+wandb/
+mlruns/
+logs/
+
+# Checkpoints and model weights
+checkpoints/*
+!checkpoints/.gitkeep
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+*.onnx
+
+# Hugging Face and model caches
+huggingface_cache/
+cache/
+.vjepa_cache/
+
+# Large media
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ego"
+version = "0.1.0"
+description = "Scaffold for egocentric action anticipation, VLM alignment, and dynamic planning research."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "License to be determined" }
+dependencies = []
+
+[project.scripts]
+ego = "ego.cli:main"
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]

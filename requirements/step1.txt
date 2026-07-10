@@ -1,0 +1,5 @@
+# Step 1 action anticipation dependencies to review before installation.
+# torch
+# torchvision
+# video decoding dependency
+# V-JEPA2 dependencies after official installation instructions are verified

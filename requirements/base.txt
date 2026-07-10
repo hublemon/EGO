@@ -1,0 +1,6 @@
+# Base runtime dependencies to review before installation.
+# pyyaml
+# pydantic or dataclasses-based contracts
+# numpy
+# pandas
+# tqdm

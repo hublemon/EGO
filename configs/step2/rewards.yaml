@@ -1,0 +1,24 @@
+reward:
+  world_model:
+    enabled: true
+    weight: null
+
+  task:
+    enabled: true
+    weight: null
+
+  memory:
+    enabled: true
+    weight: null
+
+  transition:
+    enabled: true
+    weight: null
+
+  visual_possible:
+    enabled: true
+    weight: null
+
+  format:
+    enabled: true
+    weight: null

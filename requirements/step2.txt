@@ -1,0 +1,7 @@
+# Step 2 VLM alignment dependencies to review before installation.
+# transformers
+# accelerate
+# peft
+# trl
+# datasets
+# bitsandbytes

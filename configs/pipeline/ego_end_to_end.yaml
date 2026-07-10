@@ -1,0 +1,16 @@
+pipeline:
+  name: ego_end_to_end
+  seed: 42
+  output_dir: outputs/pipeline/ego_end_to_end
+
+step1:
+  config_path: configs/step1/inference.yaml
+  candidates_path: outputs/step1/candidates.jsonl
+
+step2:
+  config_path: configs/step2/sft_qwen3vl.yaml
+  policy_output_path: outputs/step2/policy_output.jsonl
+
+step3:
+  config_path: configs/step3/planning_eval.yaml
+  trajectory_path: outputs/step3/planning_trajectory.jsonl

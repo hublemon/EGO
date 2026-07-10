@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EGO Planning Trajectory",
+  "type": "object",
+  "required": [
+    "episode_id",
+    "step_index",
+    "timestamp_sec",
+    "selected_action",
+    "trigger",
+    "vlm_called"
+  ],
+  "properties": {
+    "episode_id": {
+      "type": "string",
+      "description": "Episode identifier."
+    },
+    "step_index": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Planning step index."
+    },
+    "timestamp_sec": {
+      "type": "number",
+      "description": "Timestamp in seconds."
+    },
+    "selected_action": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Selected action at this planning step."
+    },
+    "trigger": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Trigger reason for VLM call or planning update."
+    },
+    "vlm_called": {
+      "type": "boolean",
+      "description": "Whether the VLM policy was called for this step."
+    }
+  }
+}

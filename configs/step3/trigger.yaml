@@ -1,0 +1,12 @@
+trigger:
+  enabled: true
+  entropy_threshold: null
+  distribution_shift_threshold: null
+  max_steps_without_vlm: null
+
+inputs:
+  memory_state_path: null
+  step1_candidates_path: null
+
+outputs:
+  trigger_events_path: outputs/step3/trigger_events.jsonl

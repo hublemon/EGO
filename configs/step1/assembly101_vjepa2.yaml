@@ -1,0 +1,22 @@
+experiment:
+  name: assembly101_vjepa2_action_anticipation
+  seed: 42
+  output_dir: outputs/step1/assembly101_vjepa2
+
+dataset:
+  name: assembly101
+  root: null
+  split: null
+
+model:
+  backbone: vjepa2
+  checkpoint: null
+  repository_dir: null
+
+training:
+  batch_size: null
+  learning_rate: null
+  epochs: null
+
+checkpoint:
+  output_dir: checkpoints/step1/assembly101_vjepa2

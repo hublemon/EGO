@@ -1,0 +1,28 @@
+experiment:
+  name: sft_qwen25vl_baseline
+  seed: 42
+  output_dir: outputs/step2/sft_qwen25vl_baseline
+
+model:
+  model_name_or_path: Qwen/Qwen2.5-VL-7B-Instruct
+  revision: null
+  dtype: bfloat16
+  device_map: auto
+
+adapter:
+  method: qlora
+  rank: null
+  alpha: null
+  dropout: null
+
+data:
+  train_path: null
+  validation_path: null
+
+training:
+  batch_size: null
+  learning_rate: null
+  epochs: null
+
+checkpoint:
+  output_dir: checkpoints/step2/sft_qwen25vl_baseline

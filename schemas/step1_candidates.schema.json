@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EGO Step 1 Candidates",
+  "type": "object",
+  "required": [
+    "sample_id",
+    "dataset",
+    "video_id",
+    "observation_start_sec",
+    "observation_end_sec",
+    "anticipation_time_sec",
+    "candidates",
+    "entropy"
+  ],
+  "properties": {
+    "sample_id": {
+      "type": "string",
+      "description": "Unique sample identifier."
+    },
+    "dataset": {
+      "type": "string",
+      "description": "Dataset name."
+    },
+    "video_id": {
+      "type": "string",
+      "description": "Source video identifier."
+    },
+    "observation_start_sec": {
+      "type": "number",
+      "description": "Observation window start time in seconds."
+    },
+    "observation_end_sec": {
+      "type": "number",
+      "description": "Observation window end time in seconds."
+    },
+    "anticipation_time_sec": {
+      "type": "number",
+      "description": "Future time offset being anticipated."
+    },
+    "entropy": {
+      "type": "number",
+      "description": "Distribution entropy for the candidate set."
+    },
+    "candidates": {
+      "type": "array",
+      "description": "Ranked action candidates.",
+      "items": {
+        "type": "object",
+        "required": [
+          "rank",
+          "verb",
+          "noun",
+          "probability"
+        ],
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "verb": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "noun": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "verb_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "noun_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "action_id": {
+            "type": [
+              "integer",
+              "string",
+              "null"
+            ]
+          },
+          "logit": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "probability": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      }
+    }
+  }
+}

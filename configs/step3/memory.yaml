@@ -1,0 +1,12 @@
+memory:
+  recent_actions_window: null
+  completed_action_tracking: true
+  uncertainty_tracking: true
+  state_path: null
+
+inputs:
+  policy_outputs_path: null
+  step1_candidates_path: null
+
+outputs:
+  memory_state_path: outputs/step3/memory_state.jsonl

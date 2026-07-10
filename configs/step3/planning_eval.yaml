@@ -1,0 +1,18 @@
+experiment:
+  name: planning_eval
+  seed: 42
+  output_dir: outputs/step3/planning_eval
+
+memory:
+  config_path: configs/step3/memory.yaml
+
+trigger:
+  config_path: configs/step3/trigger.yaml
+
+planner:
+  policy_output_path: null
+  candidate_path: null
+  trajectory_output_path: outputs/step3/planning_trajectory.jsonl
+
+evaluation:
+  metrics_output_path: outputs/step3/planning_metrics.json

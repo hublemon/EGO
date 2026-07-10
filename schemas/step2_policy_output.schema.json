@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EGO Step 2 Policy Output",
+  "type": "object",
+  "required": [
+    "episode_id",
+    "observation_id",
+    "candidate_ids",
+    "selected_action",
+    "confidence",
+    "reason_code",
+    "decision"
+  ],
+  "properties": {
+    "episode_id": {
+      "type": "string",
+      "description": "Episode identifier."
+    },
+    "observation_id": {
+      "type": "string",
+      "description": "Observation identifier."
+    },
+    "candidate_ids": {
+      "type": "array",
+      "items": {
+        "type": [
+          "string",
+          "integer"
+        ]
+      },
+      "description": "Candidate identifiers considered by the policy."
+    },
+    "selected_action": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Selected action payload when a valid action is chosen."
+    },
+    "confidence": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "reason_code": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Machine-readable reason for the decision."
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "SELECT",
+        "WAIT",
+        "REPLAN",
+        "NO_VALID_ACTION"
+      ]
+    }
+  }
+}
