@@ -1,0 +1,83 @@
+# Pilot config: 10-20% of train + a restricted (top_verb/top_noun) taxonomy,
+# for pipeline smoke-testing before committing to a full run. See PILOT.md.
+#
+# Build the pilot index/taxonomy first:
+#   python scripts/step1/ego4d_lta/build_lta_z1_index.py \
+#     --taxonomy <fho_lta_taxonomy.json> --train-json <fho_lta_train.json> \
+#     --val-json <fho_lta_val.json> --ego4d-json <ego4d.json> \
+#     --train-clip-fraction 0.15 \
+#     --output-dir outputs/ego4d_lta/index_pilot
+#   python scripts/step1/ego4d_lta/analyze_lta_stats.py \
+#     --index outputs/ego4d_lta/index_pilot/train.parquet \
+#     --output-dir outputs/ego4d_lta/stats_pilot --top-verb 80 --top-noun 150
+#
+# NOTE: pilot-taxonomy metrics are NOT comparable to full-taxonomy results
+# (different class count/difficulty) -- pilot is for pipeline validation and
+# dev-speed iteration only. See PILOT.md.
+
+experiment:
+  name: ego4d_lta_z1_pilot
+  seed: 42
+  output_dir: outputs/ego4d_lta/runs/pilot
+
+dataset:
+  index_dir: outputs/ego4d_lta/index_pilot
+  feature_cache_dir: data/Ego4D/feature_cache_pilot
+  video_root: data/Ego4D/lta_clips
+  video_source: clips  # clips | full_scale
+  tau_a: 1.0
+  frames_per_clip: 32   # matches EK100 (configs/step1/ek100_vjepa2.yaml)
+  frames_per_second: 8  # matches EK100
+  resolution: 256       # matches EK100
+  num_workers: 4
+
+model:
+  backbone: vjepa2
+  checkpoint: checkpoints/vjepa2/vitl.pt
+  repository_dir: third_party/vjepa2
+  classifier:
+    num_probe_blocks: 4   # unchanged from EK100 -- architecture must not change
+    num_heads: 16          # unchanged from EK100
+  model_kwargs:
+    use_v2_1: false
+    encoder:
+      model_name: vit_large
+      checkpoint_key: target_encoder
+      tubelet_size: 2
+      patch_size: 16
+      uniform_power: true
+      use_rope: true
+    predictor:
+      model_name: vit_predictor
+      checkpoint_key: predictor
+      num_frames: 64
+      depth: 12
+      num_heads: 12
+      predictor_embed_dim: 384
+      num_mask_tokens: 10
+      uniform_power: true
+      use_mask_tokens: true
+      use_sdpa: true
+      use_silu: false
+      wide_silu: false
+      use_rope: true
+  wrapper_kwargs:
+    no_predictor: false
+    num_output_frames: 2
+    num_steps: 1
+
+extraction:
+  batch_size: 8
+
+training:
+  batch_size: 8
+  learning_rate: 0.0002
+  weight_decay: 0.0001
+  final_weight_decay: 0.0001
+  start_lr: 0.0
+  final_lr: 0.0
+  warmup_epochs: 1
+  epochs: 5
+  sampler: scenario_stratified  # random | scenario_stratified
+  focal_gamma: 2.0   # same as EK100 baseline; long-tail is worse here, try higher (3-4) on the full run
+  focal_alpha: 0.25

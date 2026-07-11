@@ -79,3 +79,29 @@ def build_clip_window(
         target_start_sec=target_start_sec,
         anticipation_time_sec=anticipation_time_sec,
     )
+
+
+def sample_uniform_frame_indices(
+    start_sec: float,
+    end_sec: float,
+    video_fps: float,
+    num_frames: int,
+) -> np.ndarray:
+    """Evenly-spaced native-frame indices covering ``[start_sec, end_sec]``.
+
+    Used for datasets (e.g. Ego4D LTA) whose observation window is already
+    fixed by an upstream index-building step, rather than derived here from
+    an anticipation horizon -- see ``build_clip_window`` for that case.
+    ``end_sec < start_sec`` (a window that got clamped to zero width) still
+    returns ``num_frames`` copies of ``start_sec``'s frame rather than
+    raising, so callers can decide how to handle degenerate windows.
+    """
+    if num_frames < 1:
+        raise ValueError("num_frames must be >= 1")
+    if video_fps <= 0:
+        raise ValueError("video_fps must be > 0")
+
+    start_frame = max(0, start_sec) * video_fps
+    end_frame = max(start_sec, end_sec) * video_fps
+    frame_indices = np.linspace(start_frame, end_frame, num=num_frames)
+    return np.round(frame_indices).astype(np.int64)

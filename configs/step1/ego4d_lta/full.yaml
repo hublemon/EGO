@@ -1,0 +1,79 @@
+# Full-taxonomy config, run only after the pilot config validates the
+# pipeline end-to-end (see PILOT.md). All train data, full verb/noun/action
+# taxonomy from fho_lta_taxonomy.json.
+#
+# Build the full index first:
+#   python scripts/step1/ego4d_lta/build_lta_z1_index.py \
+#     --taxonomy <fho_lta_taxonomy.json> --train-json <fho_lta_train.json> \
+#     --val-json <fho_lta_val.json> --ego4d-json <ego4d.json> \
+#     --output-dir outputs/ego4d_lta/index_full
+
+experiment:
+  name: ego4d_lta_z1_full
+  seed: 42
+  output_dir: outputs/ego4d_lta/runs/full
+
+dataset:
+  index_dir: outputs/ego4d_lta/index_full
+  feature_cache_dir: data/Ego4D/feature_cache_full
+  video_root: data/Ego4D/lta_clips
+  video_source: clips  # clips | full_scale
+  tau_a: 1.0
+  frames_per_clip: 32   # matches EK100
+  frames_per_second: 8  # matches EK100
+  resolution: 256       # matches EK100
+  num_workers: 8
+
+model:
+  backbone: vjepa2
+  checkpoint: checkpoints/vjepa2/vitl.pt
+  repository_dir: third_party/vjepa2
+  classifier:
+    num_probe_blocks: 4   # unchanged from EK100
+    num_heads: 16          # unchanged from EK100
+  model_kwargs:
+    use_v2_1: false
+    encoder:
+      model_name: vit_large
+      checkpoint_key: target_encoder
+      tubelet_size: 2
+      patch_size: 16
+      uniform_power: true
+      use_rope: true
+    predictor:
+      model_name: vit_predictor
+      checkpoint_key: predictor
+      num_frames: 64
+      depth: 12
+      num_heads: 12
+      predictor_embed_dim: 384
+      num_mask_tokens: 10
+      uniform_power: true
+      use_mask_tokens: true
+      use_sdpa: true
+      use_silu: false
+      wide_silu: false
+      use_rope: true
+  wrapper_kwargs:
+    no_predictor: false
+    num_output_frames: 2
+    num_steps: 1
+
+extraction:
+  batch_size: 8
+
+training:
+  batch_size: 32
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  final_weight_decay: 0.0001
+  start_lr: 0.0
+  final_lr: 0.0
+  warmup_epochs: 1
+  epochs: 20
+  sampler: scenario_stratified  # random | scenario_stratified
+  # Long-tail is heavier than EK100 (thousands of action combos vs. ~3.5k for
+  # EK100's full vocab, but far fewer samples/class on average) -- start at
+  # the EK100 gamma and increase (3-4) if head classes still dominate.
+  focal_gamma: 2.0
+  focal_alpha: 0.25

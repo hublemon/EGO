@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from ego.datasets.video_sampling import build_clip_window, sample_anticipation_time_sec
+from ego.datasets.video_sampling import (
+    build_clip_window,
+    sample_anticipation_time_sec,
+    sample_uniform_frame_indices,
+)
 
 
 def test_observation_ends_before_target_action_starts():
@@ -63,3 +67,21 @@ def test_sample_anticipation_time_sec_within_range():
     for _ in range(50):
         value = sample_anticipation_time_sec((0.25, 1.75))
         assert 0.25 <= value <= 1.75
+
+
+def test_sample_uniform_frame_indices_returns_requested_count():
+    indices = sample_uniform_frame_indices(start_sec=1.0, end_sec=4.5, video_fps=30.0, num_frames=32)
+    assert len(indices) == 32
+
+
+def test_sample_uniform_frame_indices_spans_the_window_endpoints():
+    indices = sample_uniform_frame_indices(start_sec=1.0, end_sec=4.5, video_fps=30.0, num_frames=32)
+    assert indices[0] == round(1.0 * 30.0)
+    assert indices[-1] == round(4.5 * 30.0)
+    assert (indices[:-1] <= indices[1:]).all()  # monotonically non-decreasing
+
+
+def test_sample_uniform_frame_indices_handles_degenerate_zero_width_window():
+    indices = sample_uniform_frame_indices(start_sec=2.0, end_sec=2.0, video_fps=30.0, num_frames=8)
+    assert len(indices) == 8
+    assert (indices == round(2.0 * 30.0)).all()
