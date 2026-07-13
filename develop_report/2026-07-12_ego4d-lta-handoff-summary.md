@@ -28,7 +28,10 @@ action만 예측) 형태로 재현한다.
 - Ego4D LTA 주석: `fho_lta_train.json`, `fho_lta_val.json`, `fho_lta_taxonomy.json`
 - Ego4D 클립 원본(또는 full_scale 비디오) — Ego4D License Agreement 서명 후
   발급되는 AWS 자격증명으로 공식 `ego4d` CLI로 다운로드
-- 각 클립의 scenario 메타데이터 소스: `ego4d.json`
+- 각 클립의 scenario 메타데이터 소스: `ego4d.json` (2026-07-12 후속 확인:
+  `fho_lta_*.json` 자체에는 scenario 필드가 없고, `video_uid`+`clip_uid`로
+  메타데이터 json과 연결해야 얻을 수 있음 — 아래 "2026-07-12 후속 조사"
+  섹션 참고)
 
 ### 요청했던 6개 작업
 
@@ -98,6 +101,42 @@ action만 예측) 형태로 재현한다.
 - 각 스크립트는 `--help`로 인자 확인 가능, 소규모 subset에서 end-to-end
   1회 완주 확인.
 - 기존 EK100 코드 수정 시 diff 최소화, LTA 전용 신규 파일로 분리 우선.
+
+---
+
+## Part 1-보완. 2026-07-12 후속 조사 — scenario / goal·step description 메타데이터
+
+원본 스펙을 다시 훑어보던 사용자가 직접 annotation 구조를 확인하고 추가로
+정리해준 내용. **아직 코드에는 반영 전** — 다음 세션에서 실제 파일을 받은
+후 정확한 필드 경로를 재확인하며 반영해야 한다.
+
+- **scenario 필드는 `fho_lta_*.json`(train/val 주석 파일) 안에 없다.**
+  Ego4D 메타데이터 json(`ego4d.json`)에 별도로 있고, 그걸 가져오려면
+  `video_uid`뿐 아니라 **`clip_uid`까지 함께 사용해서** 메타데이터와
+  연결(join)해야 하는 필드다.
+  - 현재 구현(`ego.datasets.ego4d.load_video_scenarios`)은 `ego4d.json`의
+    `videos` 리스트를 **`video_uid`만으로** 매핑하고 있다 — 사용자가 확인한
+    바로는 `clip_uid`도 join key로 필요할 수 있다는 것이므로, 실제
+    `ego4d.json` 구조를 열어보고 (a) scenario가 정말 video 단위인지 clip
+    단위인지, (b) `video_uid`만으로 충분한지 아니면 `clip_uid` 기반의 별도
+    조회가 필요한지 확인 후 `load_video_scenarios`/`build_z1_index`의
+    scenario 연결 로직을 재검토할 것.
+- **`goal_description`, `step_description` 필드도 가져올 수 있다 (Ego4D
+  v2.1).** 원본 스펙에는 없던 내용이지만, scenario와 마찬가지로
+  `video_uid`+`clip_uid`로 메타데이터와 연결하면 각 클립의 상위
+  목표(goal)와 현재 단계(step)에 대한 자연어 설명을 가져올 수 있는 것으로
+  확인됨. 이번 6개 작업 스펙엔 없던 필드라 아직 인덱스 스키마에 반영하지
+  않았지만, 다음 세션에서 실제 데이터를 받으면:
+  - 정확한 소스 파일/필드 경로를 확인하고 (Ego4D v2.1의 Goal-Step
+    annotation 세트일 가능성이 높음 — 실제 다운로드된 파일 목록에서 확인),
+  - `build_z1_index`가 만드는 인덱스에 `goal_description`/`step_description`
+    을 **선택적 추가 컬럼**으로 넣을지 검토할 것 (기존 필수 컬럼
+    `[video_uid, clip_uid, obs_start_sec, obs_end_sec, verb_label,
+    noun_label, action_label, scenario, boundary_flag]`은 그대로 유지하고,
+    있으면 덧붙이는 방식을 권장 — 지금 있는 테스트/스키마를 깨지 않기 위함).
+  - 당장 학습에 반영하는 게 목적이 아니라도(6개 작업 스펙엔 없었으므로),
+    최소한 인덱스에 함께 저장해두면 이후 Step 2(VLM 정렬)에서 자연어
+    컨텍스트로 활용할 여지가 있다.
 
 ---
 
@@ -217,6 +256,12 @@ python scripts/step1/ego4d_lta/build_lta_z1_index.py \
 한 줄 추가하면 된다 (에러 메시지에 그 레코드의 실제 키 목록이 그대로
 출력되도록 이미 만들어둠).
 
+**이 단계에서 함께 확인/반영할 것 ("Part 1-보완" 참고):** 실제 `ego4d.json`을
+열어서 scenario가 `video_uid`만으로 조회되는지 `clip_uid`도 필요한지
+확인하고 `load_video_scenarios`(및 `build_z1_index`의 join 로직)를 필요시
+수정. 동시에 `goal_description`/`step_description`의 실제 소스 파일과
+필드 경로를 확인하고, 인덱스에 선택적 컬럼으로 추가할지 결정.
+
 ### 2단계 — 통계로 클래스 분포 확인
 ```bash
 python scripts/step1/ego4d_lta/analyze_lta_stats.py \
@@ -243,6 +288,11 @@ Long-tail이 EK100보다 심하므로 `training.focal_gamma`를 2.0(EK100 기준
 ### 확인해야 할 것 (완료 기준)
 - [ ] `build_lta_z1_index.py`가 실제 파일로 정상 완주, `N_verb`/`N_noun`/
       등록된 action 조합 수가 콘솔에 출력됨
+- [ ] `ego4d.json`에서 scenario를 `video_uid`만으로 join할 수 있는지,
+      `clip_uid`도 필요한지 확인하고 필요시 `load_video_scenarios`/
+      `build_z1_index` 수정
+- [ ] `goal_description`/`step_description`의 실제 소스 파일·필드 경로 확인,
+      인덱스에 선택 컬럼으로 추가할지 결정
 - [ ] `Ego4DLTADataset.__getitem__`이 실제 clip 비디오를 정상 디코딩
       (`video.shape == [3, frames_per_clip, resolution, resolution]`)
 - [ ] `extract_features.py`가 실제 V-JEPA2 체크포인트로 feature 추출 완료
