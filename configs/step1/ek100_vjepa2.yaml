@@ -68,7 +68,7 @@ training:
   final_lr: 0.0
   start_lr: 0.0
   warmup_epochs: 1
-  epochs: 20
+  epochs: 5
   use_bfloat16: true
   use_focal_loss: true
   use_feature_cache: false

@@ -71,7 +71,7 @@ training:
   start_lr: 0.000001
   final_lr: 0.000001
   warmup_epochs: 0.1
-  epochs: 20
+  epochs: 5
   use_bfloat16: true
   use_focal_loss: true
 

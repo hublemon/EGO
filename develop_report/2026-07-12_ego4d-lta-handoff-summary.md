@@ -7,6 +7,12 @@
 - 이 문서의 목적: Ego4D License Agreement 승인 + AWS 자격증명 발급 후,
   **새로운 대화 세션**에서 바로 이어서 진행할 수 있도록 (1) 원래 요청한 전체
   내용, (2) 데이터 없이 이미 끝낸 것, (3) 다음에 할 것을 한 곳에 정리한다.
+- **설정값 변경 (2026-07-12 후속)**: `training.epochs`를 전 config에서
+  20 → **5**로 낮췄다 (`configs/step1/{ek100_vjepa2,assembly101_vjepa2}.yaml`,
+  `configs/step1/ego4d_lta/full.yaml` — `ego4d_lta/pilot.yaml`은 원래부터
+  5였음). `warmup_epochs`는 건드리지 않았음. 실제로 몇 epoch가 적절한지는
+  아직 실데이터로 학습해본 적이 없어 판단 근거가 없다 — pilot 학습 후 loss
+  수렴 추이를 보고 다시 조정할 것.
 
 ---
 
@@ -459,6 +465,9 @@ python scripts/step1/ego4d_lta/train_lta_z1.py --config configs/step1/ego4d_lta/
 `--top-verb`/`--top-noun` 없이 인덱스 재생성 → 동일 절차 반복.
 Long-tail이 EK100보다 심하므로 `training.focal_gamma`를 2.0(EK100 기준값)
 대비 3~4로 올리는 A/B도 시도해볼 것(이미 config에 주석으로 남겨둠).
+`training.epochs`는 현재 5로 낮춰뒀는데(원래 20), 실데이터로 학습해본 적이
+없어 근거가 있는 값은 아니다 — pilot 단계에서 loss가 5 epoch 안에 눈에
+띄게 수렴하는지 보고, 부족하면 다시 올릴 것.
 
 여기까지가 **원래 6개 작업 스펙(Dataset A, FHO-LTA full)의 완료 기준**이다.
 
