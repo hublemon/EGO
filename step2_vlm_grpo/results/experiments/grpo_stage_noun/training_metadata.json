@@ -1,0 +1,10 @@
+{
+  "reward_mode": "noun_ranking",
+  "stage": "gt",
+  "reward_funcs": [
+    "format_reward",
+    "noun_ranking_reward"
+  ],
+  "train_samples": 3000,
+  "elapsed_hours": 1.624
+}

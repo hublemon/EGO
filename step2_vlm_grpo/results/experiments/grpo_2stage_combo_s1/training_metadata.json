@@ -1,0 +1,13 @@
+{
+  "reward_mode": "think_noun_combo",
+  "stage": "gt",
+  "reward_funcs": [
+    "format_reward_think",
+    "think_quality_reward",
+    "candidate_gate_reward_think",
+    "noun_gt_reward_think",
+    "noun_ranking_reward"
+  ],
+  "train_samples": 3000,
+  "elapsed_hours": 0.94
+}

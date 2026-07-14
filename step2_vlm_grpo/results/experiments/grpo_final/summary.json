@@ -1,0 +1,12 @@
+{
+  "experiment": "grpo_final",
+  "reward_mode": "think_gt_final",
+  "end_time": "2026-06-02T15:33:48",
+  "total_steps": 1250,
+  "elapsed_hours": 3.723,
+  "final_reward_total": 1.2656249105930328,
+  "final_gt_accuracy": 0.628125011920929,
+  "reward_trend": "초반 0.12218748033046722 → 최근 1.2656249105930328 (step 2~1250)",
+  "gt_accuracy_trend": "0.25 → 0.628125011920929",
+  "checkpoint_path": "runs/grpo_final"
+}

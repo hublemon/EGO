@@ -1,0 +1,12 @@
+{
+  "experiment": "grpo_2stage_combo_s1",
+  "reward_mode": "think_noun_combo",
+  "end_time": "2026-06-01T14:43:37",
+  "total_steps": 375,
+  "elapsed_hours": 0.94,
+  "final_reward_total": 0.9625000953674316,
+  "final_gt_accuracy": null,
+  "reward_trend": "초반 -0.15000000596046448 → 최근 0.9625000953674316 (step 1~375)",
+  "gt_accuracy_trend": null,
+  "checkpoint_path": "/root/work/jihun/EGO/runs/grpo_2stage_combo_s1"
+}

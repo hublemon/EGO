@@ -1,0 +1,12 @@
+{
+  "reward_mode": "think_ranking",
+  "stage": "gt",
+  "reward_funcs": [
+    "format_reward_think",
+    "think_quality_reward",
+    "candidate_reward_think",
+    "wm_ranking_reward"
+  ],
+  "train_samples": 3000,
+  "elapsed_hours": 2.994
+}

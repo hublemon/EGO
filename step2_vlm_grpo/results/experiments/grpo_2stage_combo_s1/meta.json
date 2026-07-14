@@ -1,0 +1,24 @@
+{
+  "experiment": "grpo_2stage_combo_s1",
+  "reward_mode": "think_noun_combo",
+  "stage": "gt",
+  "reward_funcs": [
+    "format_reward_think",
+    "think_quality_reward",
+    "candidate_gate_reward_think",
+    "noun_gt_reward_think",
+    "noun_ranking_reward"
+  ],
+  "train_samples": 3000,
+  "start_time": "2026-06-01T13:47:13",
+  "model": "Qwen/Qwen2.5-VL-7B-Instruct",
+  "lora_r": 16,
+  "num_generations": 4,
+  "max_completion_length": 256,
+  "max_pixels": 602112,
+  "resume_lora": null,
+  "adapter_path": null,
+  "world_size": 2,
+  "git_hash": "nogit",
+  "grpo_train_spec_md5": "c1a61566b21c8d60b5735e1384343746"
+}

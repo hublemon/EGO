@@ -1,0 +1,23 @@
+{
+  "experiment": "grpo_think_ranking",
+  "reward_mode": "think_ranking",
+  "stage": "gt",
+  "reward_funcs": [
+    "format_reward_think",
+    "think_quality_reward",
+    "candidate_reward_think",
+    "wm_ranking_reward"
+  ],
+  "train_samples": 3000,
+  "start_time": "2026-05-29T16:20:19",
+  "model": "Qwen/Qwen2.5-VL-7B-Instruct",
+  "lora_r": 16,
+  "num_generations": 4,
+  "max_completion_length": 256,
+  "max_pixels": 602112,
+  "resume_lora": null,
+  "adapter_path": null,
+  "world_size": 2,
+  "git_hash": "nogit",
+  "grpo_train_spec_md5": "c1a61566b21c8d60b5735e1384343746"
+}

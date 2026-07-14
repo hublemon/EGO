@@ -1,0 +1,12 @@
+{
+  "experiment": "grpo_think_gt",
+  "reward_mode": "think_gt",
+  "end_time": "2026-05-30T02:18:47",
+  "total_steps": 1500,
+  "elapsed_hours": 3.697,
+  "final_reward_total": 0.7125000119209289,
+  "final_gt_accuracy": 0.3625,
+  "reward_trend": "초반 0.31000002324581144 → 최근 0.7125000119209289 (step 5~1500)",
+  "gt_accuracy_trend": "0.3174999997019768 → 0.3625",
+  "checkpoint_path": "/root/work/jihun/EGO/runs/grpo_think_gt"
+}

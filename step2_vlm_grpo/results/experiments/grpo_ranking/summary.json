@@ -1,0 +1,12 @@
+{
+  "experiment": "grpo_ranking",
+  "reward_mode": "wm_ranking",
+  "end_time": "2026-05-29T16:18:53",
+  "total_steps": 1500,
+  "elapsed_hours": 1.545,
+  "final_reward_total": 1.649999976158142,
+  "final_gt_accuracy": null,
+  "reward_trend": "초반 1.3637499332427978 → 최근 1.649999976158142 (step 5~1500)",
+  "gt_accuracy_trend": null,
+  "checkpoint_path": "/root/work/jihun/EGO/runs/grpo_ranking"
+}

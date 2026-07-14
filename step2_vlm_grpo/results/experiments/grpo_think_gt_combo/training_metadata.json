@@ -1,0 +1,13 @@
+{
+  "reward_mode": "think_gt_combo",
+  "stage": "gt",
+  "reward_funcs": [
+    "format_reward_think",
+    "think_quality_reward",
+    "candidate_gate_reward_think",
+    "gt_accuracy_reward_think_v2",
+    "wm_ranking_reward"
+  ],
+  "train_samples": 3000,
+  "elapsed_hours": 1.883
+}

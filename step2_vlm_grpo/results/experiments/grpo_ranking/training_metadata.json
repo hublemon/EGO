@@ -1,0 +1,11 @@
+{
+  "reward_mode": "wm_ranking",
+  "stage": "gt",
+  "reward_funcs": [
+    "format_reward",
+    "action_candidate_consistency_reward",
+    "wm_ranking_reward"
+  ],
+  "train_samples": 3000,
+  "elapsed_hours": 1.545
+}

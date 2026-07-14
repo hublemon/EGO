@@ -1,0 +1,28 @@
+{
+  "total_samples": 4998,
+  "gt_in_top5": {
+    "verb": 4800,
+    "noun": 4756,
+    "action": 4618,
+    "verb_pct": 96.04,
+    "noun_pct": 95.16,
+    "action_pct": 92.4
+  },
+  "rank1_eq_gt": {
+    "verb": 3601,
+    "noun": 3810,
+    "action": 3498,
+    "verb_pct": 72.05,
+    "noun_pct": 76.23,
+    "action_pct": 69.99
+  },
+  "rank1_likelihood_mean": {
+    "verb": 0.3332,
+    "noun": 0.2777,
+    "action": 0.069
+  },
+  "memory": {
+    "task_history_mean_len": 9.55,
+    "temporal_nonnull_mean": 1.86
+  }
+}
