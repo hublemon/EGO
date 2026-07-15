@@ -60,6 +60,9 @@ cache/
 *.mkv
 *.webm
 
+# Local-only dev notes (not committed/pushed)
+develop_report/
+
 # OS
 .DS_Store
 Thumbs.db

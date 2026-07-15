@@ -134,7 +134,9 @@ def _unified_class_frequency(index_df: pd.DataFrame, mapping: LabelMapping, head
     return dict(class_frequency(pd.DataFrame({"x": ids}), "x"))
 
 
-def _build_train_loader(cache_dir: Path, batch_size: int, sampler_name: str, scenario_lookup: dict, seed: int):
+def _build_train_loader(
+    cache_dir: Path, batch_size: int, sampler_name: str, scenario_lookup: dict, seed: int, num_workers: int = 0
+):
     dataset = FeatureCacheDataset.from_cache_dir(cache_dir)
     if len(dataset) == 0:
         raise EgoConfigError(
@@ -151,12 +153,19 @@ def _build_train_loader(cache_dir: Path, batch_size: int, sampler_name: str, sce
         raise EgoConfigError(f"Unknown sampler {sampler_name!r}; expected 'random' or 'scenario_stratified'")
 
     loader = DataLoader(
-        dataset, batch_size=batch_size, shuffle=shuffle, sampler=sampler, collate_fn=anticipation_collate
+        dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        sampler=sampler,
+        collate_fn=anticipation_collate,
+        num_workers=num_workers,
+        pin_memory=True,
+        persistent_workers=num_workers > 0,
     )
     return dataset, loader, scenarios
 
 
-def _build_eval_loader(cache_dir: Path, batch_size: int, scenario_lookup: dict):
+def _build_eval_loader(cache_dir: Path, batch_size: int, scenario_lookup: dict, num_workers: int = 0):
     """Always sequential (``shuffle=False``, no sampler): evaluation code pairs
     ``compute_predictions``' collected ``sample_ids``/logits back to this
     function's ``scenarios`` list positionally, so iteration order must be
@@ -167,7 +176,15 @@ def _build_eval_loader(cache_dir: Path, batch_size: int, scenario_lookup: dict):
             f"No cached features found under {cache_dir}. Run extract_features.py for this split first."
         )
     scenarios = [scenario_lookup.get(sid, "unknown") for sid in dataset.sample_ids]
-    loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=anticipation_collate)
+    loader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        collate_fn=anticipation_collate,
+        num_workers=num_workers,
+        pin_memory=True,
+        persistent_workers=num_workers > 0,
+    )
     return dataset, loader, scenarios
 
 
@@ -262,6 +279,14 @@ def save_likelihood_entropy(preds: dict, scenarios: list[str], path: Path) -> No
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--config", required=True)
+    parser.add_argument(
+        "--resume",
+        help="Path to a previous run's latest.pt (e.g. from a shorter training.epochs run). "
+        "Continues from checkpoint['epoch']+1 up to this config's training.epochs, restoring "
+        "model/optimizer state and fast-forwarding the LR/WD schedules so the cosine curve is "
+        "continuous across the two runs (both runs must share the same training.epochs, "
+        "batch_size, and dataset for the schedule/steps-per-epoch math to line up).",
+    )
     args = parser.parse_args()
 
     config = load_config(args.config)
@@ -283,11 +308,12 @@ def main() -> None:
     cache_dir = expand_path(require(config, "dataset.feature_cache_dir"))
     batch_size = require(config, "training.batch_size")
     sampler_name = get(config, "training.sampler", "random")
+    num_workers = get(config, "dataset.num_workers", 0)
     train_dataset, train_loader, train_scenarios = _build_train_loader(
-        cache_dir / "train", batch_size, sampler_name, train_scenario_lookup, seed
+        cache_dir / "train", batch_size, sampler_name, train_scenario_lookup, seed, num_workers=num_workers
     )
     dev_dataset, dev_loader, dev_scenarios = _build_eval_loader(
-        cache_dir / "dev", batch_size, dev_scenario_lookup
+        cache_dir / "dev", batch_size, dev_scenario_lookup, num_workers=num_workers
     )
     step_log(1, "TrainLTAZ1", f"Train samples: {len(train_dataset)}  Dev samples: {len(dev_dataset)}")
     step_log(1, "TrainLTAZ1", f"Sampler: {sampler_name}")
@@ -336,12 +362,37 @@ def main() -> None:
         },
     )
 
-    history_path = run_dir / "training_history.csv"
-    with open(history_path, "w", newline="", encoding="utf-8") as f:
-        csv.writer(f).writerow(["epoch", "train_loss", "verb_cmr@5", "noun_cmr@5", "action_cmr@5", "seconds"])
-
+    start_epoch = 1
     best_metric = float("-inf")
-    for epoch in range(1, num_epochs + 1):
+    if args.resume:
+        checkpoint = torch.load(args.resume, map_location=device)
+        head_model.load_state_dict(checkpoint["model_state"])
+        if "optimizer_state" in checkpoint:
+            optimizer.load_state_dict(checkpoint["optimizer_state"])
+        start_epoch = checkpoint["epoch"] + 1
+        completed_steps = checkpoint["epoch"] * iterations_per_epoch
+        lr_sched._step = completed_steps
+        wd_sched._step = completed_steps
+        best_ckpt_path = run_dir / "best_action.pt"
+        if best_ckpt_path.exists():
+            best_metric = torch.load(best_ckpt_path, map_location="cpu").get("metric", float("-inf"))
+        step_log(
+            1, "TrainLTAZ1",
+            f"Resumed from {args.resume}: epoch {checkpoint['epoch']} -> continuing at epoch {start_epoch} "
+            f"(target {num_epochs}, best_action so far={best_metric:.2f})",
+        )
+        if start_epoch > num_epochs:
+            raise EgoConfigError(
+                f"--resume checkpoint is already at epoch {checkpoint['epoch']} >= this config's "
+                f"training.epochs={num_epochs}; raise training.epochs to continue."
+            )
+
+    history_path = run_dir / "training_history.csv"
+    if not (args.resume and history_path.exists()):
+        with open(history_path, "w", newline="", encoding="utf-8") as f:
+            csv.writer(f).writerow(["epoch", "train_loss", "verb_cmr@5", "noun_cmr@5", "action_cmr@5", "seconds"])
+
+    for epoch in range(start_epoch, num_epochs + 1):
         if isinstance(train_loader.sampler, ScenarioStratifiedSampler):
             train_loader.sampler.set_epoch(epoch)
         step_log(1, "TrainLTAZ1", f"Epoch {epoch}/{num_epochs}")
@@ -363,7 +414,10 @@ def main() -> None:
             )
 
         action_metric = eval_result["overall"]["action"]
-        torch.save({"epoch": epoch, "model_state": head_model.state_dict()}, run_dir / "latest.pt")
+        torch.save(
+            {"epoch": epoch, "model_state": head_model.state_dict(), "optimizer_state": optimizer.state_dict()},
+            run_dir / "latest.pt",
+        )
         if action_metric > best_metric:
             best_metric = action_metric
             torch.save({"epoch": epoch, "model_state": head_model.state_dict(), "metric": action_metric}, run_dir / "best_action.pt")

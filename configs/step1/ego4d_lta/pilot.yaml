@@ -23,7 +23,7 @@ experiment:
 dataset:
   index_dir: outputs/ego4d_lta/index_pilot
   feature_cache_dir: data/Ego4D/feature_cache_pilot
-  video_root: data/Ego4D/lta_clips
+  video_root: data/Ego4D/v2/clip_256ss  # downloaded clip_256ss (256px short side); file naming matches video_source=clips
   video_source: clips  # clips | full_scale
   tau_a: 1.0
   frames_per_clip: 32   # matches EK100 (configs/step1/ek100_vjepa2.yaml)

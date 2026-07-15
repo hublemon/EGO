@@ -8,3 +8,4 @@ decord2
 timm
 einops
 Pillow
+opencv-python-headless

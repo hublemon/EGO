@@ -16,7 +16,7 @@ experiment:
 dataset:
   index_dir: outputs/ego4d_lta/index_full
   feature_cache_dir: data/Ego4D/feature_cache_full
-  video_root: data/Ego4D/lta_clips
+  video_root: data/Ego4D/v2/clip_256ss  # downloaded clip_256ss (256px short side); file naming matches video_source=clips
   video_source: clips  # clips | full_scale
   tau_a: 1.0
   frames_per_clip: 32   # matches EK100
@@ -70,7 +70,7 @@ training:
   start_lr: 0.0
   final_lr: 0.0
   warmup_epochs: 1
-  epochs: 5
+  epochs: 3
   sampler: scenario_stratified  # random | scenario_stratified
   # Long-tail is heavier than EK100 (thousands of action combos vs. ~3.5k for
   # EK100's full vocab, but far fewer samples/class on average) -- start at
