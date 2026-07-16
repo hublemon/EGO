@@ -15,6 +15,7 @@ gt_in_top5_verb/noun/action 플래그 계산 포함.
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 from pathlib import Path
@@ -38,9 +39,25 @@ def load_jsonl_by_id(path: Path) -> dict:
 
 
 def main():
-    selected = load_jsonl_by_id(SELECTED)
-    preds = load_jsonl_by_id(PRED)
-    memory = load_jsonl_by_id(MEMORY)
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--split", choices=["train", "validation"], default="train",
+                    help="validation: *_heldout.jsonl 입출력 세트 사용")
+    ap.add_argument("--selected", type=str, default=None)
+    ap.add_argument("--pred", type=str, default=None)
+    ap.add_argument("--memory", type=str, default=None)
+    ap.add_argument("--out", type=str, default=None)
+    args = ap.parse_args()
+
+    sfx = "heldout" if args.split == "validation" else "train"
+    selected_path = Path(args.selected) if args.selected else GRPO_DIR / f"selected_{sfx}.jsonl"
+    pred_path = Path(args.pred) if args.pred else GRPO_DIR / f"predictions_{sfx}.jsonl"
+    memory_path = Path(args.memory) if args.memory else GRPO_DIR / f"memory_{sfx}.jsonl"
+    out_path = Path(args.out) if args.out else (
+        GRPO_DIR / ("grpo_dataset_heldout.jsonl" if args.split == "validation" else "grpo_dataset.jsonl"))
+
+    selected = load_jsonl_by_id(selected_path)
+    preds = load_jsonl_by_id(pred_path)
+    memory = load_jsonl_by_id(memory_path)
 
     print(f"[load] selected={len(selected)} predictions={len(preds)} memory={len(memory)}")
 
@@ -71,7 +88,7 @@ def main():
         mem = memory.get(sid, {})
         rec = {
             "sample_id": sid,
-            "split": "train",
+            "split": args.split,
             "video_id": s["video_id"],
             "narration_id": s["narration_id"],
             "trigger_frame": s["trigger_frame"],
@@ -100,11 +117,11 @@ def main():
         }
         rows.append(rec)
 
-    with OUT.open("w") as f:
+    with out_path.open("w") as f:
         for r in rows:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
-    print(f"[done] assembled {len(rows)} samples → {OUT}")
+    print(f"[done] assembled {len(rows)} samples → {out_path}")
     print(f"  dropped (no prediction): {n_drop_nopred}")
     print(f"  dropped (no frame):      {n_drop_noframe}")
 

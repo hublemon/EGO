@@ -52,10 +52,16 @@ def main():
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--resume", action="store_true",
                     help="이미 존재하는 jpg 는 건너뜀")
+    ap.add_argument("--selected", type=str, default=str(SELECTED),
+                    help="입력 selected jsonl (held-out: selected_heldout.jsonl)")
+    ap.add_argument("--manifest", type=str, default=str(MANIFEST),
+                    help="출력 manifest jsonl (frames 디렉토리는 공용 — sample_id 전역 유일)")
     args = ap.parse_args()
+    selected_path = Path(args.selected)
+    manifest_path = Path(args.manifest)
 
     FRAMES_ROOT.mkdir(parents=True, exist_ok=True)
-    samples = [json.loads(l) for l in SELECTED.read_text().splitlines() if l.strip()]
+    samples = [json.loads(l) for l in selected_path.read_text().splitlines() if l.strip()]
     if args.limit:
         samples = samples[: args.limit]
 
@@ -110,9 +116,9 @@ def main():
         del vr
     pbar.close()
 
-    MANIFEST.write_text("\n".join(json.dumps(m, ensure_ascii=False) for m in manifest) + "\n")
+    manifest_path.write_text("\n".join(json.dumps(m, ensure_ascii=False) for m in manifest) + "\n")
     print(f"[done] extracted: {n_done}, skipped: {n_skip}, errors: {n_err} → {FRAMES_ROOT}")
-    print(f"[done] manifest → {MANIFEST}")
+    print(f"[done] manifest → {manifest_path}")
 
 
 if __name__ == "__main__":

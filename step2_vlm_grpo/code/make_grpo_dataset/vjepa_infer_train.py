@@ -128,7 +128,13 @@ def main():
     ap.add_argument("--num_shards", type=int, default=1, help="GPU 분할 수 (병렬 프로세스 수)")
     ap.add_argument("--shard_id", type=int, default=0, help="이 프로세스가 맡을 shard index")
     ap.add_argument("--batch_size", type=int, default=1, help="비디오 내 클립 배치 forward 크기")
+    ap.add_argument("--selected", type=str, default=str(SELECTED),
+                    help="입력 selected jsonl (held-out: selected_heldout.jsonl)")
+    ap.add_argument("--out", type=str, default=str(OUT),
+                    help="출력 predictions jsonl (held-out: predictions_heldout.jsonl)")
     args = ap.parse_args()
+    selected_path = Path(args.selected)
+    out_base = Path(args.out)
 
     cfg = yaml.safe_load(CONFIG_YAML.read_text())
     data_cfg = cfg["experiment"]["data"]
@@ -192,19 +198,19 @@ def main():
         crop_size=data_cfg["resolution"],
     )
 
-    samples = [json.loads(l) for l in SELECTED.read_text().splitlines() if l.strip()]
+    samples = [json.loads(l) for l in selected_path.read_text().splitlines() if l.strip()]
     if args.limit:
         samples = samples[: args.limit]
 
-    OUT.parent.mkdir(parents=True, exist_ok=True)
+    out_base.parent.mkdir(parents=True, exist_ok=True)
     # shard>1 이면 shard 별 part 파일에 기록 (동시 append 충돌 방지). 나중에 머지.
-    out_path = OUT if args.num_shards == 1 else OUT.with_suffix(f".part{args.shard_id}.jsonl")
+    out_path = out_base if args.num_shards == 1 else out_base.with_suffix(f".part{args.shard_id}.jsonl")
 
     seen = set()
     if args.resume:
         # 정식 파일 + 모든 shard part 파일을 skip 대상으로.
         # (두 shard 가 동일한 seen 을 봐야 assign_shards 분배가 일치 → 누락/중복 방지)
-        seen_files = [OUT] + sorted(OUT.parent.glob("predictions_train.part*.jsonl"))
+        seen_files = [out_base] + sorted(out_base.parent.glob(f"{out_base.stem}.part*.jsonl"))
         for p in seen_files:
             if p.exists():
                 for line in p.read_text().splitlines():

@@ -27,6 +27,7 @@ import pandas as pd
 EGO_ROOT = Path(os.path.expanduser("~/work/jihun/EGO"))
 ANN = EGO_ROOT / "src/epic-kitchens-100-annotations"
 TRAIN_CSV = ANN / "EPIC_100_train.csv"
+VALIDATION_CSV = ANN / "EPIC_100_validation.csv"
 VINFO_CSV = ANN / "EPIC_100_video_info.csv"
 VERB_CSV = ANN / "EPIC_100_verb_classes.csv"
 NOUN_CSV = ANN / "EPIC_100_noun_classes.csv"
@@ -38,6 +39,10 @@ OUT = OUT_DIR / "selected_train.jsonl"
 
 def video_path(video_id: str) -> Path:
     pid = video_id.split("_")[0]
+    for ext in (".MP4", ".mp4"):
+        p = VIDEOS_BASE / pid / "videos" / f"{video_id}{ext}"
+        if p.exists():
+            return p
     return VIDEOS_BASE / pid / "videos" / f"{video_id}.MP4"
 
 
@@ -45,11 +50,18 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--target", type=int, default=5000)
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--split", choices=["train", "validation"], default="train",
+                    help="validation: EPIC_100_validation.csv 기반 held-out 셋 (기본 출력 selected_heldout.jsonl)")
+    ap.add_argument("--out", type=str, default=None, help="출력 경로 오버라이드")
     args = ap.parse_args()
+
+    csv_path = VALIDATION_CSV if args.split == "validation" else TRAIN_CSV
+    out_path = Path(args.out) if args.out else (
+        OUT_DIR / ("selected_heldout.jsonl" if args.split == "validation" else "selected_train.jsonl"))
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    df = pd.read_csv(TRAIN_CSV)
+    df = pd.read_csv(csv_path)
     vinfo = pd.read_csv(VINFO_CSV)
     fps_map = vinfo.set_index("video_id")["fps"].to_dict()
     verb_id2key = pd.read_csv(VERB_CSV).set_index("id")["key"].to_dict()
@@ -109,7 +121,7 @@ def main():
         tf = int(r["trigger_frame"])
         rows.append({
             "sample_id": r["narration_id"],
-            "split": "train",
+            "split": args.split,
             "video_id": r["video_id"],
             "narration_id": r["narration_id"],
             "start_frame": int(r["start_frame"]),
@@ -129,10 +141,10 @@ def main():
             },
         })
 
-    with OUT.open("w") as f:
+    with out_path.open("w") as f:
         for x in rows:
             f.write(json.dumps(x, ensure_ascii=False) + "\n")
-    print(f"[done] {len(rows)} samples → {OUT}")
+    print(f"[done] {len(rows)} samples → {out_path}")
 
     # 통계
     by_video = picked.groupby("video_id").size()

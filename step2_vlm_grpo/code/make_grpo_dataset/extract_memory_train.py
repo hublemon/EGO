@@ -66,13 +66,27 @@ def get_temporal_context(df: pd.DataFrame, video_id: str, ref_frame: int,
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--max-history", type=int, default=MAX_HISTORY)
+    ap.add_argument("--split", choices=["train", "validation"], default="train",
+                    help="validation: EPIC_100_validation.csv 로 history 조회 (held-out)")
+    ap.add_argument("--selected", type=str, default=None,
+                    help="입력 selected jsonl. 미지정 시 split 에 따라 자동")
+    ap.add_argument("--out", type=str, default=None,
+                    help="출력 memory jsonl. 미지정 시 split 에 따라 자동")
     args = ap.parse_args()
 
-    train_df = pd.read_csv(TRAIN_CSV)
+    csv_path = ANNOT_DIR / f"EPIC_100_{args.split}.csv"
+    selected_path = Path(args.selected) if args.selected else (
+        EGO_ROOT / "data/grpo_dataset" /
+        ("selected_heldout.jsonl" if args.split == "validation" else "selected_train.jsonl"))
+    out_path = Path(args.out) if args.out else (
+        EGO_ROOT / "data/grpo_dataset" /
+        ("memory_heldout.jsonl" if args.split == "validation" else "memory_train.jsonl"))
+
+    train_df = pd.read_csv(csv_path)
     vinfo = pd.read_csv(VIDEO_INFO_CSV).set_index("video_id")["fps"].to_dict()
 
-    samples = [json.loads(l) for l in SELECTED.read_text().splitlines() if l.strip()]
-    print(f"[load] {len(samples)} samples in selected_train.jsonl")
+    samples = [json.loads(l) for l in selected_path.read_text().splitlines() if l.strip()]
+    print(f"[load] {len(samples)} samples in {selected_path.name} (history csv: {csv_path.name})")
 
     rows = []
     for s in samples:
@@ -90,11 +104,11 @@ def main():
             "temporal_proximity": temporal,
         })
 
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    with OUT.open("w") as f:
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with out_path.open("w") as f:
         for r in rows:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
-    print(f"[done] {len(rows)} memory contexts → {OUT}")
+    print(f"[done] {len(rows)} memory contexts → {out_path}")
 
     hist_lens = [len(r["task_history"]) for r in rows]
     tp_nonnull = [sum(1 for v in r["temporal_proximity"].values() if v) for r in rows]
