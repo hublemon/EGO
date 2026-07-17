@@ -160,6 +160,7 @@ def test_train_logic() -> None:
             sys.modules[name] = types.ModuleType(name)
     # 필요한 속성 최소 stub
     sys.modules["torch"].bfloat16 = "bf16"
+    sys.modules["torch"].no_grad = lambda: (lambda f: f)   # @torch.no_grad() 모듈 데코레이터용
     sys.modules["datasets"].Dataset = object
     sys.modules["datasets"].Image = object
     for attr in ("AutoModelForImageTextToText", "AutoProcessor"):

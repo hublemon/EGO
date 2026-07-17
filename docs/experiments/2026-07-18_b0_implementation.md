@@ -90,8 +90,9 @@ GPU/모델/torch 불필요.
 
 ## 7. 알려진 한계 · 확인 필요
 
-1. **로컬 스모크 미실행**: 개발 머신(Windows)에 Python 런타임이 없어 작성자가 로컬 실행하지 못함.
-   서버 pull 후 §6 스모크를 반드시 돌릴 것.
+1. **로컬 스모크 통과 (2026-07-18)**: Python 3.14.6 + pandas 실설치 후 로컬 실행 —
+   `smoke_f0_v2.py` 33/33, `smoke_b0.py` 40/40 PASS. torch 는 스텁이므로 GPU 경로(rollout/
+   DPO/eval 생성부)는 스모크 범위 밖 — 서버에서 §6 재실행 후 본 실행으로 확인.
 2. **teacher 품질이 상한을 결정**: projection이 미래 누설 없이 belief를 정확히 낮추는지가 핵심.
    `has_future_leak_language`는 스크리닝일 뿐 — judge/human으로 교차 검증.
 3. **evaluate.py 레거시 import**: F0 eval이 `train_qwen25vl_grpo_ek100`을 참조하는 문제와 별개로,
