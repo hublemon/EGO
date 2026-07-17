@@ -108,6 +108,11 @@ def train_with_deadline(a, train_jsonl: Path, out_dir: Path, deadline_ts: float)
            "--run_mode", "validation", "--model", a.model,
            "--per_device_batch", str(a.per_device_batch), "--grad_accum", str(a.grad_accum),
            "--no_install"]
+    if a.resume_adapter:
+        cmd += ["--adapter_path", a.resume_adapter]
+        print(f"[train] 재개: {a.resume_adapter} (LoRA 가중치만, 옵티마이저 초기화)")
+    if a.train_max_steps:
+        cmd += ["--max_steps", str(a.train_max_steps)]
     print(f"[train] deadline: {datetime.fromtimestamp(deadline_ts):%H:%M} "
           f"(잔여 {(deadline_ts - time.time()) / 3600:.1f}h)")
     proc = subprocess.Popen(cmd, cwd=str(REPO))
@@ -133,7 +138,8 @@ def train_with_deadline(a, train_jsonl: Path, out_dir: Path, deadline_ts: float)
 def main() -> None:
     p = argparse.ArgumentParser(description="F0 v2 10h unattended pipeline (A100 40GB)")
     p.add_argument("--train_jsonl", required=True)
-    p.add_argument("--heldout_jsonl", required=True, help="v2(4f) held-out jsonl")
+    p.add_argument("--heldout_jsonl", default=None,
+                   help="v2(4f) held-out jsonl. 미지정 시 평가 단계(B/D/E) 생략 = 학습만 (구 모드 C)")
     p.add_argument("--heldout_1f_jsonl", default=None,
                    help="(옵션) v1(1f) held-out — 제공 시 3중 비교 완성")
     p.add_argument("--path_map", action="append")
@@ -150,6 +156,10 @@ def main() -> None:
     p.add_argument("--no_install", action="store_true")
     p.add_argument("--skip_base_eval", action="store_true",
                    help="4f-base 평가 생략 (이미 이전 세션에서 확보한 경우)")
+    p.add_argument("--resume_adapter", default=None,
+                   help="세션 재개: 이전 run 의 checkpoint-N 경로 (가중치만 이어받음)")
+    p.add_argument("--train_max_steps", type=int, default=None,
+                   help="학습 스텝 오버라이드 (재개 시 잔여 스텝 등. 125 배수 권장)")
     a = p.parse_args()
 
     t0 = time.time()
@@ -170,9 +180,13 @@ def main() -> None:
     ns = argparse.Namespace(train_jsonl=a.train_jsonl, path_map=a.path_map,
                             copy_frames_local=a.copy_frames_local)
     train_jsonl = base.prepare_jsonl(ns, work)
-    ns_h = argparse.Namespace(train_jsonl=a.heldout_jsonl, path_map=a.path_map,
-                              copy_frames_local=a.copy_frames_local)
-    heldout_jsonl = base.prepare_jsonl(ns_h, work / "heldout")
+    heldout_jsonl = None
+    if a.heldout_jsonl:
+        ns_h = argparse.Namespace(train_jsonl=a.heldout_jsonl, path_map=a.path_map,
+                                  copy_frames_local=a.copy_frames_local)
+        heldout_jsonl = base.prepare_jsonl(ns_h, work / "heldout")
+    else:
+        print("⚠ --heldout_jsonl 미지정 — 평가 단계(B/D/E) 생략, 학습만 수행")
     heldout_1f = None
     if a.heldout_1f_jsonl:
         ns_1f = argparse.Namespace(train_jsonl=a.heldout_1f_jsonl, path_map=a.path_map,
@@ -181,7 +195,7 @@ def main() -> None:
     report["phases"]["A_setup_hours"] = round(now_h(t0), 2)
 
     # Phase B — 4f-base 게이트 평가 (§5-#1 최우선)
-    if not a.skip_base_eval:
+    if heldout_jsonl is not None and not a.skip_base_eval:
         base.hr("Phase B — 4f-base held-out 평가 (멀티프레임 게이트)")
         d = run_eval("4f_base", heldout_jsonl, out_root, a.model, a.eval_limit, a.eval_batch)
         report["phases"]["B_4f_base"] = key_metrics(d)
@@ -205,7 +219,10 @@ def main() -> None:
         report["phases"]["C_train"]["steps_per_hour"] = round(last_step / max(train_hours, 0.01), 1)
 
     # Phase D — trained 평가 (최신 체크포인트)
-    if last_step:
+    if heldout_jsonl is None:
+        print("[D/E] heldout 미지정 — 평가 생략 (다음 세션에서 --skip_base_eval 없이 평가만 실행 가능)")
+        report["phases"]["D_4f_trained"] = {"status": "skipped_no_heldout"}
+    elif last_step:
         base.hr(f"Phase D — 4f-trained 평가 (checkpoint-{last_step})")
         d = run_eval(f"4f_trained_step{last_step}", heldout_jsonl, out_root, a.model,
                      a.eval_limit, a.eval_batch, adapter=str(train_out / f"checkpoint-{last_step}"))
@@ -216,7 +233,7 @@ def main() -> None:
 
     # Phase E — 잔여 시간에 배터리 ① (--no_memory)
     remain_h = a.budget_hours - now_h(t0)
-    if last_step and remain_h > 0.8:
+    if heldout_jsonl is not None and last_step and remain_h > 0.8:
         base.hr(f"Phase E — --no_memory 평가 (잔여 {remain_h:.1f}h, 배터리 ①)")
         d = run_eval(f"4f_trained_step{last_step}_nomem", heldout_jsonl, out_root, a.model,
                      a.eval_limit, a.eval_batch,
