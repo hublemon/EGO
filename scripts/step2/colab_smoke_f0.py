@@ -102,7 +102,8 @@ def install_deps(skip: bool, wm: str) -> None:
     ]
     if wm == "real":
         # V-JEPA2 백본/probe 로드·forward 에 필요한 공식 repo 의존
-        pkgs += ["einops", "timm", "decord", "pyyaml"]
+        # (webdataset: epickitchens.py 가 module-level import — 실측 누락 보고 반영)
+        pkgs += ["einops", "timm", "decord", "pyyaml", "webdataset"]
     r = sh([sys.executable, "-m", "pip", "install", "-q", *pkgs])
     if r.returncode != 0:
         print("⚠ pip install 실패 — 버전 충돌 시 --no_install 로 수동 환경에서 재시도")
