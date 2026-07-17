@@ -43,6 +43,31 @@ def serialize_memory(task_history: list[str]) -> str:
     return "Previously completed actions: " + " -> ".join(task_history) + "."
 
 
+def serialize_memory_v2(task_history: list[str], frame_aligned: dict,
+                        offsets_sec: list[float]) -> str:
+    """L2-c: frame 샘플 시각에 정렬된 recent 블록 + earlier history.
+
+    출력 예:
+      Recent context aligned with the frames:
+        Frame 1 (4.0s ago): stir pan
+        Frame 2 (2.7s ago): (no completed action at this moment)
+        ...
+      Earlier completed actions: open drawer -> take knife -> ...
+    frame_aligned 가 비면 legacy 직렬화로 폴백."""
+    if not frame_aligned:
+        return serialize_memory(task_history)
+    lines = ["Recent context aligned with the frames:"]
+    for i, off in enumerate(offsets_sec, 1):
+        key = f"frame{i}_t-{off}s"
+        label = frame_aligned.get(key)
+        when = "now" if off == 0.0 else f"{off:.1f}s ago"
+        lines.append(f"  Frame {i} ({when}): "
+                     + (label if label else "(no completed action at this moment)"))
+    if task_history:
+        lines.append("Earlier completed actions: " + " -> ".join(task_history) + ".")
+    return "\n".join(lines)
+
+
 def convert(rec: dict) -> dict | None:
     wm = rec.get("wm_output", {})
     top5_action = wm.get("top5_action", [])
@@ -84,7 +109,9 @@ def convert(rec: dict) -> dict | None:
 
     gt = rec["gt_label"]
     mem = rec.get("memory_context", {}) or {}
-    return {
+    fmeta = rec.get("frame_meta", {}) or {}
+    offsets = fmeta.get("offsets_sec") or [0.0]
+    out = {
         "image_path": image_path,
         "episode_id": rec.get("video_id", ""),
         "frame_id": rec.get("sample_id", ""),
@@ -94,9 +121,31 @@ def convert(rec: dict) -> dict | None:
         "topk_verbs": topk_verbs,
         "topk_actions_with_score": topk_actions_with_score,
         "topk_nouns_with_score": topk_nouns_with_score,
-        "memory_context": serialize_memory(mem.get("task_history", [])),
+        # L2-c: frame_aligned_context 가 있으면 시간 정렬 직렬화, 없으면 legacy
+        "memory_context": serialize_memory_v2(mem.get("task_history", []),
+                                              mem.get("frame_aligned_context", {}),
+                                              offsets),
+        "frame_meta": {"n_frames": fmeta.get("n_frames", 1), "offsets_sec": offsets},
         "gt_verb": gt["verb"],
         "gt_noun": gt["noun"],
+    }
+    # ⚠ future_gt_actions 는 학습 jsonl 에 **절대 넣지 않는다** — b0_meta 로만 분리 출력.
+    assert "future_gt_actions" not in out
+    return out
+
+
+def b0_meta_of(rec: dict) -> dict:
+    """B0 hindsight 전용 메타 (학습 파일과 물리적으로 분리 — 프롬프트 누설 구조 차단)."""
+    gt = rec["gt_label"]
+    return {
+        "sample_id": rec.get("sample_id", ""),
+        "video_id": rec.get("video_id", ""),
+        "trigger_frame": rec.get("trigger_frame"),
+        "trigger_timestamp": rec.get("trigger_timestamp"),
+        "gt_action_t": {"verb": gt["verb"], "noun": gt["noun"],
+                        "verb_class": gt["verb_class"], "noun_class": gt["noun_class"]},
+        "future_gt_actions": rec.get("future_gt_actions", []),
+        "cutoff_rule": (rec.get("memory_context") or {}).get("cutoff_rule", "legacy"),
     }
 
 
@@ -104,6 +153,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--input", default=str(EGO_ROOT / "data/grpo_dataset/grpo_dataset.jsonl"))
     ap.add_argument("--output", default=str(EGO_ROOT / "data/grpo_dataset/grpo_train.jsonl"))
+    ap.add_argument("--b0_meta_output", default=None,
+                    help="B0 hindsight 메타(jsonl). 미지정 시 <output 어간>_b0meta.jsonl")
     ap.add_argument("--mode", default="all", choices=MODES,
                     help="모든 mode 가 동일 superset 출력 (spec 명령 호환용). 필드 검증 메시지만 다름.")
     ap.add_argument("--n", type=int, default=None, help="앞에서 n개만 (None=전체)")
@@ -111,10 +162,12 @@ def main():
 
     inp = Path(args.input)
     out = Path(args.output)
+    b0_out = Path(args.b0_meta_output) if args.b0_meta_output else \
+        out.with_name(out.stem + "_b0meta.jsonl")
     rows = [json.loads(l) for l in inp.read_text().splitlines() if l.strip()]
     print(f"[load] {len(rows)} records from {inp}  (mode={args.mode})")
 
-    converted = []
+    converted, b0_rows = [], []
     n_drop_img = 0
     n_drop_fmt = 0
     for r in rows:
@@ -126,6 +179,7 @@ def main():
             n_drop_img += 1
             continue
         converted.append(c)
+        b0_rows.append(b0_meta_of(r))
         if args.n and len(converted) >= args.n:
             break
 
@@ -133,8 +187,17 @@ def main():
     with out.open("w") as f:
         for c in converted:
             f.write(json.dumps(c, ensure_ascii=False) + "\n")
+    with b0_out.open("w") as f:
+        for b in b0_rows:
+            f.write(json.dumps(b, ensure_ascii=False) + "\n")
     print(f"[done] wrote {len(converted)} → {out}")
+    print(f"[done] wrote {len(b0_rows)} b0 meta → {b0_out}  "
+          f"(future_gt_actions 는 이 파일에만 존재 — 학습 파일과 물리 분리)")
     print(f"  dropped (no top5_action): {n_drop_fmt}, (image missing): {n_drop_img}")
+
+    # 구조적 leakage 검사: 학습 파일에 future 관련 키가 없어야 한다
+    assert all("future" not in k for c in converted for k in c), \
+        "[LEAK] 학습 jsonl 에 future 필드가 들어감"
 
     # 필드 무결성 검증
     c0 = converted[0]

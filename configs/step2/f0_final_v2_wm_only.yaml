@@ -1,0 +1,102 @@
+# F0 final v2 — WM-only (GT-free) GRPO, joint action top-5 + 멀티프레임 + 리즈닝 유지(L2).
+# 확정 계획: docs/experiments/2026-07-18_f0_final_plan.md
+#
+# 핵심 원칙(불변): reward = V-JEPA2 world-model likelihood **단독**.
+#   history-consistency / belief-quality / ref-model-score(P3) 등 WM 이 아닌 신호는 넣지 않는다.
+#   L2(마스킹·시간정렬·belief 지시문)는 전부 **입력측** 조치라 reward 를 오염시키지 않는다.
+#
+# v2 개정 (2026-07-18):
+#   - 입력: 멀티프레임 4f (2x2 grid) + 프레임-히스토리 시간 정렬(L2-c)
+#   - LoRA: r16 유지 (교란 분리 — 이번 run 의 큰 변수는 멀티프레임 하나).
+#           ⚠ r64 는 폐기가 아니라 연기: 4프레임 효과 확정 후 분리 ablation 으로 반드시 시도.
+#   - history cutoff: strict (stop < trigger + 3제외) — freeze 전 필수 선행 조건
+#   - 리즈닝 유지: L2-a 마스킹(full run only) · L2-c 시간정렬 · L2-d belief 지시문 · 프록시 상시 로깅
+experiment:
+  name: f0_final_v2_wm_only
+  seed: 42
+  output_dir: outputs/step2/f0_final_v2_wm_only
+
+model:
+  model_name_or_path: Qwen/Qwen3-VL-8B-Instruct   # 회귀 취소 — Qwen3 유지 (verbose 특성)
+  revision: null
+  adapter_path: null
+  lora:
+    r: 16                              # 검증 run r16 (교란 분리). r64 는 이후 분리 ablation 필수
+    alpha: 32
+    target_modules: [q_proj, k_proj, v_proj, o_proj]
+
+input:
+  num_frames: 4                        # trigger-4.0/2.67/1.33/0.0s → 2x2 grid (전부 <= trigger)
+  frame_offsets_sec: [4.0, 2.67, 1.33, 0.0]
+  # extract_frame_train.py --num_frames 4 / extract_memory_train.py FRAME_OFFSETS_SEC 와 일치해야 함
+
+reward:
+  config_path: configs/step2/rewards.yaml
+  target: action
+  mode: wm_likelihood_joint
+  world_model_likelihood:
+    normalization: candidate
+    temperature: 1.0
+
+data:
+  train_path: null                     # grpo_train.jsonl (strict cutoff 재생성본)
+  validation_path: null                # grpo_heldout.jsonl (video-disjoint)
+  b0_meta_path: null                   # grpo_train_b0meta.jsonl (future_gt_actions — 학습 미사용)
+  train_samples: 5000
+  top_k: 5
+  hide_scores: true
+  shuffle_candidates: true
+  history_max_actions: 10
+  history_cutoff: strict               # stop < trigger + 3제외 (가로지름·동일·NaN). legacy 금지
+  future_gt_actions_k: 5               # B0 hindsight next 3~5 (b0_meta 로만 분리)
+
+reasoning_retention:                   # F0 final plan §3 — 전부 입력측 (reward 무오염)
+  l2a_mask_frame_prob: 0.0             # 검증 run 0. full run 에서 0.15~0.2 (프록시 재악화 시)
+  l2c_frame_aligned_history: true      # 프레임 시각별 정렬 표기
+  l2d_belief_anti_restatement: true    # belief 재진술 금지 지시문 (시스템 프롬프트 상시)
+  proxy_logging: true                  # history_reference_rate / belief_restatement_rate 상시 (무료)
+
+training:
+  # 런 구성: ① 500-step 검증 run (config validation) ② full-data ≥1 epoch (freeze 전 필수)
+  run_mode: validation                 # validation | full
+  max_steps: 500                       # validation run. full 은 num_train_epochs 로 전환
+  num_train_epochs: 1.0                # full run 에서 사용 (max_steps=-1)
+  num_generations: 8                   # 4 는 frac_reward_zero_std 0.5~0.75 붕괴 (실측)
+  per_device_train_batch_size: 8
+  gradient_accumulation_steps: 1
+  learning_rate: 1.0e-5
+  temperature: 1.0                     # 1.2 쓰레기 토큰 (실측). 0.8 미검증
+  max_completion_length: 384           # 태그 증가 시 clipped_ratio 재실측 후 조정 가능
+  loss_type: dr_grpo
+  scale_rewards: none
+  epsilon_high: 0.28
+  beta: 0.0                            # KL off (토큰 마스킹·KL 앵커 모두 미도입 — 팀 확정)
+  min_wm_spread: 0.05
+  dynamic_sampling_std_threshold: 0
+  save_steps: 125
+  logging_steps: 2
+  completion_log_every: 25             # judge 곡선 + 프록시 로깅 주기 (롤아웃 재사용)
+
+evaluation:
+  limit: 500
+  reward_mode: wm_likelihood_joint
+  # 3중 비교: 1f-base / 4f-base / 4f-trained. 지표: acc·wm_follow·in_joint5·G2
+  metrics: [overall_acc, wm_follow, in_joint5, acc_when_wm_top1_is_gt, g2_acc, acc_when_gt_outside_joint5, invalid_format_rate]
+
+judge:                                 # 학습 미사용 — 순수 관측. 체크포인트 사후 1회.
+  enabled: true
+  base_url: https://gw.letsur.ai/v1
+  model: gemini-2.5-pro                # Gemini 단독 강제 (팀 확정 — 자기선호 편향 배제)
+  api_key_env: LETSUR_API_KEY
+  per_step: 3
+  selection_criteria:                  # 체크포인트 선정: action 지표 1차 → judge 확인
+    primary: [overall_acc, wm_follow, g2_acc]
+    retention_gate: {history_grounding_min: 1.9, belief_globality_min: 1.9}
+
+checkpoint:
+  output_dir: checkpoints/step2/f0_final_v2_wm_only
+  freeze_gate:                         # freeze 전 필수 통과 조건 (§0)
+    - history cutoff strict + 자동 leakage 검사(check_leakage.py) PASS
+    - full-data ≥1 epoch run 완료 (500-step 검증 run 은 freeze 대상 아님)
+    - 모든 frame timestamp <= trigger
+    - base/trained 동일 held-out 재평가 완료

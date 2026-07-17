@@ -181,7 +181,20 @@ Rules:
 - start your reply with the literal string "<reasoning>".
 - the action MUST be one of the five candidates, copied exactly (both verb and noun).
 - do not invent new verb+noun combinations.
+- <task_belief> must be a GLOBAL goal spanning several actions (e.g. "prepare a vegetable
+  salad"), NOT a restatement of the single action you are about to choose (e.g. do NOT write
+  "cut the tomato" when your action is cut/tomato). A vague goal ("do a kitchen task") is also wrong.
 """
+
+# L2-a: 이미지 마스킹 샘플용 시스템 프롬프트 (프레임 대신 히스토리 의존 명시).
+JOINT_SYSTEM_PROMPT_MASKED = JOINT_SYSTEM_PROMPT.replace(
+    "1. A first-person video frame.",
+    "1. (The video frame is unavailable for this step — rely on your action history.)")
+
+# 4-frame grid 안내 문구 (L2-c 정렬 프롬프트와 짝). num_frames==4 일 때 프레임 설명을 교체.
+JOINT_FRAME_DESC_4 = (
+    "1. A 2x2 grid of four first-person frames sampled over the last 4 seconds, ordered\n"
+    "   top-left -> top-right -> bottom-left -> bottom-right (4.0s ago, 2.7s ago, 1.3s ago, now).")
 
 JOINT_INSTRUCTION = """Reason about the egocentric frame and your action history, infer what you are
 trying to accomplish, and choose the single most likely NEXT action from the five candidates below."""
@@ -218,6 +231,13 @@ WM_LIK_TEMP = 1.0
 #   True 면 프롬프트의 memory_context 를 GT-유래 과거 action 대신 공란 문구로 대체.
 #   학습·평가 동일 경로(make_conversation)를 타므로 플래그 하나로 양쪽 일관 적용.
 NO_MEMORY = False
+
+# L2-a 프레임 마스킹 커리큘럼 (F0 final plan §3.2) — main() 에서 --mask_frame_prob 로 설정.
+#   sample_id 해시로 결정론적 선택된 비율의 샘플에서 이미지를 회색 placeholder 로 교체하고
+#   "히스토리에 의존하라"는 문구를 프롬프트에 명시 → 히스토리 회로에 gradient 보장.
+#   리워드는 그대로 WM likelihood (입력측 조치 — 신호 무오염). 0 = off.
+MASK_FRAME_PROB = 0.0
+BLANK_IMAGE_PATH: Optional[str] = None
 
 
 def load_jsonl(path: str, limit: Optional[int] = None) -> List[Dict[str, Any]]:
@@ -392,12 +412,24 @@ Reason step by step in <think>, then output <action>{{"verb": "...", "noun": "..
     return out
 
 
+def _mask_this_sample(sample_id: str) -> bool:
+    """L2-a: sample_id 해시로 결정론적 마스킹 선택 (seed 무관, 재현 가능).
+    MASK_FRAME_PROB 비율의 샘플을 골라 True."""
+    if MASK_FRAME_PROB <= 0.0:
+        return False
+    h = int(hashlib.md5(sample_id.encode("utf-8")).hexdigest()[:8], 16)
+    return (h % 1000) < int(MASK_FRAME_PROB * 1000)
+
+
 def build_joint_conversation(example: Dict[str, Any], top_k: int,
                              rng: random.Random) -> Dict[str, Any]:
     """F0 v2: WM joint action top-5 를 그대로 후보로 제시 (5지선다). score 제거 + 셔플.
 
-    think_convergence(P4) 는 topk_nouns 를 참조하므로 5개 후보의 noun 집합을 넣어 준다.
-    wm_likelihood(P1) 는 topk_actions_with_score 를 rank 보존으로 받으므로 변경 없음.
+    v2 추가 (F0 final plan):
+      - 4-frame grid 안내 (frame_meta.n_frames==4 → 프레임 설명·시각 라벨 교체)
+      - L2-a 이미지 마스킹 (MASK_FRAME_PROB): 선택 샘플은 image 를 blank 로, 시스템 프롬프트 교체
+      - L2-d belief 지시문은 JOINT_SYSTEM_PROMPT 에 상시 포함
+    think_convergence(P4) 는 topk_nouns 를, wm_likelihood(P1) 는 topk_actions_with_score 를 참조.
     """
     acts = (example.get("topk_actions_with_score") or [])[:top_k]
     pairs = []
@@ -407,15 +439,29 @@ def build_joint_conversation(example: Dict[str, Any], top_k: int,
             pairs.append((v, n))
     disp = rng.sample(pairs, len(pairs))   # 순서 단서 제거 (rank 자명해 차단)
 
-    # task_goal 은 **의도적으로 프롬프트에 넣지 않는다.**
-    # 실측: select_train.py 가 만드는 task_goal = "그 비디오의 첫 narration" = 사실상 video ID.
-    #   비디오당 종류 1개(80/80) · GT 예측력 1.1% · 샘플은 중앙값 9.1분 뒤 시점.
-    # 목표 정보는 없고 video 식별 지름길만 열어준다 → 제거하고 모델이 history 로 추론하게 한다.
+    # task_goal 은 **의도적으로 프롬프트에 넣지 않는다** (video ID 지름길 — GT 예측력 1.1%).
     memory_context = ("No previous action history is available." if NO_MEMORY
                       else (example.get("memory_context") or "No previous action history is available."))
-    cand_lines = "\n".join(f'- {{"verb": "{v}", "noun": "{n}"}}' for v, n in disp)
-    problem_text = f"""{JOINT_INSTRUCTION}
 
+    fmeta = example.get("frame_meta") or {}
+    n_frames = int(fmeta.get("n_frames", 1))
+    sample_id = str(example.get("frame_id", ""))
+    masked = _mask_this_sample(sample_id)
+
+    # 프레임 설명: 4f grid 안내 또는 단일 프레임. 마스킹 샘플은 히스토리 의존 지시.
+    if masked:
+        sys_prompt = JOINT_SYSTEM_PROMPT_MASKED
+        frame_note = ("The frame is unavailable this step. Infer the world model's likely choice "
+                      "from your action history alone.")
+    else:
+        sys_prompt = JOINT_SYSTEM_PROMPT
+        frame_note = (JOINT_FRAME_DESC_4.split("\n", 1)[0].lstrip("1. ").strip()
+                      if n_frames == 4 else "")
+
+    cand_lines = "\n".join(f'- {{"verb": "{v}", "noun": "{n}"}}' for v, n in disp)
+    frame_block = (f"\nFrame note: {frame_note}\n" if frame_note else "\n")
+    problem_text = f"""{JOINT_INSTRUCTION}
+{frame_block}
 Action history:
 {memory_context}
 
@@ -427,14 +473,18 @@ Begin your reply with "<reasoning>". Reason inside <reasoning></reasoning>, then
 copying exactly one candidate above.
 """
     prompt = [
-        {"role": "system", "content": JOINT_SYSTEM_PROMPT},
+        {"role": "system", "content": sys_prompt},
         {"role": "user", "content": problem_text},
     ]
+    # 마스킹 샘플은 회색 placeholder 이미지 (BLANK_IMAGE_PATH, main 에서 준비). 없으면 원본 유지.
+    image_path = (BLANK_IMAGE_PATH if (masked and BLANK_IMAGE_PATH) else example["image_path"])
     out = {
         "prompt": prompt,
-        "image": example["image_path"],
+        "image": image_path,
         "stage": "joint",
-        "sample_id": str(example.get("frame_id", "")),
+        "sample_id": sample_id,
+        "frame_masked": bool(masked),
+        "n_frames": n_frames,
         "episode_id": str(example.get("episode_id", "")),
         # gate 용: 화면에 보인 (verb,noun) 쌍 목록
         "topk_actions_display": json.dumps([{"verb": v, "noun": n} for v, n in disp],
@@ -625,6 +675,40 @@ def get_valid_action_by_index(valid_actions: List[Dict[str, Any]], idx: Optional
         if int(item["index"]) == idx:
             return item["verb"], item["noun"]
     return None
+
+
+# ------------------------- 리즈닝 유지 프록시 (F0 final plan §3.3, 무료·API 0) -------------------------
+# 학습에 미사용 — 순수 관측. sample_reasoning_traces.py 휴리스틱을 학습 로거로 이식.
+
+def _extract_reasoning_block(text: str) -> str:
+    m = re.search(r"<(?:reasoning|think)>(.*?)</(?:reasoning|think)>", text or "", re.DOTALL)
+    return m.group(1).strip() if m else ""
+
+
+def _extract_belief_block(text: str) -> str:
+    m = re.search(r"<task_belief>(.*?)</task_belief>", text or "", re.DOTALL)
+    return m.group(1).strip() if m else ""
+
+
+def history_reference_rate(reasoning: str, memory_context: str) -> float:
+    """reasoning 이 history 라벨의 토큰을 얼마나 참조하는가 (0~1). history 없으면 0."""
+    r = (reasoning or "").lower()
+    toks = set(re.findall(r"[a-z]{3,}", (memory_context or "").lower()))
+    # 프롬프트 상용어 제거 (history 고유 토큰만)
+    toks -= {"previously", "completed", "actions", "recent", "context", "aligned",
+             "with", "the", "frames", "frame", "ago", "now", "earlier", "action",
+             "history", "moment", "available", "previous", "and", "for", "this", "step"}
+    if not toks:
+        return 0.0
+    return sum(1 for t in toks if t in r) / len(toks)
+
+
+def belief_restatement_flag(belief: str, verb: Optional[str], noun: Optional[str]) -> bool:
+    """belief_globality=0 스크리닝: belief 가 선택 action 의 재진술인가."""
+    if not belief or not verb or not noun:
+        return False
+    b = belief.lower()
+    return verb.lower() in b and noun.lower().split(":")[0] in b
 
 
 # ------------------------- rewards -------------------------
@@ -1562,6 +1646,30 @@ class GRPOLogger(TrainerCallback):
                     pass
             _append_jsonl(self.dir / "completion_samples.jsonl", rec)
 
+        # [P] 리즈닝 유지 프록시 (F0 final plan §3.3) — 버퍼 전체 completion 대상, 학습 미사용.
+        #   history_reference_rate: reasoning 이 history 토큰을 참조하는 평균 비율
+        #   belief_restatement_rate: belief 가 선택 action 의 재진술인 비율 (낮을수록 좋음)
+        mem_col = cols.get("memory_context") or [""] * n
+        href, brest, parsed = [], [], 0
+        for i in range(n):
+            txt = extract_text_from_completion(comps[i])
+            reasoning = _extract_reasoning_block(txt)
+            belief = _extract_belief_block(txt)
+            v, no = parse_vn(comps[i])
+            if not reasoning and not belief:
+                continue
+            parsed += 1
+            mem_i = mem_col[i] if i < len(mem_col) else ""
+            href.append(history_reference_rate(reasoning, mem_i))
+            brest.append(1.0 if belief_restatement_flag(belief, v, no) else 0.0)
+        if parsed:
+            _append_jsonl(self.dir / "reasoning_proxy.jsonl", {
+                "step": step,
+                "n_parsed": parsed,
+                "history_reference_rate": round(sum(href) / len(href), 4) if href else None,
+                "belief_restatement_rate": round(sum(brest) / len(brest), 4) if brest else None,
+            })
+
         # [C] think 분석 (think 모드만)
         if self.is_think:
             think_texts, wcs, mention_flags, pairs = [], [], [], []
@@ -1731,6 +1839,13 @@ def parse_args():
                         "1.0=Run 1 동일. G2 구조적 천장(분포매칭<argmax) 완화/정량화용")
     p.add_argument("--no_memory", action="store_true",
                    help="memory-off (misalignment ③): 프롬프트 memory_context 공란화. 학습·평가 동일 적용")
+    # ----- F0 final plan v2: 리즈닝 유지(L2) -----
+    p.add_argument("--mask_frame_prob", type=float, default=0.0,
+                   help="L2-a: 이 비율의 샘플에서 이미지를 blank 로 교체 + 히스토리 의존 지시 "
+                        "(sample_id 해시로 결정론적 선택). 0=off. 권장 검증 run 0, full run 0.15~0.2")
+    p.add_argument("--num_frames", type=int, default=1, choices=[1, 4],
+                   help="입력 프레임 수 (데이터는 extract_frame 에서 grid 합성됨). 프롬프트 안내문만 결정. "
+                        "frame_meta.n_frames 가 있으면 그것이 우선")
     # ----- Run 2 대비 인자 -----
     p.add_argument("--p3_weight", type=float, default=0.0,
                    help="P3(think_support) 가중치. wm_likelihood_p3 모드에서 >0 필수 (권장 0.25 — "
@@ -1744,8 +1859,19 @@ def parse_args():
     return p.parse_args()
 
 
+def _prepare_blank_image(out_dir: str) -> str:
+    """L2-a 마스킹용 회색 placeholder JPEG 생성 (없으면). 448x448 중립 회색."""
+    from PIL import Image as _PILImage
+    path = Path(out_dir) / "_blank_frame.jpg"
+    if not path.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        _PILImage.new("RGB", (448, 448), (128, 128, 128)).save(path, quality=85)
+    return str(path)
+
+
 def main():
     global PARSE_FORMAT, HIDE_SCORES, WM_LIK_NORM, WM_LIK_TEMP, NO_MEMORY, P3_WEIGHT
+    global MASK_FRAME_PROB, BLANK_IMAGE_PATH
     args = parse_args()
 
     is_think = args.reward_mode in THINK_REWARD_MODES
@@ -1755,6 +1881,10 @@ def main():
     WM_LIK_TEMP = args.wm_likelihood_temp
     NO_MEMORY = args.no_memory
     P3_WEIGHT = args.p3_weight
+    MASK_FRAME_PROB = args.mask_frame_prob
+    if MASK_FRAME_PROB > 0.0:
+        BLANK_IMAGE_PATH = _prepare_blank_image(args.output_dir)
+        print(f"[INFO] L2-a frame masking: prob={MASK_FRAME_PROB} blank={BLANK_IMAGE_PATH}")
     if WM_LIK_TEMP <= 0:
         raise ValueError("--wm_likelihood_temp 는 >0 이어야 함")
     if args.reward_mode == "wm_likelihood_p3" and args.p3_weight <= 0:
@@ -1910,6 +2040,10 @@ def main():
             "temperature": args.temperature,
             "p3_weight": args.p3_weight,
             "reward_weights": args.reward_weights,
+            # F0 final plan v2
+            "mask_frame_prob": args.mask_frame_prob,
+            "num_frames": args.num_frames,
+            "lora_alpha": args.lora_alpha,
         }
         with open(out / "meta.json", "w", encoding="utf-8") as f:
             json.dump(meta, f, ensure_ascii=False, indent=2)

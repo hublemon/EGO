@@ -46,6 +46,8 @@ def main():
     ap.add_argument("--pred", type=str, default=None)
     ap.add_argument("--memory", type=str, default=None)
     ap.add_argument("--out", type=str, default=None)
+    ap.add_argument("--frames_manifest", type=str, default=None,
+                    help="frames_manifest.jsonl — n_frames/offsets_sec (4f 시 필수)")
     args = ap.parse_args()
 
     sfx = "heldout" if args.split == "validation" else "train"
@@ -58,8 +60,11 @@ def main():
     selected = load_jsonl_by_id(selected_path)
     preds = load_jsonl_by_id(pred_path)
     memory = load_jsonl_by_id(memory_path)
+    fmanifest_path = Path(args.frames_manifest) if args.frames_manifest else GRPO_DIR / "frames_manifest.jsonl"
+    fmeta = load_jsonl_by_id(fmanifest_path) if fmanifest_path.exists() else {}
 
-    print(f"[load] selected={len(selected)} predictions={len(preds)} memory={len(memory)}")
+    print(f"[load] selected={len(selected)} predictions={len(preds)} memory={len(memory)} "
+          f"frame_meta={len(fmeta)}")
 
     rows = []
     n_drop_nopred = 0
@@ -113,7 +118,16 @@ def main():
             "memory_context": {
                 "task_history": mem.get("task_history", []),
                 "temporal_proximity": mem.get("temporal_proximity", {}),
+                "frame_aligned_context": mem.get("frame_aligned_context", {}),   # L2-c
+                "cutoff_rule": mem.get("cutoff_rule", "legacy"),
             },
+            # 4f 프롬프트 라벨용 (train 프롬프트 빌더가 읽음)
+            "frame_meta": {
+                "n_frames": (fmeta.get(sid) or {}).get("n_frames", 1),
+                "offsets_sec": (fmeta.get(sid) or {}).get("offsets_sec", [0.0]),
+            },
+            # ⚠ policy prompt 노출 금지 — convert 가 b0_meta 파일로 분리
+            "future_gt_actions": mem.get("future_gt_actions", []),
         }
         rows.append(rec)
 
