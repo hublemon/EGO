@@ -1,0 +1,70 @@
+# F0 final — WM-only (GT-free) GRPO, joint action top-5 포맷.
+# 결과: docs/experiments/2026-07-17_f0_final.md
+#
+# 핵심 원칙: reward = V-JEPA2 world-model likelihood **단독**.
+#   history-consistency / belief-quality / ref-model-score(P3) 등 **WM 이 아닌 신호는 넣지 않는다**.
+#   넣는 순간 "GT-free WM 신호만으로 학습이 성립한다"(G1)는 주장이 오염된다.
+experiment:
+  name: f0_final_wm_only
+  seed: 42
+  output_dir: outputs/step2/f0_final_wm_only
+
+model:
+  model_name_or_path: Qwen/Qwen3-VL-8B-Instruct
+  revision: null
+  adapter_path: null
+  lora:
+    r: 16
+    alpha: 32
+    target_modules: [q_proj, k_proj, v_proj, o_proj]
+
+reward:
+  config_path: configs/step2/rewards.yaml
+  target: action
+  mode: wm_likelihood_joint          # format_joint + candidate_gate_joint + P1 + P4(pair)
+  world_model_likelihood:
+    normalization: candidate         # 후보 5개 안에서 재정규화 (조건부 분포)
+    temperature: 1.0                 # sharpening 미사용 — Run 2b 에서 무효 확인 (0.122 vs 0.124)
+
+data:
+  # 실제 경로는 커밋하지 않는다 (docs/experiments/README.md 규약).
+  # 내부 핸드오프 참조. 스키마는 docs/step2_vlm_alignment.md.
+  train_path: null                   # grpo_train.jsonl   (4,998 rows)
+  validation_path: null              # grpo_heldout.jsonl (1,417 rows, video-disjoint)
+  train_samples: 5000
+  top_k: 5
+  hide_scores: true                  # 필수. 점수 노출 시 top-1 복사로 즉시 퇴화
+  shuffle_candidates: true           # 필수. 순서가 rank 를 누설
+  history_max_actions: 10
+
+training:
+  max_steps: 500                     # save_steps 의 배수여야 최종 체크포인트가 생성됨
+  num_generations: 8                 # 4 는 frac_reward_zero_std 0.5~0.75 로 붕괴 (실측)
+  per_device_train_batch_size: 8
+  gradient_accumulation_steps: 1
+  learning_rate: 1.0e-5
+  temperature: 1.0                   # 1.2 는 쓰레기 토큰 생성 (실측)
+  max_completion_length: 384         # 256 은 clipped_ratio 0.25 (Qwen3-VL 은 verbose)
+  loss_type: dr_grpo                 # 길이 편향 제거
+  scale_rewards: none
+  epsilon_high: 0.28                 # clip-higher
+  beta: 0.0                          # KL off
+  min_wm_spread: 0.05                # dynamic sampling 정적 절반
+  dynamic_sampling_std_threshold: 0  # 런타임 절반은 끔 — ablation 에서 불필요 확인
+  save_steps: 125
+  logging_steps: 2
+  completion_log_every: 25           # judge 리즈닝 곡선용 (롤아웃 재사용, GPU 비용 0)
+
+evaluation:
+  limit: 500
+  reward_mode: wm_likelihood_joint   # 학습과 프롬프트 포맷을 반드시 일치시킬 것
+
+judge:                               # 학습에 일절 미사용 — 순수 관측
+  enabled: true
+  base_url: https://gw.letsur.ai/v1
+  model: claude-sonnet-4-6           # gemini-2.5-pro 는 호출당 25배 비쌈 (reasoning 토큰)
+  api_key_env: LETSUR_API_KEY        # 키는 환경변수로만. 절대 파일에 두지 않는다
+  per_step: 3
+
+checkpoint:
+  output_dir: checkpoints/step2/f0_final_wm_only
