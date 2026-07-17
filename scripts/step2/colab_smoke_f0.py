@@ -293,7 +293,7 @@ def logic_smoke() -> bool:
 # ─────────────────────────────────────────────────────────────────────────────
 # 5. GRPO 학습 스모크
 # ─────────────────────────────────────────────────────────────────────────────
-def train_smoke(a, train_jsonl: Path, out_dir: Path) -> bool:
+def train_smoke(a, train_jsonl: Path, out_dir: Path, min_wm_spread: str = "0.05") -> bool:
     hr("[5] GRPO 학습 스모크 (축소 설정)")
     train_py = REPO / "src/ego/step2_vlm_alignment/train_grpo_action.py"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -308,7 +308,7 @@ def train_smoke(a, train_jsonl: Path, out_dir: Path) -> bool:
         "--num_frames", str(a.num_frames),
         "--mask_frame_prob", "0.0",
         "--loss_type", "dr_grpo", "--scale_rewards", "none", "--epsilon_high", "0.28",
-        "--min_wm_spread", "0.05", "--dynamic_sampling_std_threshold", "0",
+        "--min_wm_spread", min_wm_spread, "--dynamic_sampling_std_threshold", "0",
         "--train_samples", str(a.n_samples),
         "--max_steps", str(a.max_steps),
         "--num_generations", str(a.num_generations),
@@ -415,7 +415,13 @@ def main() -> None:
     if a.skip_train:
         print("\n--skip_train → GPU 학습 스모크 생략")
     else:
-        train_ok = train_smoke(a, train_jsonl, out_dir)
+        # 실추론 모드(합성 클립): 3천+ 클래스에 대한 probe softmax 가 거의 균등 → 후보 재정규화 후
+        # 분포가 flat 이라 min_wm_spread=0.05 가 전 샘플을 걸러냄 (실측: 0/8 kept — 필터 동작 자체는
+        # 이것으로 검증됨). 스모크의 목적은 학습 루프 관통이므로 이 경우만 필터를 끈다.
+        spread = "0.0" if (a.wm == "real" and not a.train_jsonl) else "0.05"
+        if spread == "0.0":
+            print("[INFO] real 모드 합성 클립 → WM 분포 flat → min_wm_spread=0 (스모크 한정)")
+        train_ok = train_smoke(a, train_jsonl, out_dir, min_wm_spread=spread)
         results["train"] = train_ok
         results["verify"] = verify_outputs(out_dir, a.max_steps) if train_ok else False
 
