@@ -1,0 +1,69 @@
+# B0 — Full-Trace Projected-Hindsight DPO (MVP).
+# 핸드오프: EGO_STEP2_B0_FULL_TRACE_DPO_VALIDATION_HANDOFF (2026-07-18)
+# 구현: src/ego/step2_vlm_alignment/b0/ · docs/experiments/2026-07-18_b0_implementation.md
+#
+# 핵심: reasoning/belief/action 분리 없음. 전체 trace 를 하나의 preference 단위로.
+#   chosen   = projected(reasoning+belief) + GT action   (시점 t past-grounded)
+#   rejected = FAA online(reasoning+belief+action)
+#   stop-gradient equivalence judge 로 SAME/SAME drop (projector 문체 학습 차단)
+experiment:
+  name: b0_full_trace_dpo
+  seed: 42
+  output_dir: outputs/step2/b0_full_trace_dpo
+
+model:
+  model_name_or_path: Qwen/Qwen3-VL-8B-Instruct
+  faa_adapter: null                  # frozen FAA (초기값 + DPO reference). freeze 게이트 통과본
+  lora: {r: 16, alpha: 32, dropout: 0.05}
+
+teacher:                             # frozen base VLM (FAA LoRA 미적용) — 외부 대형모델 미사용
+  model_name_or_path: Qwen/Qwen3-VL-8B-Instruct
+  max_new_tokens: 512
+  greedy: true                       # temperature 0 — preference target 결정론 안정화
+
+data:
+  # 병합 입력: F0 grpo_{split}.jsonl(프롬프트/이미지/후보) + *_b0meta.jsonl(gt/future) + FAA traces
+  faa_traces_path: null              # generate_faa_traces 산출
+  samples_path: null                 # build_dpo_dataset 입력 (병합본)
+  dpo_train_path: null               # b0_dpo_train.jsonl
+  dpo_heldout_path: null             # b0_dpo_heldout.jsonl
+  online_generations_per_prompt: 4
+  candidate_support_required: true   # a_GT ∈ D_t (§13)
+
+routing:                             # §10 — 전부 코드 고정. 참고용 표기
+  keep:  [DIFFERENT/DIFFERENT, DIFFERENT/SAME, SAME/DIFFERENT, UNCERTAIN/DIFFERENT]
+  drop:  [SAME/SAME, UNCERTAIN/SAME]     # audit 보존 (학습 제외)
+  drop_condition: "belief≡ ∧ action=GT → semantic_tie"
+
+training:                            # §11 표준 DPO
+  beta: 0.1
+  learning_rate: 5.0e-6
+  num_train_epochs: 1.0
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 8
+  max_length: 1024
+  max_prompt_length: 640
+  save_steps: 100
+  logging_steps: 2
+  reference: frozen_faa              # ⚠ base 아님 — FAA adapter 얹은 frozen 모델
+
+validation:                          # §16~24 — 네 조건 동시
+  split: episode_disjoint
+  go_criteria:
+    - held-out preference margin(B0) > FAA
+    - GT/conditional action accuracy > FAA
+    - end-to-end accuracy → 62% 목표 근접
+    - net_recovery > 0 (recovery > regression)
+    - future_leakage 비증가 · coherence 유지/개선
+    - SAME/SAME audit margin 과증가 없음 (projector 문체 학습 아님)
+  controls:                          # §22
+    - FAA (baseline)
+    - B0-Raw (projection 없이 raw hindsight) — projection 필요성
+    - B0-Projected (최종 MVP)
+    - B0-Shuffled (다른 episode chosen) — style shortcut 검사
+  judge:
+    model: gemini-2.5-pro            # F0 와 동일 정책 (Gemini 단독). blind, 학습 미사용
+  human_eval: {n: "50~100", mode: "blind A/B/TIE", stratified: true}
+
+checkpoint:
+  output_dir: checkpoints/step2/b0_full_trace_dpo
