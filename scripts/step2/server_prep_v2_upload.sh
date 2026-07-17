@@ -24,14 +24,21 @@ set -euo pipefail
 SRV_EGO="${SRV_EGO:-$HOME/work/jihun/EGO}"          # 데이터 스크립트들이 하드코딩한 루트
 HUB_DIR="${HUB_DIR:-$HOME/EGO_hub}"                  # hublemon/EGO 클론 위치
 GD="$SRV_EGO/data/grpo_dataset"
-LOG="$SRV_EGO/f0_v2_build.log"
 DRIVE_REMOTE="${DRIVE_REMOTE:-}"                     # 예: gdrive:step2_vlm_grpo/v2 (rclone remote)
+
+# SRV_EGO 검증 전에는 로그를 열지 않는다 (잘못된 머신에서 안내 메시지가 나오도록)
+if [ ! -d "$SRV_EGO" ]; then
+  echo "✗ $SRV_EGO 없음 — 이 스크립트는 v1 산출물이 있는 **학습 서버**에서 실행해야 한다."
+  echo "  (EK100 원본 영상 + data/grpo_dataset/selected·predictions jsonl 이 있는 머신)"
+  echo "  레이아웃이 다르면:  SRV_EGO=<서버의 EGO 루트> bash $0"
+  exit 2
+fi
+LOG="$SRV_EGO/f0_v2_build.log"
 
 say() { echo -e "\n=== $* ===" | tee -a "$LOG"; }
 
 say "[0] 환경"
 echo "SRV_EGO=$SRV_EGO  HUB_DIR=$HUB_DIR" | tee -a "$LOG"
-[ -d "$SRV_EGO" ] || { echo "✗ $SRV_EGO 없음 — SRV_EGO=<경로> 로 재실행"; exit 2; }
 
 say "[1] hublemon/EGO 확보"
 if [ -d "$HUB_DIR/.git" ]; then git -C "$HUB_DIR" pull --ff-only; else
