@@ -127,16 +127,35 @@ ANN_FILES = ["EPIC_100_train.csv", "EPIC_100_validation.csv",
              "EPIC_100_verb_classes.csv", "EPIC_100_noun_classes.csv"]
 
 
+def _valid_pt(path: Path) -> bool:
+    """torch .pt(=zip) 무결성 검사. 잘린 다운로드는 central directory 가 없어 열기 실패."""
+    if path.suffix != ".pt":
+        return True
+    import zipfile
+    try:
+        zipfile.ZipFile(path).close()
+        return True
+    except Exception:
+        return False
+
+
 def _download(url: str, dest: Path) -> None:
     if dest.exists() and dest.stat().st_size > 0:
-        print(f"  cached: {dest.name} ({dest.stat().st_size / 1e6:.0f} MB)")
-        return
+        if _valid_pt(dest):
+            print(f"  cached: {dest.name} ({dest.stat().st_size / 1e6:.0f} MB)")
+            return
+        # 잘린 캐시 (Drive 쓰기 중단 등) — wget -c 로 이어받기 시도
+        print(f"  ⚠ corrupt cache: {dest.name} ({dest.stat().st_size / 1e6:.0f} MB) — 이어받기/재다운로드")
     dest.parent.mkdir(parents=True, exist_ok=True)
     print(f"  download: {url}")
-    # wget 진행률 유지 (대용량 백본 ~수 GB). 실패 시 curl 폴백.
-    r = sh(["wget", "-q", "--show-progress", "-O", str(dest), url])
+    # -c: 부분 파일 이어받기 (Drive 마운트로 수 GB 쓰다 끊긴 경우 처음부터 다시 안 받음)
+    r = sh(["wget", "-c", "-q", "--show-progress", "-O", str(dest), url])
     if r.returncode != 0:
-        sh(["curl", "-fL", "-o", str(dest), url])
+        sh(["curl", "-fL", "-C", "-", "-o", str(dest), url])
+    if not (dest.exists() and dest.stat().st_size > 0 and _valid_pt(dest)):
+        print(f"✗ 다운로드 무결성 실패: {dest}")
+        print("  Drive 용량 부족 가능성 — 확인 후 재시도하거나 --assets_dir 를 /content 로컬로 지정")
+        sys.exit(2)
 
 
 def ensure_vjepa_assets(assets_dir: Path) -> dict:
