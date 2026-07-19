@@ -41,7 +41,12 @@ from ego.datasets.ego4d_stats import class_frequency, head_mid_tail_bands  # noq
 from ego.datasets.label_mapping import LabelMapping  # noqa: E402
 from ego.step1_action_anticipation.data.collator import anticipation_collate  # noqa: E402
 from ego.step1_action_anticipation.data.feature_cache import FeatureCacheDataset  # noqa: E402
-from ego.step1_action_anticipation.metrics import class_mean_recall, per_class_recall, prediction_entropy  # noqa: E402
+from ego.step1_action_anticipation.metrics import (  # noqa: E402
+    class_mean_recall,
+    per_class_recall,
+    prediction_entropy,
+    top_k_recall,
+)
 from ego.step1_action_anticipation.models import AnticipationHead  # noqa: E402
 from ego.step1_action_anticipation.train import _CosineWD, _WarmupCosineLR, sigmoid_focal_loss  # noqa: E402
 
@@ -248,11 +253,15 @@ def scenario_breakdown(logits, labels, num_classes: int, scenarios: list[str], k
 
 def evaluate(head_model, loader, device, num_classes: dict, bands: dict, scenarios: list[str], k: int = 5) -> dict:
     preds = compute_predictions(head_model, loader, device)
-    result: dict = {"overall": {}, "band": {}, "scenario": {}}
+    result: dict = {"overall": {}, "band": {}, "scenario": {}, "accuracy_top1": {}, "accuracy_top5": {}}
     for h in HEADS:
         logits, labels = preds["logits"][h], preds["labels"][h]
         result["overall"][h] = class_mean_recall(logits, labels, num_classes[h], k=k)
         result["band"][h] = band_breakdown(logits, labels, num_classes[h], bands[h], k=k)
+        # Simple (micro, instance-level) accuracy alongside the class-mean recall above --
+        # distinct metric (not weighted equally per class), always logged together per user request.
+        result["accuracy_top1"][h] = top_k_recall(logits, labels, k=1)
+        result["accuracy_top5"][h] = top_k_recall(logits, labels, k=5)
         result["scenario"][h] = scenario_breakdown(logits, labels, num_classes[h], scenarios, k=k)
     result["_preds"] = preds
     return result
@@ -404,13 +413,22 @@ def main() -> None:
         for h in HEADS:
             step_log(1, "TrainLTAZ1", f"Dev {h} class-mean Recall@5: {eval_result['overall'][h]:.2f}")
             step_log(1, "TrainLTAZ1", f"Dev {h} band breakdown: {eval_result['band'][h]}")
+            step_log(
+                1, "TrainLTAZ1",
+                f"Dev {h} simple accuracy: top1={eval_result['accuracy_top1'][h]:.2f}  "
+                f"top5={eval_result['accuracy_top5'][h]:.2f}",
+            )
         step_log(1, "TrainLTAZ1", f"Dev action scenario breakdown: {eval_result['scenario']['action']}")
 
         elapsed = time.time() - t0
         with open(history_path, "a", newline="", encoding="utf-8") as f:
             csv.writer(f).writerow(
                 [epoch, f"{train_loss:.4f}", eval_result["overall"]["verb"], eval_result["overall"]["noun"],
-                 eval_result["overall"]["action"], f"{elapsed:.1f}"]
+                 eval_result["overall"]["action"],
+                 eval_result["accuracy_top1"]["verb"], eval_result["accuracy_top5"]["verb"],
+                 eval_result["accuracy_top1"]["noun"], eval_result["accuracy_top5"]["noun"],
+                 eval_result["accuracy_top1"]["action"], eval_result["accuracy_top5"]["action"],
+                 f"{elapsed:.1f}"]
             )
 
         action_metric = eval_result["overall"]["action"]
@@ -426,7 +444,8 @@ def main() -> None:
         write_json(
             run_dir / "metrics.json",
             {"epoch": epoch, "train_loss": train_loss, "overall": eval_result["overall"],
-             "band": eval_result["band"], "scenario": eval_result["scenario"]},
+             "band": eval_result["band"], "scenario": eval_result["scenario"],
+             "accuracy_top1": eval_result["accuracy_top1"], "accuracy_top5": eval_result["accuracy_top5"]},
         )
         save_likelihood_entropy(eval_result["_preds"], dev_scenarios, run_dir / "likelihood_entropy.jsonl")
 

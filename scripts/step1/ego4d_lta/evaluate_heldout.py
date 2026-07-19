@@ -170,11 +170,17 @@ def main() -> None:
     for h in tz1.HEADS:
         step_log(1, "EvaluateHeldout", f"{args.split} {h} class-mean Recall@5: {result['overall'][h]:.2f}")
         step_log(1, "EvaluateHeldout", f"{args.split} {h} band breakdown: {result['band'][h]}")
+        step_log(
+            1, "EvaluateHeldout",
+            f"{args.split} {h} simple accuracy: top1={result['accuracy_top1'][h]:.2f}  "
+            f"top5={result['accuracy_top5'][h]:.2f}",
+        )
 
     run_dir = ensure_dir(expand_path(require(config, "experiment.output_dir")))
     write_json(
         run_dir / f"{args.split}_metrics.json",
         {"overall": result["overall"], "band": result["band"], "scenario": result["scenario"],
+         "accuracy_top1": result["accuracy_top1"], "accuracy_top5": result["accuracy_top5"],
          "checkpoint": args.checkpoint, "checkpoint_epoch": checkpoint.get("epoch")},
     )
     tz1.save_likelihood_entropy(result["_preds"], eval_scenarios, run_dir / f"{args.split}_likelihood_entropy.jsonl")
