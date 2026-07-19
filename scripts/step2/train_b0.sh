@@ -16,6 +16,6 @@ accelerate launch --multi_gpu --num_processes 2 \
   --model_name   Qwen/Qwen3-VL-8B-Instruct \
   --beta 0.1 --learning_rate 5e-6 --num_train_epochs 1.0 \
   --per_device_train_batch_size 2 --gradient_accumulation_steps 8 \
-  --lora_r 16 --lora_alpha 32 --save_steps 100 --logging_steps 2
+  --save_steps 100 --logging_steps 2
 
 echo "[done] B0 → $OUT"

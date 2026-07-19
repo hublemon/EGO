@@ -16,7 +16,7 @@ import os
 import statistics
 from pathlib import Path
 
-EGO_ROOT = Path(os.path.expanduser("~/work/jihun/EGO"))
+EGO_ROOT = Path(os.path.expanduser(os.environ.get("EGO_ROOT", "~/work/jihun/EGO")))
 GRPO_DIR = EGO_ROOT / "data/grpo_dataset"
 DATASET = GRPO_DIR / "grpo_dataset.jsonl"
 STATS_DIR = GRPO_DIR / "stats"

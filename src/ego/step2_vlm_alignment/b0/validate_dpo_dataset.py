@@ -32,14 +32,44 @@ def _prompt_text(record: dict) -> str:
     return str(p)
 
 
+_HISTORY_START = "Action history:"
+_HISTORY_END = "Action candidates"
+
+
+def _mask_history_section(text: str) -> str:
+    """action-string 누설 검사용으로 프롬프트의 history 섹션을 제거.
+    반복 태스크에서는 과거 히스토리에 GT 와 같은 라벨("stir pan")이 **정당하게** 존재한다 —
+    strict cutoff(< trigger)가 이미 시간 경계를 보증하므로, current/future GT 문자열 검사는
+    히스토리 섹션 *밖*에만 적용한다 (§15 의 의도 보존, 반복-행동 샘플 오탐 드랍 방지)."""
+    i = text.find(_HISTORY_START)
+    if i < 0:
+        return text
+    j = text.find(_HISTORY_END, i)
+    return text[:i] + text[j:] if j > i else text[:i]
+
+
+def _to_seconds(v):
+    """stop_time/trigger_time 을 초 단위 float 로. 'HH:MM:SS.ss' 문자열도 허용."""
+    if v is None or isinstance(v, (int, float)):
+        return v
+    try:
+        parts = [float(x) for x in str(v).split(":")]
+    except ValueError:
+        return None
+    sec = 0.0
+    for p in parts:
+        sec = sec * 60 + p
+    return sec
+
+
 def check_prompt_leakage(record: dict) -> list[str]:
     """핸드오프 §15 leakage assertions. record 는 DPO record + 검사용 meta 를 포함할 수 있다.
     prompt 텍스트에 금지 정보가 substring 으로 나타나면 위반."""
     errs = []
     text = _prompt_text(record)
+    text_no_history = _mask_history_section(text)
     meta = record.get("_leak_check") or {}   # build 단계가 채워주는 검사용 원본 (직렬화 안 함)
     forbidden = {
-        "current_gt_action": meta.get("gt_action_str"),
         "raw_hindsight": meta.get("raw_task"),
         "projected_belief": meta.get("projected_belief"),
         "faa_belief": meta.get("faa_belief"),
@@ -48,14 +78,18 @@ def check_prompt_leakage(record: dict) -> list[str]:
     for name, val in forbidden.items():
         if val and str(val).strip() and str(val).strip() in text:
             errs.append(f"[leak] '{name}' value present in policy prompt")
+    # current/future GT action 문자열은 히스토리 섹션 밖에서만 금지 (반복 행동 오탐 방지)
+    gt_s = str(meta.get("gt_action_str") or "").strip()
+    if gt_s and gt_s in text_no_history:
+        errs.append("[leak] 'current_gt_action' value present in policy prompt")
     for fut in (meta.get("future_gt_actions") or []):
         s = f"{fut.get('verb','')} {fut.get('noun','')}".strip()
-        if s and s in text:
+        if s and s in text_no_history:
             errs.append(f"[leak] future action '{s}' present in policy prompt")
-    # history stop_time <= trigger (구조 검사; build 가 numeric 을 넘겨줄 때만)
-    trigger = meta.get("trigger_time")
+    # history stop_time <= trigger (구조 검사; 문자열 timestamp 도 초로 변환해 비교)
+    trigger = _to_seconds(meta.get("trigger_time"))
     for h in (meta.get("policy_history") or []):
-        st = h.get("stop_time")
+        st = _to_seconds(h.get("stop_time"))
         if trigger is not None and st is not None and st > trigger:
             errs.append(f"[leak] history action stop_time {st} > trigger {trigger}")
     return errs

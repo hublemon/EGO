@@ -134,7 +134,8 @@ class MockTeacher:
     def infer_raw_trace(self, gt_trajectory):
         return "<task_belief>make a meal</task_belief><reasoning>sequence builds a dish</reasoning>"
 
-    def project_full_trace(self, raw_trace, memory_context, candidates, gt_verb, gt_noun):
+    def project_full_trace(self, raw_trace, memory_context, candidates, gt_verb, gt_noun,
+                           image_path=None):
         return U.parse_full_trace(U.build_full_trace(
             "A relevant object is visible and prior actions support this step.",
             "prepare a meal", gt_verb, gt_noun))

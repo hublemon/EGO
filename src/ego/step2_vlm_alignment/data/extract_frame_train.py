@@ -26,11 +26,10 @@ from decord import VideoReader, cpu
 from PIL import Image
 from tqdm import tqdm
 
-EGO_ROOT = Path(os.path.expanduser("~/work/jihun/EGO"))
+EGO_ROOT = Path(os.path.expanduser(os.environ.get("EGO_ROOT", "~/work/jihun/EGO")))
 VIDEOS_BASE = os.environ.get("EK100_VIDEOS", "data/EK100/videos")  # 비공개 경로는 커밋하지 않는다
-SELECTED = EGO_ROOT / "data/grpo_dataset/selected_train.jsonl"
-FRAMES_ROOT = EGO_ROOT / "data/grpo_dataset/frames"
-MANIFEST = EGO_ROOT / "data/grpo_dataset/frames_manifest.jsonl"
+GRPO_DIR = EGO_ROOT / "data/grpo_dataset"
+FRAMES_ROOT = GRPO_DIR / "frames"
 
 SHORT_SIDE_1F = 768   # 1-frame: 기존과 동일
 SHORT_SIDE_4F = 448   # 4-frame: 각 frame 448 → grid 약 896 (VLM 토큰 예산 고려)
@@ -81,17 +80,35 @@ def frame_indices(trigger: int, fps: float, nframes: int, num: int) -> list[int]
     return idxs
 
 
+def _matches_num_frames(jpg: Path, num: int) -> bool:
+    """resume 시 기존 jpg 가 요청 포맷과 일치하는지 기하로 판정.
+    1f: short side <= SHORT_SIDE_1F(768) · 4f grid: short side = 2*448+2 = 898 (>800).
+    불일치(예: v1 1f 잔존물에 4f 요청)면 재추출하도록 False."""
+    try:
+        with Image.open(jpg) as im:
+            short = min(im.size)
+    except Exception:
+        return False
+    return short > 800 if num == 4 else short <= 800
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=None)
-    ap.add_argument("--resume", action="store_true", help="이미 존재하는 jpg 는 건너뜀")
-    ap.add_argument("--selected", type=str, default=str(SELECTED))
-    ap.add_argument("--manifest", type=str, default=str(MANIFEST))
+    ap.add_argument("--resume", action="store_true",
+                    help="요청 포맷(1f/4f)과 기하가 일치하는 기존 jpg 만 건너뜀")
+    ap.add_argument("--split", choices=["train", "validation"], default="train",
+                    help="validation: selected_heldout / frames_manifest_heldout 사용")
+    ap.add_argument("--selected", type=str, default=None)
+    ap.add_argument("--manifest", type=str, default=None)
     ap.add_argument("--num_frames", type=int, default=1, choices=[1, 4],
                     help="4: trigger-4.0/2.67/1.33/0.0s 4장을 2x2 grid 합성 (F0 final plan)")
     args = ap.parse_args()
-    selected_path = Path(args.selected)
-    manifest_path = Path(args.manifest)
+    sfx = "heldout" if args.split == "validation" else "train"
+    selected_path = Path(args.selected) if args.selected else GRPO_DIR / f"selected_{sfx}.jsonl"
+    manifest_path = Path(args.manifest) if args.manifest else (
+        GRPO_DIR / ("frames_manifest_heldout.jsonl" if args.split == "validation"
+                    else "frames_manifest.jsonl"))
 
     FRAMES_ROOT.mkdir(parents=True, exist_ok=True)
     samples = [json.loads(l) for l in selected_path.read_text().splitlines() if l.strip()]
@@ -110,7 +127,7 @@ def main():
         for s in vsamples:
             sid = s["sample_id"]
             out = FRAMES_ROOT / f"{sid}.jpg"
-            if args.resume and out.exists():
+            if args.resume and out.exists() and _matches_num_frames(out, args.num_frames):
                 n_skip += 1
                 manifest.append({"sample_id": sid, "video_id": vid, "frame_path": str(out),
                                  "trigger_frame": int(s["trigger_frame"]),

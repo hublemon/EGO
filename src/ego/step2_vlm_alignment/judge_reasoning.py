@@ -87,14 +87,21 @@ choice is objectively correct — you are not told the right answer and should n
                         (2 = e.g. "wash up after cooking"), not a restatement of the single
                         chosen action (0 = e.g. goal "open the cupboard" while choosing
                         "open cupboard"), and not vacuous (0 = "do a kitchen task").
+7. belief_action_link — the chosen action is justified AS A STEP TOWARD the stated task belief
+                        (2 = reasoning explicitly connects "because the goal is X, the next
+                        step is Y"; 1 = goal and choice merely coexist without connection;
+                        0 = the belief is ignored or contradicted when choosing the action).
 
 Output JSON only:
 {{"history_grounding": N, "candidate_review": N, "visual_grounding": N,
 "conclusion_follows": N, "no_confabulation": N, "belief_globality": N,
-"note": "<one short sentence>"}}"""
+"belief_action_link": N, "note": "<one short sentence>"}}"""
 
+# belief_action_link: 배터리 ④ (handoff §10.1) — belief→action 인과 링크의 step 곡선.
+# B0 성공 판정 기준의 baseline. judge = gemini-2.5-pro (handoff §6.1).
 KEYS = ["history_grounding", "candidate_review", "visual_grounding",
-        "conclusion_follows", "no_confabulation", "belief_globality"]
+        "conclusion_follows", "no_confabulation", "belief_globality",
+        "belief_action_link"]
 
 
 def extract_think(text: str) -> str:
@@ -243,7 +250,9 @@ def main():
         rows.sort(key=lambda r: r["step"])
         h = len(rows) // 2
         first, last = rows[:h], rows[h:]
-        def mean(rs, k): return sum(r[k] for r in rs) / len(rs)
+        def mean(rs, k):
+            vs = [r[k] for r in rs if k in r]   # 구버전 레코드(신규 항목 없음) 허용
+            return sum(vs) / len(vs) if vs else float('nan')
         summary = {"n_steps": len(rows), "judge_model": args.judge_model,
                    "step_range": [rows[0]["step"], rows[-1]["step"]],
                    "estimated_cost_usd": round(total_cost, 4)}

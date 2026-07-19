@@ -27,7 +27,7 @@ from pathlib import Path
 
 import pandas as pd
 
-EGO_ROOT = Path(os.path.expanduser("~/work/jihun/EGO"))
+EGO_ROOT = Path(os.path.expanduser(os.environ.get("EGO_ROOT", "~/work/jihun/EGO")))
 ANN = EGO_ROOT / "src/epic-kitchens-100-annotations"
 VERB_ID2KEY = pd.read_csv(ANN / "EPIC_100_verb_classes.csv").set_index("id")["key"].to_dict()
 NOUN_ID2KEY = pd.read_csv(ANN / "EPIC_100_noun_classes.csv").set_index("id")["key"].to_dict()

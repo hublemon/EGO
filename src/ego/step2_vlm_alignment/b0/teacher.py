@@ -98,7 +98,8 @@ def parse_equivalence(text: str) -> str:
 class TeacherProtocol(Protocol):
     def infer_raw_trace(self, gt_trajectory: list[dict]) -> str: ...
     def project_full_trace(self, raw_trace: str, memory_context: str,
-                           candidates: list[dict], gt_verb: str, gt_noun: str) -> Optional[Trace]: ...
+                           candidates: list[dict], gt_verb: str, gt_noun: str,
+                           image_path: Optional[str] = None) -> Optional[Trace]: ...
     def equivalence(self, faa_belief: str, projected_belief: str) -> str: ...
 
 
@@ -116,10 +117,22 @@ class FrozenVLMTeacher:
     def _generate(self, prompt: str, image_path: Optional[str] = None) -> str:
         # 서버 전용 경로. 여기서 무거운 import 를 지역화해 로직 모듈이 GPU 없이 import 되게 한다.
         import torch
-        messages = [{"role": "user", "content": prompt}]
-        text = self.processor.apply_chat_template(messages, tokenize=False,
-                                                  add_generation_prompt=True)
-        inputs = self.processor(text=[text], return_tensors="pt").to(self.model.device)
+        # 정보 경계표(§2): offline teacher 는 시점 t 관측 x≤t 접근 가능 —
+        # projection 이 시각 근거 없는 환각 주장을 만들지 않도록 이미지를 실제로 전달한다.
+        if image_path:
+            from PIL import Image
+            image = Image.open(image_path).convert("RGB")
+            messages = [{"role": "user", "content": [
+                {"type": "image"}, {"type": "text", "text": prompt}]}]
+            text = self.processor.apply_chat_template(messages, tokenize=False,
+                                                      add_generation_prompt=True)
+            inputs = self.processor(text=[text], images=[image],
+                                    return_tensors="pt").to(self.model.device)
+        else:
+            messages = [{"role": "user", "content": prompt}]
+            text = self.processor.apply_chat_template(messages, tokenize=False,
+                                                      add_generation_prompt=True)
+            inputs = self.processor(text=[text], return_tensors="pt").to(self.model.device)
         with torch.no_grad():
             out = self.model.generate(**inputs, max_new_tokens=self.max_new_tokens,
                                       do_sample=False)
@@ -129,9 +142,12 @@ class FrozenVLMTeacher:
     def infer_raw_trace(self, gt_trajectory: list[dict]) -> str:
         return self._generate(raw_hindsight_prompt(gt_trajectory))
 
-    def project_full_trace(self, raw_trace, memory_context, candidates, gt_verb, gt_noun):
+    def project_full_trace(self, raw_trace, memory_context, candidates, gt_verb, gt_noun,
+                           image_path=None):
+        # 시점 t 프레임을 보고 projection — "A bowl is visible" 류 주장이 실제 관측에 근거하게.
         txt = self._generate(projection_prompt(raw_trace, memory_context, candidates,
-                                               gt_verb, gt_noun))
+                                               gt_verb, gt_noun),
+                             image_path=image_path)
         tr = parse_full_trace(txt)
         if not (tr.reasoning and tr.belief):
             return None

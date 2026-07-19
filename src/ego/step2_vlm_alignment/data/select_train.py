@@ -24,7 +24,7 @@ from pathlib import Path
 
 import pandas as pd
 
-EGO_ROOT = Path(os.path.expanduser("~/work/jihun/EGO"))
+EGO_ROOT = Path(os.path.expanduser(os.environ.get("EGO_ROOT", "~/work/jihun/EGO")))
 ANN = EGO_ROOT / "src/epic-kitchens-100-annotations"
 TRAIN_CSV = ANN / "EPIC_100_train.csv"
 VALIDATION_CSV = ANN / "EPIC_100_validation.csv"

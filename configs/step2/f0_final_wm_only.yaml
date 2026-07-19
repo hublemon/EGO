@@ -62,7 +62,7 @@ evaluation:
 judge:                               # 학습에 일절 미사용 — 순수 관측
   enabled: true
   base_url: https://gw.letsur.ai/v1
-  model: claude-sonnet-4-6           # gemini-2.5-pro 는 호출당 25배 비쌈 (reasoning 토큰)
+  model: gemini-2.5-pro              # handoff §6.1: 이후 모든 judge 채점은 Gemini 통일 (Claude 계열 금지)
   api_key_env: LETSUR_API_KEY        # 키는 환경변수로만. 절대 파일에 두지 않는다
   per_step: 3
 

@@ -454,8 +454,12 @@ def build_joint_conversation(example: Dict[str, Any], top_k: int,
         frame_note = ("The frame is unavailable this step. Infer the world model's likely choice "
                       "from your action history alone.")
     else:
-        sys_prompt = JOINT_SYSTEM_PROMPT
-        frame_note = (JOINT_FRAME_DESC_4.split("\n", 1)[0].lstrip("1. ").strip()
+        # 4f: 시스템 프롬프트의 프레임 항목도 grid 설명으로 교체 (셀↔시각 매핑은 L2-c 계약)
+        sys_prompt = (JOINT_SYSTEM_PROMPT.replace("1. A first-person video frame.",
+                                                  JOINT_FRAME_DESC_4)
+                      if n_frames == 4 else JOINT_SYSTEM_PROMPT)
+        frame_note = (" ".join(l.strip() for l in
+                               JOINT_FRAME_DESC_4.removeprefix("1. ").splitlines())
                       if n_frames == 4 else "")
 
     cand_lines = "\n".join(f'- {{"verb": "{v}", "noun": "{n}"}}' for v, n in disp)

@@ -20,7 +20,7 @@ import json
 import os
 from pathlib import Path
 
-EGO_ROOT = Path(os.path.expanduser("~/work/jihun/EGO"))
+EGO_ROOT = Path(os.path.expanduser(os.environ.get("EGO_ROOT", "~/work/jihun/EGO")))
 GRPO_DIR = EGO_ROOT / "data/grpo_dataset"
 SELECTED = GRPO_DIR / "selected_train.jsonl"
 PRED = GRPO_DIR / "predictions_train.jsonl"
@@ -60,7 +60,9 @@ def main():
     selected = load_jsonl_by_id(selected_path)
     preds = load_jsonl_by_id(pred_path)
     memory = load_jsonl_by_id(memory_path)
-    fmanifest_path = Path(args.frames_manifest) if args.frames_manifest else GRPO_DIR / "frames_manifest.jsonl"
+    fmanifest_path = Path(args.frames_manifest) if args.frames_manifest else (
+        GRPO_DIR / ("frames_manifest_heldout.jsonl" if args.split == "validation"
+                    else "frames_manifest.jsonl"))
     fmeta = load_jsonl_by_id(fmanifest_path) if fmanifest_path.exists() else {}
 
     print(f"[load] selected={len(selected)} predictions={len(preds)} memory={len(memory)} "

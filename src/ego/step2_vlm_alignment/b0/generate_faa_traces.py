@@ -17,8 +17,9 @@ import os
 import sys
 from pathlib import Path
 
-EGO_ROOT = Path(os.path.expanduser("~/work/jihun/EGO"))
-sys.path.insert(0, str(EGO_ROOT / "src/ego/step2_vlm_alignment"))
+EGO_ROOT = Path(os.path.expanduser(os.environ.get("EGO_ROOT", "~/work/jihun/EGO")))
+# train_grpo_action 플랫 import 는 리포 내 위치 기준 (EGO_ROOT 는 데이터 루트일 수 있음)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
 def _ckpt_hash(adapter_path: str) -> str:

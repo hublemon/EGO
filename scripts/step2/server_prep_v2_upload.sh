@@ -21,7 +21,8 @@
 #   1f-base 비교(3중 비교)를 위해 기존 frames/ 를 frames_1f_backup/ 으로 먼저 백업한다.
 set -euo pipefail
 
-SRV_EGO="${SRV_EGO:-$HOME/work/jihun/EGO}"          # 데이터 스크립트들이 하드코딩한 루트
+SRV_EGO="${SRV_EGO:-$HOME/work/jihun/EGO}"          # 데이터 루트 (python 스크립트에는 EGO_ROOT 로 전파)
+export EGO_ROOT="$SRV_EGO"
 HUB_DIR="${HUB_DIR:-$HOME/EGO_hub}"                  # hublemon/EGO 클론 위치
 GD="$SRV_EGO/data/grpo_dataset"
 DRIVE_REMOTE="${DRIVE_REMOTE:-}"                     # 예: gdrive:step2_vlm_grpo/v2 (rclone remote)
@@ -77,10 +78,23 @@ for name, lo in [("grpo_train.jsonl", 3000), ("grpo_heldout.jsonl", 300)]:
     if not p.exists():
         print(f"  ✗ {name} 없음"); ok = False; continue
     rows = [json.loads(l) for l in p.read_text().splitlines() if l.strip()]
-    fm = rows[0].get("frame_meta") or {}
     nf_ok = all((r.get("frame_meta") or {}).get("n_frames") == 4 for r in rows[:50])
-    print(f"  {name}: {len(rows)} lines · n_frames==4 (첫50): {nf_ok}")
-    ok = ok and len(rows) >= lo and nf_ok
+    # 메타데이터가 아니라 실제 픽셀로 4f grid 검증 (v1 1f 잔존물 오염 방지):
+    # 4f grid short side = 2*448+2 = 898 > 800, v1 1f = 768.
+    geom_ok, checked = True, 0
+    try:
+        from PIL import Image
+        for r in rows[:20]:
+            ip = Path(r["image_path"])
+            if ip.exists():
+                with Image.open(ip) as im:
+                    if min(im.size) <= 800:
+                        geom_ok = False
+                checked += 1
+    except ImportError:
+        print("  (PIL 없음 — 기하 검증 생략)")
+    print(f"  {name}: {len(rows)} lines · n_frames==4 (첫50): {nf_ok} · 4f-grid 기하 (첫{checked}): {geom_ok}")
+    ok = ok and len(rows) >= lo and nf_ok and geom_ok
 mem = gd / "memory_train.jsonl"
 if mem.exists():
     r0 = json.loads(mem.open().readline())
@@ -100,9 +114,13 @@ for f in ['grpo_train.jsonl','grpo_heldout.jsonl']:
         seen.add(p.split('/frames/')[-1])
 print('\n'.join(sorted(seen)))")
 echo "$TRAIN_FRAMES" | sed 's|^|frames/|' > upload_frames.txt
-tar czf f0_v2_upload.tgz grpo_train.jsonl grpo_heldout.jsonl grpo_train_b0meta.jsonl \
-    frames_manifest_train.jsonl -T upload_frames.txt 2>/dev/null || \
-tar czf f0_v2_upload.tgz grpo_train.jsonl grpo_heldout.jsonl -T upload_frames.txt
+# 존재하는 파일만 목록에 담아 한 번에 패키징 (b0meta 는 B0 데이터 계약 전달물 — 누락 금지)
+PKG_FILES=(grpo_train.jsonl grpo_heldout.jsonl)
+for f in grpo_train_b0meta.jsonl grpo_heldout_b0meta.jsonl \
+         frames_manifest.jsonl frames_manifest_heldout.jsonl; do
+  if [ -s "$f" ]; then PKG_FILES+=("$f"); else echo "  ⚠ $f 없음 — 패키지에서 제외" | tee -a "$LOG"; fi
+done
+tar czf f0_v2_upload.tgz "${PKG_FILES[@]}" -T upload_frames.txt
 md5sum f0_v2_upload.tgz | tee -a "$LOG"
 du -h f0_v2_upload.tgz | tee -a "$LOG"
 

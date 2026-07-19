@@ -13,25 +13,27 @@ cd "$(dirname "$0")/../.."
 
 RUN_MODE="${RUN_MODE:-validation}"          # validation | full
 MASK_PROB="${MASK_FRAME_PROB:-0.0}"         # full run 에서 0.15~0.2 (프록시 재악화 시)
+NUM_FRAMES="${NUM_FRAMES:-4}"               # 배터리 ⑤ 게이트 결과에 따라 1 (2026-07-18 미달 → 1f 확정)
 
 if [ "$RUN_MODE" = "full" ]; then
   STEP_ARGS="--num_train_epochs 1.0 --max_steps -1"
-  OUT="outputs/step2/f0_final_v2_full"
+  OUT="outputs/step2/f0_final_v2_full_${NUM_FRAMES}f"
 else
   STEP_ARGS="--max_steps 500"
-  OUT="outputs/step2/f0_final_v2_val"
+  OUT="outputs/step2/f0_final_v2_val_${NUM_FRAMES}f"
 fi
-echo "[RUN_MODE=$RUN_MODE] mask_frame_prob=$MASK_PROB out=$OUT lora_r=16"
+echo "[RUN_MODE=$RUN_MODE] num_frames=$NUM_FRAMES mask_frame_prob=$MASK_PROB out=$OUT lora_r=16"
 
 # 2xH200 기준. num_frames 4 는 vision token 증가 → 배치/속도 재측정 필요.
-accelerate launch --multi_gpu --num_processes 2 \
+# accelerate 콘솔 스크립트는 shebang 이 절대경로라 서버 이전 시 깨진다 — python -m 으로 호출.
+python -m accelerate.commands.launch --multi_gpu --num_processes 2 \
   src/ego/step2_vlm_alignment/train_grpo_action.py \
   --model_name         Qwen/Qwen3-VL-8B-Instruct \
   --train_jsonl        "${EGO_TRAIN_JSONL:?set EGO_TRAIN_JSONL}" \
   --output_dir         "$OUT" \
   --reward_mode        wm_likelihood_joint \
   --wm_likelihood_norm candidate \
-  --num_frames         4 \
+  --num_frames         "$NUM_FRAMES" \
   --mask_frame_prob    "$MASK_PROB" \
   --loss_type          dr_grpo --scale_rewards none --epsilon_high 0.28 \
   --min_wm_spread      0.05 --dynamic_sampling_std_threshold 0 \

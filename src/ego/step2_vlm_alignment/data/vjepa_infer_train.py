@@ -29,7 +29,7 @@ import yaml
 from decord import VideoReader, cpu
 from tqdm import tqdm
 
-EGO_ROOT = Path(os.path.expanduser("~/work/jihun/EGO"))
+EGO_ROOT = Path(os.path.expanduser(os.environ.get("EGO_ROOT", "~/work/jihun/EGO")))
 VJEPA2_SRC = EGO_ROOT / "src/vjepa2"
 sys.path.insert(0, str(VJEPA2_SRC))
 

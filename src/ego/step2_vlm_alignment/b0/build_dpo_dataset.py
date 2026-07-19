@@ -99,9 +99,15 @@ def build_pairs(samples: Iterable[dict], teacher: TeacherProtocol,
             stats.gt_outside_candidates += 1
             continue
 
-        raw = teacher.infer_raw_trace(s.get("future_gt_actions", []))
+        future = s.get("future_gt_actions", [])
+        if not future:
+            # 영상 말미 등 future 0개 — 빈 시퀀스로 goal 역추론은 무의미. projection 실패로 집계.
+            stats.projection_failures += 1
+            continue
+        raw = teacher.infer_raw_trace(future)
         projected = teacher.project_full_trace(
-            raw, s.get("memory_context", ""), candidates, gt["verb"], gt["noun"])
+            raw, s.get("memory_context", ""), candidates, gt["verb"], gt["noun"],
+            image_path=s.get("image_path") or None)
         if projected is None or not projected.is_complete():
             stats.projection_failures += 1
             continue

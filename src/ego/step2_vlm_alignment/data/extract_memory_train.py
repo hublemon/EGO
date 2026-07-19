@@ -31,7 +31,7 @@ from pathlib import Path
 
 import pandas as pd
 
-EGO_ROOT = Path(os.path.expanduser("~/work/jihun/EGO"))
+EGO_ROOT = Path(os.path.expanduser(os.environ.get("EGO_ROOT", "~/work/jihun/EGO")))
 ANNOT_DIR = EGO_ROOT / "src/epic-kitchens-100-annotations"
 TRAIN_CSV = ANNOT_DIR / "EPIC_100_train.csv"
 VIDEO_INFO_CSV = ANNOT_DIR / "EPIC_100_video_info.csv"
