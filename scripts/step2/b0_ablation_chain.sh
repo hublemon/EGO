@@ -101,6 +101,7 @@ PYEOF
     python -m accelerate.commands.launch --multi_gpu --num_processes 2 \
       src/ego/step2_vlm_alignment/b0/train_b0_dpo.py \
       --dpo_jsonl "$ABL/dpo_actpatch.jsonl" --faa_adapter "$FAA" --output_dir "$A1OUT" \
+      --max_length 4096 \
       --beta 0.1 --learning_rate 5e-6 --num_train_epochs 1.0 \
       --per_device_train_batch_size 2 --gradient_accumulation_steps 8 \
       --save_steps 50 > "$ABL/train_actpatch.log" 2>&1 || die "A1 학습 실패 — $ABL/train_actpatch.log"
@@ -145,6 +146,7 @@ print('half pairs:',len(rows)//2)"
     python -m accelerate.commands.launch --multi_gpu --num_processes 2 \
       src/ego/step2_vlm_alignment/b0/train_b0_dpo.py \
       --dpo_jsonl "$ABL/dpo_half.jsonl" --faa_adapter "$FAA" --output_dir "$A2OUT" \
+      --max_length 4096 \
       --beta 0.1 --learning_rate 5e-6 --num_train_epochs 1.0 \
       --per_device_train_batch_size 2 --gradient_accumulation_steps 8 \
       --save_steps 50 > "$ABL/train_half.log" 2>&1 || die "A2 학습 실패 — $ABL/train_half.log"

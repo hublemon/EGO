@@ -191,6 +191,22 @@ JOINT_SYSTEM_PROMPT_MASKED = JOINT_SYSTEM_PROMPT.replace(
     "1. A first-person video frame.",
     "1. (The video frame is unavailable for this step — rely on your action history.)")
 
+JOINT_SYSTEM_PROMPT_ACTION_ONLY = """You are an embodied agent choosing your next action
+from a first-person view.
+
+You receive:
+1. A first-person video frame.
+2. Your recent action history.
+3. Five candidate next-actions from a world model (V-JEPA2), in no particular order.
+
+Reply with ONLY one line, nothing else:
+<action>{"verb": "...", "noun": "..."}</action>
+
+Rules:
+- the action MUST be one of the five candidates, copied exactly (both verb and noun).
+- do not invent new verb+noun combinations. No reasoning text, no other tags.
+"""
+
 # 4-frame grid 안내 문구 (L2-c 정렬 프롬프트와 짝). num_frames==4 일 때 프레임 설명을 교체.
 JOINT_FRAME_DESC_4 = (
     "1. A 2x2 grid of four first-person frames sampled over the last 4 seconds, ordered\n"
@@ -209,11 +225,13 @@ THINK_REWARD_MODES = {"think_format", "think_ranking", "think_gt",
                       "think_gt_final", "wm_likelihood", "wm_likelihood_p3",
                       "wm_likelihood_joint"}
 # joint action top-5 포맷을 쓰는 모드 (프롬프트 빌더 분기용)
-JOINT_REWARD_MODES = {"wm_likelihood_joint"}
+JOINT_REWARD_MODES = {"wm_likelihood_joint", "wm_clean", "gt_only", "gt_action_only"}
+# F0-GA 진단: full-trace 생성 없이 <action> 만 출력 (병목 분리용 — 방법 아님, 스카이라인 계열)
+ACTION_ONLY = False   # main() 에서 reward_mode==gt_action_only 일 때 True
 JSON_REWARD_MODES = {"wm_ranking", "noun_ranking", "action_ranking_from_noun"}
 RANK_REWARD_TABLE = {1: 1.0, 2: 0.7, 3: 0.4, 4: 0.2, 5: 0.1}
 # GT-free 모드: 학습 신호는 물론 데이터셋 필터에도 GT 를 쓰지 않는다 (Run 1~).
-GT_FREE_REWARD_MODES = {"wm_likelihood", "wm_likelihood_p3", "wm_likelihood_joint"}
+GT_FREE_REWARD_MODES = {"wm_likelihood", "wm_likelihood_p3", "wm_likelihood_joint", "wm_clean"}
 # wm_likelihood reward 정규화 방식 — main() 에서 --wm_likelihood_norm 으로 설정.
 #   "candidate": likelihood / sum(top-k likelihood). 후보 5개가 실제 선택지이므로 조건부 분포가
 #                맞는 target 이고, raw softmax(~3800 클래스)는 median std 0.015 로 스케일이 작아
@@ -476,6 +494,11 @@ Begin your reply with "<reasoning>". Reason inside <reasoning></reasoning>, then
 <task_belief></task_belief>, then output <action>{{"verb": "...", "noun": "..."}}</action>
 copying exactly one candidate above.
 """
+    if ACTION_ONLY:
+        sys_prompt = JOINT_SYSTEM_PROMPT_ACTION_ONLY
+        problem_text = problem_text.split("Begin your reply with")[0] + (
+            'Reply with ONLY <action>{"verb": "...", "noun": "..."}</action> '
+            "copying exactly one candidate above. Nothing else.\n")
     prompt = [
         {"role": "system", "content": sys_prompt},
         {"role": "user", "content": problem_text},
@@ -921,6 +944,52 @@ def format_reward_joint(completions, **kwargs) -> List[float]:
     return rewards
 
 
+# ── 2026-07-19 통합 핸드오프 반영: clean/skyline 모드 ─────────────────────
+# validity 는 additive 보너스가 아니라 constraint(고정 floor). task reward 는 단일 신호.
+# 로깅: 기존 reward_log.jsonl 이 함수별 평균을 기록하므로 floor/task 분리 관측 가능.
+GT_ONLY_GROUP_STATS: dict = {"path": None, "num_gen": 8}   # main() 에서 설정
+
+
+def validity_floor_reward_joint(completions, topk_actions_display, **kwargs) -> List[float]:
+    """parse 실패 또는 joint top-k 밖 조합 → -0.5, 유효 → 0.0. (format 보너스 없음)"""
+    rewards = []
+    for comp, disp in zip(completions, topk_actions_display):
+        verb, noun, _ = parse_action_from_think_format(comp)
+        ok = bool(verb) and bool(noun)
+        if ok:
+            try:
+                valid = {(str(a.get("verb", "")), str(a.get("noun", ""))) for a in json.loads(disp)}
+            except Exception:
+                valid = set()
+            ok = (verb, noun) in valid
+        rewards.append(0.0 if ok else -0.5)
+    return rewards
+
+
+def gt_binary_reward_joint(completions, gt_verb, gt_noun, **kwargs) -> List[float]:
+    """GT-only skyline task reward: (verb,noun)==GT → 1.0, else 0.0 (무효 감점은 floor 담당).
+    그룹 조성(all_wrong/mixed/all_correct)을 GT_ONLY_GROUP_STATS['path'] 에 side-log."""
+    rewards = []
+    for comp, gv, gn in zip(completions, gt_verb, gt_noun):
+        verb, noun, _ = parse_action_from_think_format(comp)
+        rewards.append(1.0 if (verb and noun and verb == gv and noun == gn) else 0.0)
+    gp = GT_ONLY_GROUP_STATS.get("path")
+    if gp:
+        g = GT_ONLY_GROUP_STATS.get("num_gen", 8)
+        comp_stats = {"all_wrong": 0, "mixed": 0, "all_correct": 0}
+        for i in range(0, len(rewards) - g + 1, g):
+            grp = rewards[i:i + g]
+            key = ("all_correct" if all(r > 0 for r in grp)
+                   else "all_wrong" if all(r == 0 for r in grp) else "mixed")
+            comp_stats[key] += 1
+        try:
+            with open(gp, "a", encoding="utf-8") as f:
+                f.write(json.dumps(comp_stats) + "\n")
+        except Exception:
+            pass
+    return rewards
+
+
 def candidate_gate_reward_joint(completions, topk_actions_display, **kwargs) -> List[float]:
     """F0 v2 게이트: 선택한 (verb,noun) 쌍이 제시된 joint top-5 안에 있으면 0.0, 아니면 -0.5.
 
@@ -1339,6 +1408,13 @@ def build_reward_funcs(reward_mode: str):
         # gate 만 joint 쌍 소속 검사로 교체 — **리워드 신호는 WM likelihood 단독 유지**
         # (history-consistency 같은 비-WM 항은 넣지 않는다. G1 오염 방지).
         "wm_likelihood_joint": [format_reward_joint, candidate_gate_reward_joint, wm_likelihood_reward, think_convergence_reward_joint],
+        # ── 2026-07-19 클린 재편: validity=floor 단일 constraint, task reward 단일 신호.
+        #    think_convergence 는 학습 reward 에서 제외 (사후 합리화 보상 — P1-1), 평가 metric 으로만.
+        "wm_clean": [validity_floor_reward_joint, wm_likelihood_reward],
+        # GT-only skyline (본 방법 아님): oracle-subset(GT∈top-k) 학습, 진단 목적.
+        "gt_only":  [validity_floor_reward_joint, gt_binary_reward_joint],
+        # F0-GA 진단: gt_only 와 동일 리워드, 출력만 action-only (생성 병목 분리)
+        "gt_action_only": [validity_floor_reward_joint, gt_binary_reward_joint],
     }
     return table[reward_mode]
 
@@ -1363,6 +1439,23 @@ def _wm_spread(ex: Dict[str, Any], top_k: int) -> float:
 
 def filter_rows_for_stage(rows, stage, top_k, drop_unrewardable_samples, reward_mode=None,
                           min_wm_spread: float = 0.0):
+    # gt_only skyline: GT 가 후보 밖이면 전 롤아웃 보상 0 → oracle-subset 으로 드랍 (통합 핸드오프 2.4)
+    if reward_mode in ("gt_only", "gt_action_only"):
+        n0 = len(rows)
+        kept = []
+        for ex in rows:
+            cands = {(str(a.get("verb", "")), str(a.get("noun", "")))
+                     for a in (ex.get("topk_actions") or [])[:top_k]}
+            if (str(ex.get("gt_verb", "")), str(ex.get("gt_noun", ""))) in cands:
+                kept.append(ex)
+        GT_ONLY_GROUP_STATS["oracle_manifest"] = {
+            "num_total_prompts": n0, "num_gt_in_topk": len(kept),
+            "num_gt_not_in_topk": n0 - len(kept),
+            "candidate_coverage_at_k": round(len(kept) / n0, 4) if n0 else None,
+            "gt_not_in_topk_policy": "drop", "training_scope": "oracle_subset", "top_k": top_k}
+        print(f"[filter:gt_only] GT∈top{top_k} {len(kept)}/{n0} "
+              f"(coverage {len(kept)/n0:.3f}) — oracle-subset 학습")
+        rows = kept
     # GT-free 모드: GT 기반 필터를 쓰지 않는다 (GT 가 학습 분포에 새는 뒷문 차단).
     # 대신 dynamic sampling 의 정적 절반 — WM 분포가 flat 해 advantage 가 태생적으로
     # 생성 불가능한 샘플을 사전에 제거 (reward 는 WM likelihood 만의 함수이므로
@@ -1772,6 +1865,73 @@ class DynamicSamplingGRPOTrainer(GRPOTrainer):
         return output
 
 
+class SpanCreditGRPOTrainer(DynamicSamplingGRPOTrainer):
+    """P1-6 대응: policy-gradient credit 을 <action> span 토큰에만 부여 (2026-07-19 통합 핸드오프 F0-WA).
+
+    advantages (B,) → (B,T) 확장 후 action span 밖 가중치를 span_credit_lambda(기본 0)로.
+    trl 1.5.1 _compute_loss 가 (B,T) advantage 를 공식 지원하는 것을 이용 — 손실 코드 비침습.
+    reasoning/belief 의 붕괴 방지는 --beta(ref-KL) 로 담당. 한계: trl 구조상 KL 은 전 토큰
+    적용(비-action 한정 불가) — action 토큰에도 걸리는 KL 은 약한 정규화로 무해.
+    span 탐지: 태그 토큰열 서브시퀀스 탐색, 실패 시 누적 디코드 폴백 (BPE 경계 안전)."""
+
+    def __init__(self, *args, span_credit_lambda: float = 0.0, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.span_credit_lambda = float(span_credit_lambda)
+        tok = getattr(self.processing_class, "tokenizer", self.processing_class)
+        self._sc_tok = tok
+        self._sc_open = tok.encode("<action>", add_special_tokens=False)
+        self._sc_close = tok.encode("</action>", add_special_tokens=False)
+        self._sc_stats = {"n": 0, "found": 0, "fallback": 0}
+
+    @staticmethod
+    def _sc_find(ids, sub):
+        n, m = len(ids), len(sub)
+        for i in range(n - m + 1):
+            if ids[i:i + m] == sub:
+                return i
+        return -1
+
+    def _action_span_weights(self, completion_ids, completion_mask):
+        B, T = completion_ids.shape
+        w = torch.full((B, T), self.span_credit_lambda,
+                       dtype=torch.float32, device=completion_ids.device)
+        for b in range(B):
+            ids = completion_ids[b][completion_mask[b].bool()].tolist()
+            self._sc_stats["n"] += 1
+            st = self._sc_find(ids, self._sc_open)
+            en = self._sc_find(ids, self._sc_close)
+            if st >= 0 and en >= 0:
+                w[b, st:en + len(self._sc_close)] = 1.0
+                self._sc_stats["found"] += 1
+                continue
+            # 폴백: 누적 디코드 (태그가 BPE 경계에 걸린 경우)
+            text, st, en = "", -1, -1
+            for t in range(len(ids)):
+                text = self._sc_tok.decode(ids[:t + 1])
+                if st < 0 and "<action>" in text:
+                    st = t
+                if st >= 0 and "</action>" in text:
+                    en = t
+                    break
+            if st >= 0:
+                w[b, st:(en + 1 if en >= 0 else len(ids))] = 1.0
+                self._sc_stats["found"] += 1
+                self._sc_stats["fallback"] += 1
+            # action 태그 자체가 없으면 전 토큰 λ — validity floor 신호만 남음(의도된 동작)
+        return w
+
+    def _compute_loss(self, model, inputs):
+        adv = inputs.get("advantages")
+        if adv is not None and adv.dim() == 1:
+            w = self._action_span_weights(inputs["completion_ids"], inputs["completion_mask"])
+            inputs = dict(inputs)
+            inputs["advantages"] = adv.unsqueeze(1).to(w.dtype) * w
+            if self._sc_stats["n"] and self._sc_stats["n"] % 512 == 0:
+                st = self._sc_stats
+                print(f"[span_credit] tag found {st['found']}/{st['n']} (fallback {st['fallback']})")
+        return super()._compute_loss(model, inputs)
+
+
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--train_jsonl", type=str, required=True)
@@ -1784,7 +1944,7 @@ def parse_args():
                             "think_wm_rank_fix", "think_gt_combo",
                             "think_noun_gt", "think_noun_combo",
                             "think_gt_final", "wm_likelihood", "wm_likelihood_p3",
-                            "wm_likelihood_joint"],
+                            "wm_likelihood_joint", "wm_clean", "gt_only", "gt_action_only"],
                    help="실험 4/5/6/7 reward 구성. 미지정 시 legacy(stage+reward_target) 경로.")
     p.add_argument("--reward_target", type=str, default="auto", choices=["auto", "vjepa_top1", "gt"],
                    help="(legacy) auto: stage=gt→gt, noun/action→vjepa_top1")
@@ -1854,6 +2014,11 @@ def parse_args():
     p.add_argument("--p3_weight", type=float, default=0.0,
                    help="P3(think_support) 가중치. wm_likelihood_p3 모드에서 >0 필수 (권장 0.25 — "
                         "P1 최대 ~0.8, P4 최대 0.25 보다 작거나 같게). ref 모델 forward 가 붙어 step 시간 증가")
+    p.add_argument("--action_span_credit", action="store_true",
+                   help="P1-6: policy-gradient advantage 를 <action> span 토큰에만 부여 "
+                        "(reasoning/belief 는 --beta ref-KL 로 보존)")
+    p.add_argument("--span_credit_lambda", type=float, default=0.0,
+                   help="action span 밖 토큰의 advantage 가중 (0=완전 차단)")
     p.add_argument("--completion_log_every", type=int, default=25,
                    help="completion_samples.jsonl 캡처 주기(step). judge 리즈닝 곡선용 — "
                         "judge_reasoning_curve.py 가 이 파일을 읽는다. 학습 비용 없음(롤아웃 재사용).")
@@ -1903,6 +2068,14 @@ def main():
     print(f"[INFO] reward_mode={args.reward_mode} stage={args.stage} parse={PARSE_FORMAT} "
           f"max_compl={args.max_completion_length} top_k={args.top_k}")
     print(f"[INFO] train_jsonl={args.train_jsonl} output_dir={args.output_dir}")
+
+    if args.reward_mode == "gt_action_only":
+        global ACTION_ONLY
+        ACTION_ONLY = True
+    if args.reward_mode in ("gt_only", "gt_action_only"):
+        Path(args.output_dir).mkdir(parents=True, exist_ok=True)
+        GT_ONLY_GROUP_STATS["path"] = str(Path(args.output_dir) / "group_stats.jsonl")
+        GT_ONLY_GROUP_STATS["num_gen"] = args.num_generations
 
     processor = AutoProcessor.from_pretrained(
         args.model_name,
@@ -1955,6 +2128,10 @@ def main():
     reward_components = list(zip(reward_names, reward_funcs))
     sink = make_logging_sink(reward_components, shared)
     reward_funcs_with_sink = reward_funcs + [sink]
+    if args.reward_mode == "gt_only" and GT_ONLY_GROUP_STATS.get("oracle_manifest"):
+        (Path(args.output_dir) / "oracle_manifest.json").write_text(
+            json.dumps(GT_ONLY_GROUP_STATS["oracle_manifest"], indent=2), encoding="utf-8")
+
     logger = GRPOLogger(args.output_dir, reward_names, args.num_generations, is_think, shared,
                         capture_every=args.completion_log_every)
 
@@ -1997,7 +2174,9 @@ def main():
         **extra_cfg,
     )
 
-    trainer = DynamicSamplingGRPOTrainer(
+    trainer_cls = SpanCreditGRPOTrainer if args.action_span_credit else DynamicSamplingGRPOTrainer
+    trainer_extra = {"span_credit_lambda": args.span_credit_lambda} if args.action_span_credit else {}
+    trainer = trainer_cls(
         model=model,
         processing_class=processor,
         reward_funcs=reward_funcs_with_sink,
@@ -2006,6 +2185,7 @@ def main():
         callbacks=[logger],
         group_std_threshold=args.dynamic_sampling_std_threshold,
         ds_shared=shared,
+        **trainer_extra,
     )
 
     out = Path(args.output_dir)

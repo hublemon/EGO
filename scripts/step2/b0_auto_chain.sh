@@ -180,12 +180,20 @@ if ! ls -d "$B0OUT"/checkpoint-* >/dev/null 2>&1; then
   python -m accelerate.commands.launch --multi_gpu --num_processes 2 \
     src/ego/step2_vlm_alignment/b0/train_b0_dpo.py \
     --dpo_jsonl "$MVP/b0_dpo.jsonl" --faa_adapter "$FAA" --output_dir "$B0OUT" \
+    --max_length 4096 \
     --beta 0.1 --learning_rate 5e-6 --num_train_epochs 1.0 \
     --per_device_train_batch_size 2 --gradient_accumulation_steps 8 \
     --save_steps 50 || die "S9 DPO 학습 실패"
 fi
 B0CKPT=$(ls -d "$B0OUT"/checkpoint-* 2>/dev/null | sort -V | tail -1)
 [ -n "$B0CKPT" ] || die "B0 체크포인트 없음"
+# 무학습 가드 — adapter 가중치가 FAA 와 실제로 달라졌는지 (margin 항등 0 사건 재발 방지)
+$PY -c "
+from safetensors.torch import load_file
+a=load_file('$FAA/adapter_model.safetensors'); b=load_file('$B0CKPT'+'/adapter_model.safetensors')
+d=max((a[k]-b[k]).abs().max().item() for k in a if k in b)
+print('[guard] max adapter weight diff vs FAA:',d)
+raise SystemExit(0 if d>1e-7 else 1)" || die "S9 무학습: 체크포인트가 FAA 와 동일"
 
 # ── S10·S11 평가 ─────────────────────────────────────────────────────
 say "S10 evaluate_b0 (margin·coherence) + S11 생성 acc"

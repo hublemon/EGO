@@ -101,6 +101,8 @@ def main():
     ap.add_argument("--max_new_tokens", type=int, default=384)  # 학습 completion 예산과 동일
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--no_memory", action="store_true", help="배터리 ①: memory_context 공란화")
+    ap.add_argument("--action_only", action="store_true",
+                    help="F0-GA 진단: action-only 프롬프트 (T.ACTION_ONLY)")
     ap.add_argument("--history_only", action="store_true",
                     help="배터리 ②: 전 샘플 프레임 마스킹 (L2-a 경로) — 히스토리 단독 예측력")
     ap.add_argument("--max_pixels", type=int, default=768 * 28 * 28,
@@ -120,6 +122,8 @@ def main():
     out.parent.mkdir(parents=True, exist_ok=True)
 
     T.NO_MEMORY = args.no_memory
+    if args.action_only:
+        T.ACTION_ONLY = True
     if args.history_only:
         T.MASK_FRAME_PROB = 1.0
         T.BLANK_IMAGE_PATH = T._prepare_blank_image(str(out.parent))
@@ -159,7 +163,7 @@ def main():
 
     n = len(preds)
     m = dict(n=n, parsed=0, acc=0, verb_acc=0, noun_acc=0, in_joint5=0, wm_follow=0,
-             wm_top1_gt=0, gt_in_top5=0, g2_n=0, g2_correct=0,
+             wm_top1_gt=0, gt_in_top5=0, g2_n=0, g2_correct=0, acc_in5=0,
              belief_present=0, belief_restate=0, reasoning_words=0)
     records = []
     for pred_text, conv, ex in zip(preds, convs, raws):
@@ -182,6 +186,7 @@ def main():
         m["in_joint5"] += int(ok and (v, nn_) in disp)
         m["wm_follow"] += int(ok and (v, nn_) == wm1)
         m["g2_correct"] += int(g2 and correct)
+        m["acc_in5"] += int(gt_in5 and correct)      # conditional acc 분자 (GT∈top5)
         mb = re.search(r"<task_belief>(.*?)</task_belief>", pred_text, re.DOTALL)
         belief = (mb.group(1).strip() if mb else "")
         m["belief_present"] += int(bool(belief))
@@ -206,6 +211,10 @@ def main():
         "in_joint5": rate("in_joint5"), "wm_follow": rate("wm_follow"),
         "wm_top1_gt_acc": rate("wm_top1_gt"), "gt_in_top5_rate": rate("gt_in_top5"),
         "g2_n": m["g2_n"], "g2_acc": rate("g2_correct", "g2_n"), "g2_chance": 0.2,
+        # oracle-subset 해석용 3분리 (통합 핸드오프 2.4): coverage / conditional / overall
+        "acc_given_gt_in_top5": rate("acc_in5", "gt_in_top5") if m["gt_in_top5"] else None,
+        "oracle_upper_bound_proxy": (round(m["gt_in_top5"] / n * (m["acc_in5"] / m["gt_in_top5"]), 4)
+                                     if m["gt_in_top5"] else None),
         "rank1_given_in5": rate("wm_follow", "wm_top1_gt") if m["wm_top1_gt"] else None,
         "belief_present_rate": rate("belief_present"),
         "belief_restatement_rate": rate("belief_restate", "belief_present")
