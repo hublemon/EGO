@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# f0_rerun_signal.sh — 신호 개선 재검증 run (무인).
+# pro_rerun_signal.sh — 신호 개선 재검증 run (무인).
 #
 # 진단 목적: G1≈0(2026-07-18 500-step run)의 원인이 "신호 굶주림"인지 판정.
 #   처방 3종 동시 적용 (전부 GT-free · 동결 레시피 외 항목):
@@ -9,7 +9,7 @@
 #   판정 지표: train wm_likelihood_reward 곡선의 기울기 (오르면 학습량 문제 → full run 가치 회복,
 #             플랫이면 rank1|in5 병목이 본질 → Q1 재서술).
 #
-# 실행:  setsid nohup bash scripts/step2/f0_rerun_signal.sh \
+# 실행:  setsid nohup bash scripts/step2/pro_rerun_signal.sh \
 #          >> $EGO_ROOT/runs/f0_rerun.log 2>&1 < /dev/null &
 set -uo pipefail
 export EGO_ROOT="${EGO_ROOT:-/mnt/nvme/migration/jihun/EGO}"

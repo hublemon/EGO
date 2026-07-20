@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# f0_ga_chain.sh — F0-GR 진단: action-only 생성 기반 REINFORCE + EMA 기준선.
+# pro_ga_chain.sh — F0-GR 진단: action-only 생성 기반 REINFORCE + EMA 기준선.
 #   경위: (1) action-only GRPO 는 8롤아웃 전원 동일(그룹 분산 0)로 무학습 ×2회.
 #         (2) exact-CE(후보 스코어링)는 "생성으로 행동 선택" 전제와 불일치로 설계 기각.
 #   → 생성은 유지하고 기준선만 그룹→EMA 로 교체한 REINFORCE 로 진단 수행.
-#   마커는 F0_GA_DONE/FAILED 유지 (b0_r1_chain 이 이 마커로 cuda:0 대기).
+#   마커는 F0_GA_DONE/FAILED 유지 (retro_r1_chain 이 이 마커로 cuda:0 대기).
 set -euo pipefail
 export EGO_ROOT="${EGO_ROOT:-/mnt/nvme/migration/jihun/EGO}"
 export HF_HOME=/mnt/nvme/cache TRANSFORMERS_CACHE=/mnt/nvme/cache/transformers
@@ -23,7 +23,7 @@ die(){ say "✗ $*"; touch "$BAT/F0_GA_FAILED"; exit 1; }
 if [ ! -f "$BAT/.f0smoke_gr" ]; then
   say "smoke: F0-GR 32샘플 (cuda:0)"
   SDIR=$BAT/f0smoke_gr; rm -rf "$SDIR"
-  $PY scripts/step2/f0_gr_train.py --train_jsonl "$TRAIN_JSONL" --output_dir "$SDIR" \
+  $PY scripts/step2/pro_gr_train.py --train_jsonl "$TRAIN_JSONL" --output_dir "$SDIR" \
     --max_samples 32 --accum 8 --log_every 16 --save_every 100000 --device cuda:0 \
     > "$SDIR.log" 2>&1 || die "GR smoke 실행 실패 — $SDIR.log"
   $PY - "$SDIR/gr_log.jsonl" <<'PYEOF' || die "GR smoke 로그 이상"
@@ -41,7 +41,7 @@ else say "smoke skip"; fi
 if [ ! -f "$OUT/TRAINING_DONE" ]; then
   rm -rf "$OUT"
   say "F0-GR 학습 (cuda:0, 7000 샘플)"
-  $PY scripts/step2/f0_gr_train.py --train_jsonl "$TRAIN_JSONL" --output_dir "$OUT" \
+  $PY scripts/step2/pro_gr_train.py --train_jsonl "$TRAIN_JSONL" --output_dir "$OUT" \
     --max_samples 7000 --accum 16 --device cuda:0 \
     > "$BAT/train_gr.log" 2>&1 || die "F0-GR 학습 실패 — $BAT/train_gr.log"
   ls "$OUT"/checkpoint-final >/dev/null 2>&1 || die "최종 체크포인트 없음"

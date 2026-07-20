@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""f0_gr_train.py — F0-GR 진단: action-only 생성 기반 REINFORCE + EMA 기준선.
+"""pro_gr_train.py — F0-GR 진단: action-only 생성 기반 REINFORCE + EMA 기준선.
 
 설계 결정(2026-07-20): 후보 문자열 teacher-forcing 스코어링(exact-CE)은 "생성으로 행동을
 선택하는 에이전트" 전제와 train-test 불일치라 기각. 행동 선택은 **생성**으로 유지하되,

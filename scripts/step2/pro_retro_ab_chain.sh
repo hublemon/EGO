@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# f0b0_ab_chain.sh — "credit 을 action 에 국소화하면 달라지는가" 를 두 트랙에서 동시에 검증.
+# pro_retro_ab_chain.sh — "credit 을 action 에 국소화하면 달라지는가" 를 두 트랙에서 동시에 검증.
 #
 # 진단 배경: R1 span 분해가 belief +0.917 vs action +0.007 (131:1) 이었고, F0 의 ③ 인과도
 #   0.008 에 머물렀다. 두 현상의 원인이 같다 — **행동으로 정해진 credit 이 trace 전체
@@ -43,7 +43,7 @@ arm_a(){
   set -e
   if [ ! -s "$AD/pairs_p2only.jsonl" ]; then
     say "[A] P2-only 쌍 생성 (max_p1=0, max_p2=4)"
-    $PY -m ego.step2_vlm_alignment.b0.build_pairs_contrastive \
+    $PY -m ego.step2_vlm_alignment.retro.build_pairs_contrastive \
       --samples "$PD/b0_samples_8gen.jsonl" --train_jsonl "$TR1F" \
       --max_p1 0 --max_p2 4 \
       --out_pairs "$AD/pairs_p2only.jsonl" --out_hard "$AD/hard_ids.json" \
@@ -55,7 +55,7 @@ arm_a(){
   if [ ! -f "$AOUT/TRAINING_DONE" ]; then
     say "[A] DPO 학습 (cuda:0)"
     rm -rf "$AOUT"
-    CUDA_VISIBLE_DEVICES=0 $PY src/ego/step2_vlm_alignment/b0/train_b0_dpo.py \
+    CUDA_VISIBLE_DEVICES=0 $PY src/ego/step2_vlm_alignment/retro/train_retro_dpo.py \
       --dpo_jsonl "$AD/pairs_p2only.jsonl" --faa_adapter "$FAA" --output_dir "$AOUT" \
       --max_length 4096 --max_prompt_length 1024 > "$AD/dpo.log" 2>&1 || die "[A] DPO 실패"
     $PY -c "
@@ -71,7 +71,7 @@ raise SystemExit(0 if d>1e-7 else 1)" || die "[A] 무학습"
       --out "$BAT/abA_gen_1f.json" > "$BAT/abA_gen_1f.log" 2>&1 || die "[A] eval 실패"; }
   # span margin — P12·R1 과 동일 heldout 쌍으로 비교 가능하게
   [ -s "$BAT/remeasure_abA.json" ] || { say "[A] span margin";
-    $PY scripts/step2/remeasure_b0_margin.py --dpo_jsonl "$R1D/b0_r1_dpo_heldout.jsonl" \
+    $PY scripts/step2/remeasure_retro_margin.py --dpo_jsonl "$R1D/b0_r1_dpo_heldout.jsonl" \
       --policies "faa:$FAA,p2only:$AOUT" --device cuda:0 \
       --out "$BAT/remeasure_abA.json" > "$BAT/remeasure_abA.log" 2>&1 || die "[A] margin 실패"; }
   say "[A] 완료"
@@ -83,14 +83,14 @@ arm_b(){
   if [ ! -f "$BOUT/TRAINING_DONE" ]; then
     say "[B] smoke (12샘플, credit=action)"
     rm -rf "$BAT/f0smoke_ac"
-    $PY scripts/step2/f0_gr_train.py --train_jsonl "$TR1F" --output_dir "$BAT/f0smoke_ac" \
+    $PY scripts/step2/pro_gr_train.py --train_jsonl "$TR1F" --output_dir "$BAT/f0smoke_ac" \
       --full_trace --reward wm --credit action --max_new_tokens 384 --batch_gen 2 \
       --max_samples 12 --accum 4 --log_every 6 --save_every 100000 --device cuda:1 \
       > "$BAT/f0smoke_ac.log" 2>&1 || die "[B] smoke 실패 — $BAT/f0smoke_ac.log"
     # action 태그 미검출로 전량 스킵되면 학습이 0 → smoke 로그에 기록이 남는지 확인
     grep -q "\[gr\]" "$BAT/f0smoke_ac.log" || die "[B] smoke 무학습 (action span 미검출 의심)"
     say "[B] 학습 (cuda:1, 5000 샘플)"
-    $PY scripts/step2/f0_gr_train.py --train_jsonl "$TR1F" --output_dir "$BOUT" \
+    $PY scripts/step2/pro_gr_train.py --train_jsonl "$TR1F" --output_dir "$BOUT" \
       --full_trace --reward wm --credit action --max_new_tokens 384 --batch_gen 4 \
       --max_samples 5000 --accum 16 --save_every 1250 --device cuda:1 \
       > "$BAT/train_ac.log" 2>&1 || die "[B] 학습 실패 — $BAT/train_ac.log"

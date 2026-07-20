@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""colab_smoke_f0.py — Step2 F0 (WM-only GRPO) GPU 스모크 러너 (Colab A100 40GB 대상).
+"""colab_smoke_pro.py — Step2 F0 (WM-only GRPO) GPU 스모크 러너 (Colab A100 40GB 대상).
 
 한 파일로 다음을 자동 실행한다:
   1. GPU/환경 점검
@@ -10,7 +10,7 @@
          reward(wm_likelihood_joint)는 jsonl 안의 precompute likelihood 만 읽으므로
          V-JEPA2 / EPIC-Kitchens 원본이 없어도 학습 루프 전체를 GPU 에서 검증할 수 있다.
        - 실제 데이터가 있으면 --train_jsonl 로 그 경로를 그대로 물린다 (합성 생략).
-  4. 순수 로직 스모크(smoke_f0_v2.py) 실행 — 데이터/프롬프트 규칙 회귀 검사
+  4. 순수 로직 스모크(smoke_pro_v2.py) 실행 — 데이터/프롬프트 규칙 회귀 검사
   5. GRPO 학습 스모크 (축소 설정 2 step) — Qwen3-VL-8B + LoRA + wm_likelihood_joint reward
   6. 산출물 검증(checkpoint / reward_log.jsonl / completion_samples.jsonl) 후 PASS/FAIL 요약
 
@@ -18,10 +18,10 @@
 검증하지 않는 것: 학습 품질/수렴/지표 — 그건 실제 데이터 + full run 의 몫.
 
 Colab 사용법 (셀 하나):
-    !cd /content/EGO && python scripts/step2/colab_smoke_f0.py
+    !cd /content/EGO && python scripts/step2/colab_smoke_pro.py
 
 실데이터로:
-    !cd /content/EGO && python scripts/step2/colab_smoke_f0.py \
+    !cd /content/EGO && python scripts/step2/colab_smoke_pro.py \
         --train_jsonl /content/drive/MyDrive/ego/grpo_train.jsonl --num_frames 4
 
 무거운 라이브러리(torch/transformers 등)는 설치 이후 함수 안에서 lazy import 한다
@@ -279,8 +279,8 @@ def synth_data(data_dir: Path, n: int, num_frames: int) -> Path:
 # 4. 순수 로직 스모크
 # ─────────────────────────────────────────────────────────────────────────────
 def logic_smoke() -> bool:
-    hr("[4] 순수 로직 스모크 (smoke_f0_v2.py)")
-    script = REPO / "scripts/step2/smoke_f0_v2.py"
+    hr("[4] 순수 로직 스모크 (smoke_pro_v2.py)")
+    script = REPO / "scripts/step2/smoke_pro_v2.py"
     if not script.exists():
         print(f"⚠ 없음: {script} — 건너뜀")
         return True

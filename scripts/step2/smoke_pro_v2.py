@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""smoke_f0_v2.py — F0 final plan v2 데이터/프롬프트 로직 스모크 테스트 (GPU/torch 불필요).
+"""smoke_pro_v2.py — F0 final plan v2 데이터/프롬프트 로직 스모크 테스트 (GPU/torch 불필요).
 
 검증 대상 (F0 final plan §0):
   §0-4 strict cutoff: stop < trigger 엄격 부등호 + 3제외 (가로지름·동일·NaN)

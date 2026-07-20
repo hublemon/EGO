@@ -50,7 +50,7 @@
 
 \* A1 = chosen을 teacher 투영 대신 "FAA 자기 trace에 GT action만 패치"로 구성한 ablation. teacher의 기여를 분리한다.
 
-### 2-2. 결정적 증거 — margin의 span 분해 (heldout 906쌍, 길이정규화, `remeasure_b0_margin.py`)
+### 2-2. 결정적 증거 — margin의 span 분해 (heldout 906쌍, 길이정규화, `remeasure_retro_margin.py`)
 
 | 개선(vs FAA, 토큰당) | 전체 | reasoning span | task_belief span | **action span** |
 |---|---|---|---|---|
@@ -65,7 +65,7 @@
 
 ### 2-3. 구조적 원인 (코드 위치)
 
-`src/ego/step2_vlm_alignment/b0/teacher.py` — `project_full_trace()`:
+`src/ego/step2_vlm_alignment/retro/teacher.py` — `project_full_trace()`:
 
 ```
 현행 정보 흐름:
@@ -131,7 +131,7 @@
 | 5 | smoke: 2샘플 전 경로 (goal 추출→belief 생성→verify→pair) — **goal에 GT 누출 없는지 assert** | 체인 | 0.5h |
 | 6 | MVP 재빌드 — **기존 FAA 롤아웃(rejected) 전량 재사용**, teacher 산출만 재생성 (2-way 샤딩) | 체인 | ~3h GPU |
 | 7 | DPO 재학습 (동일 하이퍼파라미터, max_length 4096) | 체인 | 0.5h |
-| 8 | 평가: 생성 acc + **③ belief-swap** + span-margin 재측정(`remeasure_b0_margin.py` 재사용) | 체인 | ~1h |
+| 8 | 평가: 생성 acc + **③ belief-swap** + span-margin 재측정(`remeasure_retro_margin.py` 재사용) | 체인 | ~1h |
 
 **총 예상: 구현 4–5h + GPU 5h ≈ 캘린더 1일 이내** (기존 체인 인프라·멱등 마커 재사용 시).
 

@@ -1,6 +1,6 @@
 # B0 — Full-Trace Projected-Hindsight DPO (MVP).
 # 핸드오프: EGO_STEP2_B0_FULL_TRACE_DPO_VALIDATION_HANDOFF (2026-07-18)
-# 구현: src/ego/step2_vlm_alignment/b0/ · docs/experiments/2026-07-18_b0_implementation.md
+# 구현: src/ego/step2_vlm_alignment/retro/ · docs/experiments/2026-07-18_b0_implementation.md
 #
 # 핵심: reasoning/belief/action 분리 없음. 전체 trace 를 하나의 preference 단위로.
 #   chosen   = projected(reasoning+belief) + GT action   (시점 t past-grounded)

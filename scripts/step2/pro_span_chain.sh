@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# f0_span_chain.sh — Phase 2b: F0-WA (clean WM + action-span credit + ref-KL) 무인 체인.
+# pro_span_chain.sh — Phase 2b: F0-WA (clean WM + action-span credit + ref-KL) 무인 체인.
 #   P1-6 대응: advantage 를 <action> span 에만 부여, reasoning/belief 는 beta(ref-KL)로 보존.
 #   기반: wm_clean (Phase 1 F0-W 와 동일 데이터·하이퍼) — 변경 변수는 credit 배분 + beta 뿐.
 #   목적 지표: ③ belief-swap 인과 민감도 (F0-W 대비) + acc 유지 여부.

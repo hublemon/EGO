@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# b0_ablation_chain.sh — B0 MVP 완료 후 유효 ablation 무인 체인 (데드라인 하드 게이트).
+# retro_ablation_chain.sh — B0 MVP 완료 후 유효 ablation 무인 체인 (데드라인 하드 게이트).
 #   A0 ③ belief-swap on B0 ckpt (+④ judge 시도, 비치명) — B0 핵심 성공 지표
 #   A1 action-patch DPO: chosen = FAA 자기 trace + GT action 패치 (teacher 투영 제거)
 #       → full-trace projected hindsight 기여 분리. 각 arm: train → 생성 acc → ③ swap
@@ -99,7 +99,7 @@ PYEOF
   if ! ls -d "$A1OUT"/checkpoint-* >/dev/null 2>&1; then
     say "A1 DPO 학습 (동일 하이퍼파라미터)"
     python -m accelerate.commands.launch --multi_gpu --num_processes 2 \
-      src/ego/step2_vlm_alignment/b0/train_b0_dpo.py \
+      src/ego/step2_vlm_alignment/retro/train_retro_dpo.py \
       --dpo_jsonl "$ABL/dpo_actpatch.jsonl" --faa_adapter "$FAA" --output_dir "$A1OUT" \
       --max_length 4096 \
       --beta 0.1 --learning_rate 5e-6 --num_train_epochs 1.0 \
@@ -109,7 +109,7 @@ PYEOF
   A1CKPT=$(ls -d "$A1OUT"/checkpoint-* 2>/dev/null | sort -V | tail -1)
   [ -n "$A1CKPT" ] || die "A1 체크포인트 없음"
   # margin 평가(비치명, cuda:0) — gen(cuda:1) 과 병렬
-  [ -s "$BAT/abl_actpatch_eval.json" ] || CUDA_VISIBLE_DEVICES=0 $PY -m ego.step2_vlm_alignment.b0.evaluate_b0 \
+  [ -s "$BAT/abl_actpatch_eval.json" ] || CUDA_VISIBLE_DEVICES=0 $PY -m ego.step2_vlm_alignment.retro.evaluate_retro \
     --dpo_jsonl "$MVP/b0_dpo_heldout.jsonl" --faa_adapter "$FAA" --b0_adapter "$A1CKPT" \
     --out "$BAT/abl_actpatch_eval.json" > "$BAT/abl_actpatch_eval.log" 2>&1 || true &
   MARGIN_PID=$!
@@ -144,7 +144,7 @@ print('half pairs:',len(rows)//2)"
   if ! ls -d "$A2OUT"/checkpoint-* >/dev/null 2>&1; then
     say "A2 DPO 학습 (½ 데이터)"
     python -m accelerate.commands.launch --multi_gpu --num_processes 2 \
-      src/ego/step2_vlm_alignment/b0/train_b0_dpo.py \
+      src/ego/step2_vlm_alignment/retro/train_retro_dpo.py \
       --dpo_jsonl "$ABL/dpo_half.jsonl" --faa_adapter "$FAA" --output_dir "$A2OUT" \
       --max_length 4096 \
       --beta 0.1 --learning_rate 5e-6 --num_train_epochs 1.0 \

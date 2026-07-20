@@ -11,7 +11,7 @@
 # 하는 일:
 #   1. hublemon/EGO 최신 클론/풀 (~/EGO_hub) — v2 빌드 스크립트 확보
 #   2. 선행물 검사 (selected/predictions train+heldout, EK100 어노테이션, 영상 접근)
-#   3. build_f0_v2_data.sh 실행 — 4f grid 프레임 + strict cutoff memory + assemble/convert
+#   3. build_pro_v2_data.sh 실행 — 4f grid 프레임 + strict cutoff memory + assemble/convert
 #      + 자동 leakage 검사 (PASS 실패 시 여기서 중단 = freeze 게이트)
 #   4. 산출물 검증 (라인 수 · frame_meta.n_frames==4 · cutoff_rule strict)
 #   5. 업로드 패키징: f0_v2_upload.tgz (grpo_train/heldout/b0meta jsonl + 참조 프레임 전체 + md5)
@@ -64,7 +64,7 @@ fi
 
 say "[4] v2 빌드 (strict cutoff + 4f + leakage 게이트)"
 cd "$HUB_DIR"
-bash scripts/step2/build_f0_v2_data.sh 2>&1 | tee -a "$LOG"
+bash scripts/step2/build_pro_v2_data.sh 2>&1 | tee -a "$LOG"
 # build 스크립트가 leakage FAIL 시 비-0 종료 (set -e 로 여기서 중단됨)
 
 say "[5] 산출물 검증"

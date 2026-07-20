@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# b0_auto_chain.sh — 배터리 ③④ → B0 MVP(1,500 프롬프트) 전 과정 무인 체인.
+# retro_auto_chain.sh — 배터리 ③④ → B0 MVP(1,500 프롬프트) 전 과정 무인 체인.
 #   S1 ③ belief-swap (base + step500)          [GPU 2장 병렬, ~40분]
 #   S2 ④ belief_action_link judge 재채점        [API, S1 과 병렬]
 #   S3 MVP 서브샘플 1,500 (seed 0)
@@ -78,19 +78,19 @@ fi
 if [ ! -f "$MVP/.smoke_ok" ]; then
   say "smoke: FAA 롤아웃/teacher 2샘플 예행"
   head -2 "$MVP/grpo_mvp.jsonl" > "$MVP/smoke_in.jsonl"
-  CUDA_VISIBLE_DEVICES=0 $PY -m ego.step2_vlm_alignment.b0.generate_faa_traces \
+  CUDA_VISIBLE_DEVICES=0 $PY -m ego.step2_vlm_alignment.retro.generate_faa_traces \
     --faa_adapter "$FAA" --train_jsonl "$MVP/smoke_in.jsonl" --out "$MVP/smoke_faa.jsonl" \
     --num_generations 2 > "$MVP/smoke.log" 2>&1 || die "smoke FAA 롤아웃 실패 — $MVP/smoke.log"
   head -2 "$MVP/b0meta_mvp.jsonl" > "$MVP/smoke_meta.jsonl"
-  $PY -m ego.step2_vlm_alignment.b0.merge_b0_samples --faa_traces "$MVP/smoke_faa.jsonl" \
+  $PY -m ego.step2_vlm_alignment.retro.merge_retro_samples --faa_traces "$MVP/smoke_faa.jsonl" \
     --b0meta "$MVP/smoke_meta.jsonl" --out "$MVP/smoke_samples.jsonl" >> "$MVP/smoke.log" 2>&1 \
     || die "smoke merge 실패"
-  CUDA_VISIBLE_DEVICES=0 $PY -m ego.step2_vlm_alignment.b0.build_dpo_dataset \
+  CUDA_VISIBLE_DEVICES=0 $PY -m ego.step2_vlm_alignment.retro.build_dpo_dataset \
     --samples "$MVP/smoke_samples.jsonl" --out_train "$MVP/smoke_dpo.jsonl" \
     --out_audit "$MVP/smoke_audit.jsonl" >> "$MVP/smoke.log" 2>&1 || die "smoke teacher 빌드 실패"
   # DPO 트레이너 예행 — TRL 버전/API 비호환을 대량 GPU 전에 잡는다 (S9 실패 재발 방지)
   if [ -s "$MVP/smoke_dpo.jsonl" ]; then
-    CUDA_VISIBLE_DEVICES=0 $PY src/ego/step2_vlm_alignment/b0/train_b0_dpo.py \
+    CUDA_VISIBLE_DEVICES=0 $PY src/ego/step2_vlm_alignment/retro/train_retro_dpo.py \
       --dpo_jsonl "$MVP/smoke_dpo.jsonl" --faa_adapter "$FAA" \
       --output_dir "$MVP/smoke_dpo_out" --per_device_train_batch_size 1 \
       --gradient_accumulation_steps 1 --save_steps 999 >> "$MVP/smoke.log" 2>&1 \
@@ -111,7 +111,7 @@ for i in range(2):
     with open(f'$MVP/in_{i}.jsonl','w') as f:
         for r in rows[i::2]: f.write(json.dumps(r,ensure_ascii=False)+'\n')"
   for i in 0 1; do
-    CUDA_VISIBLE_DEVICES=$i $PY -m ego.step2_vlm_alignment.b0.generate_faa_traces \
+    CUDA_VISIBLE_DEVICES=$i $PY -m ego.step2_vlm_alignment.retro.generate_faa_traces \
       --faa_adapter "$FAA" --train_jsonl "$MVP/in_$i.jsonl" --out "$MVP/faa_$i.jsonl" \
       --num_generations 4 --temperature 1.0 > "$MVP/faa_$i.log" 2>&1 &
   done; wait
@@ -121,7 +121,7 @@ fi
 
 # ── S5 병합 ───────────────────────────────────────────────────────────
 [ -s "$MVP/b0_samples.jsonl" ] || { say "S5 병합";
-  $PY -m ego.step2_vlm_alignment.b0.merge_b0_samples --faa_traces "$MVP/faa_traces.jsonl" \
+  $PY -m ego.step2_vlm_alignment.retro.merge_retro_samples --faa_traces "$MVP/faa_traces.jsonl" \
     --b0meta "$MVP/b0meta_mvp.jsonl" --out "$MVP/b0_samples.jsonl" || die "S5 병합 실패"; }
 
 # ── S6 teacher 빌드 (2-way 샤딩) ──────────────────────────────────────
@@ -134,7 +134,7 @@ for i in range(2):
     with open(f'$MVP/bs_{i}.jsonl','w') as f:
         for r in rows[i::2]: f.write(json.dumps(r,ensure_ascii=False)+'\n')"
   for i in 0 1; do
-    CUDA_VISIBLE_DEVICES=$i $PY -m ego.step2_vlm_alignment.b0.build_dpo_dataset \
+    CUDA_VISIBLE_DEVICES=$i $PY -m ego.step2_vlm_alignment.retro.build_dpo_dataset \
       --samples "$MVP/bs_$i.jsonl" --out_train "$MVP/dpo_$i.jsonl" \
       --out_audit "$MVP/audit_$i.jsonl" > "$MVP/build_$i.log" 2>&1 &
   done; wait
@@ -145,7 +145,7 @@ fi
 
 # ── S7 재검증 게이트 ─────────────────────────────────────────────────
 say "S7 DPO 데이터 재검증"
-$PY -m ego.step2_vlm_alignment.b0.validate_cli --dpo "$MVP/b0_dpo.jsonl" || die "S7 검증 FAIL"
+$PY -m ego.step2_vlm_alignment.retro.validate_cli --dpo "$MVP/b0_dpo.jsonl" || die "S7 검증 FAIL"
 
 # ── S8 heldout pairs (margin 평가용, 500) ─────────────────────────────
 if [ ! -s "$MVP/b0_dpo_heldout.jsonl" ]; then
@@ -158,16 +158,16 @@ for i in range(2):
     with open(f'$MVP/ho_in_{i}.jsonl','w') as f:
         for r in rows[i::2]: f.write(json.dumps(r,ensure_ascii=False)+'\n')"
   for i in 0 1; do
-    CUDA_VISIBLE_DEVICES=$i $PY -m ego.step2_vlm_alignment.b0.generate_faa_traces \
+    CUDA_VISIBLE_DEVICES=$i $PY -m ego.step2_vlm_alignment.retro.generate_faa_traces \
       --faa_adapter "$FAA" --train_jsonl "$MVP/ho_in_$i.jsonl" --out "$MVP/faa_ho_$i.jsonl" \
       --num_generations 4 > "$MVP/faa_heldout_$i.log" 2>&1 &
   done; wait
   [ -s "$MVP/faa_ho_0.jsonl" ] && [ -s "$MVP/faa_ho_1.jsonl" ] || die "S8 heldout 롤아웃 실패"
   cat "$MVP/faa_ho_0.jsonl" "$MVP/faa_ho_1.jsonl" > "$MVP/faa_heldout.jsonl"
-  $PY -m ego.step2_vlm_alignment.b0.merge_b0_samples --faa_traces "$MVP/faa_heldout.jsonl" \
+  $PY -m ego.step2_vlm_alignment.retro.merge_retro_samples --faa_traces "$MVP/faa_heldout.jsonl" \
     --b0meta "$BAT/heldout_1f_root/data/grpo_dataset/grpo_heldout_1f_b0meta.jsonl" \
     --out "$MVP/b0_samples_heldout.jsonl" || die "S8 병합 실패"
-  CUDA_VISIBLE_DEVICES=1 $PY -m ego.step2_vlm_alignment.b0.build_dpo_dataset \
+  CUDA_VISIBLE_DEVICES=1 $PY -m ego.step2_vlm_alignment.retro.build_dpo_dataset \
     --samples "$MVP/b0_samples_heldout.jsonl" --out_train "$MVP/b0_dpo_heldout.jsonl" \
     --out_audit "$MVP/b0_audit_heldout.jsonl" > "$MVP/build_heldout.log" 2>&1 \
     || die "S8 heldout 빌드 실패"
@@ -178,7 +178,7 @@ B0OUT=$REPO/outputs/step2/b0_mvp
 if ! ls -d "$B0OUT"/checkpoint-* >/dev/null 2>&1; then
   say "S9 B0 DPO 학습"
   python -m accelerate.commands.launch --multi_gpu --num_processes 2 \
-    src/ego/step2_vlm_alignment/b0/train_b0_dpo.py \
+    src/ego/step2_vlm_alignment/retro/train_retro_dpo.py \
     --dpo_jsonl "$MVP/b0_dpo.jsonl" --faa_adapter "$FAA" --output_dir "$B0OUT" \
     --max_length 4096 \
     --beta 0.1 --learning_rate 5e-6 --num_train_epochs 1.0 \
@@ -197,7 +197,7 @@ raise SystemExit(0 if d>1e-7 else 1)" || die "S9 무학습: 체크포인트가 F
 
 # ── S10·S11 평가 ─────────────────────────────────────────────────────
 say "S10 evaluate_b0 (margin·coherence) + S11 생성 acc"
-[ -s "$BAT/b0_eval.json" ] || CUDA_VISIBLE_DEVICES=0 $PY -m ego.step2_vlm_alignment.b0.evaluate_b0 \
+[ -s "$BAT/b0_eval.json" ] || CUDA_VISIBLE_DEVICES=0 $PY -m ego.step2_vlm_alignment.retro.evaluate_retro \
   --dpo_jsonl "$MVP/b0_dpo_heldout.jsonl" --faa_adapter "$FAA" --b0_adapter "$B0CKPT" \
   --out "$BAT/b0_eval.json" > "$BAT/b0_eval.log" 2>&1 &
 [ -s "$BAT/b0_gen_1f.json" ] || $PY scripts/step2/eval_battery.py --jsonl "$J1F" --device cuda:1 \

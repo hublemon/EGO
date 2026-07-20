@@ -11,7 +11,7 @@ SFT / noun-stage GRPO 는 미구현(스캐폴드만).
 |---|---|
 | 코드 | `src/ego/step2_vlm_alignment/train_grpo_action.py` (학습) · `evaluate.py` (평가) · `judge_reasoning.py` (리즈닝 judge 곡선) |
 | 설정 | `configs/step2/f0_final_wm_only.yaml` |
-| 실행 | `scripts/step2/train_f0_final.sh` · `scripts/step2/eval_f0_final.sh` |
+| 실행 | `scripts/step2/train_pro_final.sh` · `scripts/step2/eval_pro_final.sh` |
 
 ## F0 설계 요약
 

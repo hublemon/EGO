@@ -1,4 +1,4 @@
-"""evaluate_b0.py — FAA vs B0 held-out 비교 (핸드오프 §16~21, GPU).
+"""evaluate_retro.py — FAA vs B0 held-out 비교 (핸드오프 §16~21, GPU).
 
 세 검증을 동일 past-only 프롬프트·generation config 로 수행:
   A. held-out preference margin  : m = logπ(chosen) - logπ(rejected). m_B0 > m_FAA 기대.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# b0_full_chain.sh — B0 풀 스케일: B0_VALIDATED 일 때만 R1 레시피를 전체 train set 으로 확장.
+# retro_full_chain.sh — B0 풀 스케일: B0_VALIDATED 일 때만 R1 레시피를 전체 train set 으로 확장.
 #   원칙: 검증된 R1 레시피 그대로, FAA=F0-L 고정 — 확정 변수는 스케일 하나뿐.
 #   (새 F0 로의 FAA 마이그레이션은 사람 리뷰 후 별도 단계)
 # 게이트: B0_R1_DONE 대기 → B0_VALIDATED 없으면 NEEDS 마커 + 종료(풀 스케일 금지 유지)
@@ -56,7 +56,7 @@ print(f"[S1] 신규 {len(new)} (기존 {len(done)}) → 2-way")
 PYEOF
   for i in 0 1; do
     [ -s "$FD/faa_new_$i.jsonl" ] && continue
-    CUDA_VISIBLE_DEVICES=$i $PY -m ego.step2_vlm_alignment.b0.generate_faa_traces \
+    CUDA_VISIBLE_DEVICES=$i $PY -m ego.step2_vlm_alignment.retro.generate_faa_traces \
       --faa_adapter "$FAA" --train_jsonl "$FD/in_new_$i.jsonl" --out "$FD/faa_new_$i.jsonl" \
       --num_generations 4 > "$FD/faa_new_$i.log" 2>&1 & eval "R$i=\$!"
   done
@@ -68,11 +68,11 @@ fi
 # ── S2 병합 + R1 gated pair 빌드 (신규만, 2-way) → 기존 R1 pair 와 합침 ─────
 if [ ! -s "$FD/b0_full_dpo.jsonl" ]; then
   [ -s "$FD/samples_new.jsonl" ] || { say "S2 병합";
-    $PY -m ego.step2_vlm_alignment.b0.merge_b0_samples --faa_traces "$FD/faa_new.jsonl" \
+    $PY -m ego.step2_vlm_alignment.retro.merge_retro_samples --faa_traces "$FD/faa_new.jsonl" \
       --b0meta "$B0META" --out "$FD/samples_new.jsonl" || die "병합 실패"; }
   for sh in 0 1; do
     [ -s "$FD/train_new_$sh.jsonl" ] && continue
-    CUDA_VISIBLE_DEVICES=$sh $PY -m ego.step2_vlm_alignment.b0.build_dpo_dataset_r1 \
+    CUDA_VISIBLE_DEVICES=$sh $PY -m ego.step2_vlm_alignment.retro.build_dpo_dataset_r1 \
       --samples "$FD/samples_new.jsonl" --train_jsonl "$TR1F" \
       --shard $sh --num_shards 2 \
       --out_train "$FD/train_new_$sh.jsonl" --out_audit "$FD/audit_new_$sh.jsonl" \
@@ -90,7 +90,7 @@ fi
 if [ ! -f "$B0OUT/TRAINING_DONE" ]; then
   rm -rf "$B0OUT"
   say "S3 DPO 학습 (cuda:0, 전체 pairs)"
-  CUDA_VISIBLE_DEVICES=0 $PY src/ego/step2_vlm_alignment/b0/train_b0_dpo.py \
+  CUDA_VISIBLE_DEVICES=0 $PY src/ego/step2_vlm_alignment/retro/train_retro_dpo.py \
     --dpo_jsonl "$FD/b0_full_dpo.jsonl" --faa_adapter "$FAA" --output_dir "$B0OUT" \
     --max_length 4096 --max_prompt_length 1024 \
     > "$FD/dpo.log" 2>&1 || die "DPO 실패 — $FD/dpo.log"
@@ -114,7 +114,7 @@ fi
     --device cuda:1 --out "$BAT/swap_b0full.json" > "$BAT/swap_b0full.log" 2>&1 \
     || die "③ swap 실패"; }
 [ -s "$BAT/remeasure_b0full.json" ] || { say "S4c span-margin";
-  $PY scripts/step2/remeasure_b0_margin.py --dpo_jsonl "$R1D/b0_r1_dpo_heldout.jsonl" \
+  $PY scripts/step2/remeasure_retro_margin.py --dpo_jsonl "$R1D/b0_r1_dpo_heldout.jsonl" \
     --policies "faa:$FAA,b0full:$B0OUT" --device cuda:1 \
     --out "$BAT/remeasure_b0full.json" > "$BAT/remeasure_b0full.log" 2>&1 \
     || die "margin 실패"; }

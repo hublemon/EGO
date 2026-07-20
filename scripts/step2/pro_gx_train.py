@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""f0_gx_train.py — F0-GX 진단: action-only 5지선다 exact-gradient (listwise CE).
+"""pro_gx_train.py — F0-GX 진단: action-only 5지선다 exact-gradient (listwise CE).
 
 배경: action-only GRPO(F0-GA)는 completion 이 짧아 T1.3 에서도 8롤아웃이 전부 동일
 (그룹 분산 0 → advantage 0 → 무학습). 행동 공간이 유한(후보 5)하고 reward 가 선택의

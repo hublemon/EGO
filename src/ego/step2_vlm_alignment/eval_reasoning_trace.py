@@ -1,7 +1,7 @@
 # NOTE: F0 (WM-only GRPO) 트랙의 **실제로 검증된 코드**를 그대로 옮긴 것이다.
 # 2026-07-17 F0 final 결과(docs/experiments/2026-07-17_f0_final.md)를 만든 코드가 이 파일이다.
 # 패키지 구조에 맞춘 추측성 리팩터는 하지 않았다 — 재검증 없이 쪼개면 결과 재현이 깨진다.
-# 실행은 configs/step2/f0_final_wm_only.yaml 과 scripts/step2/train_f0_final.sh 참조.
+# 실행은 configs/step2/f0_final_wm_only.yaml 과 scripts/step2/train_pro_final.sh 참조.
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """eval_reasoning_trace.py — G3 (reasoning 인과성) 사후 검증 모듈. 학습 루프 밖, 보상 미사용.

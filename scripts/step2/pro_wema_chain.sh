@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# f0_wema_chain.sh — F0-W-EMA: full-trace + WM likelihood 보상(GT-free) + EMA 기준선.
+# pro_wema_chain.sh — F0-W-EMA: full-trace + WM likelihood 보상(GT-free) + EMA 기준선.
 #   목적: 같은 최적화(EMA)에서 보상만 WM vs GT 를 갈라 비교 (F0-WE 와 쌍).
 #   예상 분기: W-EMA 는 wm_follow↑·acc≤0.374·G2↓(복사기 수렴) vs WE 는 acc·G2 동반↑ 여부.
 #   GT-free 이므로 성공 시 '방법' 자격 있음. 전체 5000 샘플 (GT 필터 미적용).
@@ -26,7 +26,7 @@ say "cuda:1 확보 — 시작"
 if [ ! -f "$BAT/.f0smoke_wema" ]; then
   say "smoke: W-EMA 12샘플 (cuda:1)"
   SDIR=$BAT/f0smoke_wema; rm -rf "$SDIR"
-  $PY scripts/step2/f0_gr_train.py --train_jsonl "$TRAIN_JSONL" --output_dir "$SDIR" \
+  $PY scripts/step2/pro_gr_train.py --train_jsonl "$TRAIN_JSONL" --output_dir "$SDIR" \
     --full_trace --reward wm --max_new_tokens 384 --batch_gen 2 \
     --max_samples 12 --accum 4 --log_every 6 --save_every 100000 --device cuda:1 \
     > "$SDIR.log" 2>&1 || die "W-EMA smoke 실행 실패 — $SDIR.log"
@@ -43,7 +43,7 @@ else say "smoke skip"; fi
 if [ ! -f "$OUT/TRAINING_DONE" ]; then
   rm -rf "$OUT"
   say "F0-W-EMA 학습 (cuda:1, 5000 샘플, batch_gen 4)"
-  $PY scripts/step2/f0_gr_train.py --train_jsonl "$TRAIN_JSONL" --output_dir "$OUT" \
+  $PY scripts/step2/pro_gr_train.py --train_jsonl "$TRAIN_JSONL" --output_dir "$OUT" \
     --full_trace --reward wm --max_new_tokens 384 --batch_gen 4 \
     --max_samples 5000 --accum 16 --save_every 1250 --device cuda:1 \
     > "$BAT/train_wema.log" 2>&1 || die "W-EMA 학습 실패 — $BAT/train_wema.log"

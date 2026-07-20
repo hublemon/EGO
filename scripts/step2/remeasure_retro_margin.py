@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""remeasure_b0_margin.py — 코드리뷰 B0-4/B0-5/B0-6 반영 B0 margin 재측정.
+"""remeasure_retro_margin.py — 코드리뷰 B0-4/B0-5/B0-6 반영 B0 margin 재측정.
 
 기존 evaluate_b0 는 sum log-prob margin → 짧은 chosen 이 구조적으로 유리(길이 편향).
 여기서는 동일 heldout DPO 쌍에 대해 정책(FAA/B0/A1)별로:

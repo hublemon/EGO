@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# b0_r1_chain.sh — B0-R1: GT-hidden gated teacher 리팩터 무인 체인.
+# retro_r1_chain.sh — B0-R1: GT-hidden gated teacher 리팩터 무인 체인.
 #   리팩터 핸드오프 v2 정정 반영: hard action gate · goal suffix 추출 · G2 retention 게이트.
 #   FAA 롤아웃(rejected)은 MVP 산출 전량 재사용 — 변수는 teacher 구성뿐.
 # smoke(3샘플 전 경로) → pair 재구축(2-way, cuda:1 즉시 + cuda:0 은 F0_GA 종료 대기)
@@ -26,7 +26,7 @@ die(){ say "✗ $*"; touch "$BAT/B0_R1_FAILED"; exit 1; }
 # ── S1 smoke: 3샘플 전 경로 (goal 누출 assert 는 빌더 내장 — 산출 통계로 검사) ──
 if [ ! -f "$R1D/.smoke_ok" ]; then
   say "S1 smoke: 3샘플 gated 빌드 (cuda:1)"
-  CUDA_VISIBLE_DEVICES=1 $PY -m ego.step2_vlm_alignment.b0.build_dpo_dataset_r1 \
+  CUDA_VISIBLE_DEVICES=1 $PY -m ego.step2_vlm_alignment.retro.build_dpo_dataset_r1 \
     --samples "$MVP/b0_samples.jsonl" --train_jsonl "$TR1F" --limit 3 \
     --out_train "$R1D/smoke_train.jsonl" --out_audit "$R1D/smoke_audit.jsonl" \
     --out_stats "$R1D/smoke_stats.json" > "$R1D/smoke.log" 2>&1 || die "smoke 실패 — $R1D/smoke.log"
@@ -43,7 +43,7 @@ else say "S1 skip"; fi
 
 # ── S2 pair 재구축 (train 1500, 2-way): shard0=cuda:1 즉시, shard1=cuda:0 대기 ──
 build_shard(){ local sh=$1 gpu=$2
-  CUDA_VISIBLE_DEVICES=$gpu $PY -m ego.step2_vlm_alignment.b0.build_dpo_dataset_r1 \
+  CUDA_VISIBLE_DEVICES=$gpu $PY -m ego.step2_vlm_alignment.retro.build_dpo_dataset_r1 \
     --samples "$MVP/b0_samples.jsonl" --train_jsonl "$TR1F" \
     --shard $sh --num_shards 2 \
     --out_train "$R1D/train_$sh.jsonl" --out_audit "$R1D/audit_$sh.jsonl" \
@@ -95,7 +95,7 @@ if [ ! -s "$R1D/b0_r1_dpo_heldout.jsonl" ]; then
   say "S4 heldout 재구축 (2-way)"
   for sh in 0 1; do
     [ -s "$R1D/ho_train_$sh.jsonl" ] && continue
-    CUDA_VISIBLE_DEVICES=$sh $PY -m ego.step2_vlm_alignment.b0.build_dpo_dataset_r1 \
+    CUDA_VISIBLE_DEVICES=$sh $PY -m ego.step2_vlm_alignment.retro.build_dpo_dataset_r1 \
       --samples "$MVP/b0_samples_heldout.jsonl" --train_jsonl "$J1F" \
       --shard $sh --num_shards 2 \
       --out_train "$R1D/ho_train_$sh.jsonl" --out_audit "$R1D/ho_audit_$sh.jsonl" \
@@ -112,7 +112,7 @@ fi
 if [ ! -f "$B0OUT/TRAINING_DONE" ]; then
   rm -rf "$B0OUT"
   say "S5 DPO 학습 (cuda:0)"
-  CUDA_VISIBLE_DEVICES=0 $PY src/ego/step2_vlm_alignment/b0/train_b0_dpo.py \
+  CUDA_VISIBLE_DEVICES=0 $PY src/ego/step2_vlm_alignment/retro/train_retro_dpo.py \
     --dpo_jsonl "$R1D/b0_r1_dpo.jsonl" --faa_adapter "$FAA" --output_dir "$B0OUT" \
     --max_length 4096 --max_prompt_length 1024 \
     > "$R1D/dpo.log" 2>&1 || die "DPO 실패 — $R1D/dpo.log"
@@ -136,7 +136,7 @@ fi
     --device cuda:1 --out "$BAT/swap_b0r1.json" > "$BAT/swap_b0r1.log" 2>&1 \
     || die "③ swap 실패"; }
 [ -s "$BAT/remeasure_b0r1.json" ] || { say "S6c span-margin 재측정";
-  $PY scripts/step2/remeasure_b0_margin.py --dpo_jsonl "$R1D/b0_r1_dpo_heldout.jsonl" \
+  $PY scripts/step2/remeasure_retro_margin.py --dpo_jsonl "$R1D/b0_r1_dpo_heldout.jsonl" \
     --policies "faa:$FAA,b0r1:$B0OUT" --device cuda:1 \
     --out "$BAT/remeasure_b0r1.json" > "$BAT/remeasure_b0r1.log" 2>&1 \
     || die "margin 재측정 실패"; }

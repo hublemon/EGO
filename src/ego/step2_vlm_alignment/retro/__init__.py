@@ -1,4 +1,7 @@
-"""B0 — Full-Trace Projected-Hindsight DPO.
+"""retrospection (retro, 구 B0) — Full-Trace Projected-Hindsight DPO.
+
+사후(hindsight) trace 로부터 선호를 증류하는 트랙. 대응하는 사전 트랙은
+prospection(pro, 구 F0) — scripts/step2/pro_*.py|sh.
 
 핸드오프: EGO_STEP2_B0_FULL_TRACE_DPO_VALIDATION_HANDOFF (2026-07-18)
 구현 노트: docs/experiments/2026-07-18_b0_implementation.md
@@ -14,6 +17,6 @@ rejected 로 쓰는 sequence-level DPO.
   teacher              — raw hindsight · projection · equivalence (frozen base VLM)
   build_dpo_dataset    — offline pair 오케스트레이션 (teacher 주입 가능)
   generate_faa_traces  — frozen FAA online full-trace rollout (GPU)
-  train_b0_dpo         — TRL DPOTrainer wrapper
-  evaluate_b0          — held-out preference · GT accuracy · coherence
+  train_retro_dpo      — TRL DPOTrainer wrapper
+  evaluate_retro       — held-out preference · GT accuracy · coherence
 """

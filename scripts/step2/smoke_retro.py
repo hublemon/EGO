@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""smoke_b0.py — B0 full-trace DPO 결정론적 로직 스모크 (GPU/torch/model 불필요).
+"""smoke_retro.py — B0 full-trace DPO 결정론적 로직 스모크 (GPU/torch/model 불필요).
 
 검증 대상 (핸드오프):
   §8·§10 routing table + SAME/SAME drop + UNCERTAIN/SAME audit
@@ -34,11 +34,11 @@ def check(name: str, cond: bool, detail: str = "") -> None:
         print(f"  [FAIL] {name}" + (f" — {detail}" if detail else ""))
 
 
-from ego.step2_vlm_alignment.b0 import route_pairs as R          # noqa: E402
-from ego.step2_vlm_alignment.b0 import trace_utils as U          # noqa: E402
-from ego.step2_vlm_alignment.b0 import validate_dpo_dataset as V  # noqa: E402
-from ego.step2_vlm_alignment.b0 import build_dpo_dataset as B     # noqa: E402
-from ego.step2_vlm_alignment.b0 import evaluate_b0 as E          # noqa: E402
+from ego.step2_vlm_alignment.retro import route_pairs as R          # noqa: E402
+from ego.step2_vlm_alignment.retro import trace_utils as U          # noqa: E402
+from ego.step2_vlm_alignment.retro import validate_dpo_dataset as V  # noqa: E402
+from ego.step2_vlm_alignment.retro import build_dpo_dataset as B     # noqa: E402
+from ego.step2_vlm_alignment.retro import evaluate_b0 as E          # noqa: E402
 
 
 def test_routing() -> None:

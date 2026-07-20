@@ -8,7 +8,7 @@ export PYTHONPATH="src:${PYTHONPATH:-}"
 FAA_ADAPTER="${FAA_ADAPTER:?set FAA_ADAPTER}"
 B0_ADAPTER="${B0_ADAPTER:?set B0_ADAPTER}"
 
-python -m ego.step2_vlm_alignment.b0.evaluate_b0 \
+python -m ego.step2_vlm_alignment.retro.evaluate_retro \
   --dpo_jsonl   data/grpo_dataset/b0_dpo_heldout.jsonl \
   --faa_adapter "$FAA_ADAPTER" \
   --b0_adapter  "$B0_ADAPTER" \

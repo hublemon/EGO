@@ -1,4 +1,4 @@
-"""train_b0_dpo.py — full-trace sequence-level DPO (핸드오프 §11, GPU).
+"""train_retro_dpo.py — full-trace sequence-level DPO (핸드오프 §11, GPU).
 
 B0 = FAA adapter 에서 초기화 · frozen FAA 를 reference 로 사용하는 표준 DPO.
   L_B0 = -log σ[ β( log π_B0(y+)/π_FAA(y+) - log π_B0(y-)/π_FAA(y-) ) ]

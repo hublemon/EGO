@@ -1,4 +1,4 @@
-"""merge_b0_samples.py — faa_traces + b0meta 를 sample_id 로 병합 (build_dpo_dataset 입력).
+"""merge_retro_samples.py — faa_traces + b0meta 를 sample_id 로 병합 (build_dpo_dataset 입력).
 
 faa_traces_{split}.jsonl (generate_faa_traces):
   {sample_id, prompt, image_path, memory_context, candidates, faa_traces[...], faa_checkpoint_hash}

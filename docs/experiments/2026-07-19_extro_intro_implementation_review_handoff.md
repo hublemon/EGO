@@ -20,21 +20,21 @@ extro (F0)
   src/ego/step2_vlm_alignment/train_grpo_action.py   # 프롬프트·파싱·리워드·트레이너 (2251줄)
   scripts/step2/eval_battery.py                      # 평가 배터리 (학습 빌더 재사용)
   scripts/step2/eval_belief_swap.py                  # ③ belief-swap 인과 개입
-  scripts/step2/f0_clean_chain.sh / f0_span_chain.sh # 무인 실행 하네스 (Phase 1 / 2b)
+  scripts/step2/pro_clean_chain.sh / pro_span_chain.sh # 무인 실행 하네스 (Phase 1 / 2b)
   src/ego/step2_vlm_alignment/judge_reasoning.py     # gemini 외부 judge (25 step 간격)
 
 intro (B0, 현행 MVP)
-  src/ego/step2_vlm_alignment/b0/
+  src/ego/step2_vlm_alignment/retro/
     generate_faa_traces.py   # frozen FAA online rollout
     teacher.py               # frozen base VLM teacher (hindsight·projection·equivalence)
     route_pairs.py           # pair routing table (순수 로직)
     build_dpo_dataset.py     # 오케스트레이션 + emit 직전 검증
     validate_dpo_dataset.py  # leakage / pair-invariant 검사 (순수 로직)
-    merge_b0_samples.py      # faa_traces + b0meta 병합
-    train_b0_dpo.py          # sequence-level DPO (TRL)
-    evaluate_b0.py           # margin / accuracy 분해 / coherence
-  scripts/step2/remeasure_b0_margin.py               # 길이 정규화 + span 분해 재측정
-  scripts/step2/b0_auto_chain.sh / b0_ablation_chain.sh
+    merge_retro_samples.py      # faa_traces + b0meta 병합
+    train_retro_dpo.py          # sequence-level DPO (TRL)
+    evaluate_retro.py           # margin / accuracy 분해 / coherence
+  scripts/step2/remeasure_retro_margin.py               # 길이 정규화 + span 분해 재측정
+  scripts/step2/retro_auto_chain.sh / retro_ablation_chain.sh
 
 intro 리팩터 (B0-R1) — 계획 문서만
   docs/experiments/2026-07-19_b0_teacher_refactor_handoff.md
@@ -106,7 +106,7 @@ P1-6(credit 배분) 대응. TRL 1.5.1 `_compute_loss` 가 **(B,T) 토큰별 adva
 - **`eval_belief_swap.py` (③)**: 완성 trace 에서 reasoning 은 고정, `<task_belief>` 만 다른 샘플 것으로 교체(derangement, offset 250)한 prefix 를 **assistant 응답 강제 prefix** 로 넣고 `<action>` 만 이어서 greedy 재생성. `causal_sensitivity = swap_action_change − control_action_change`. control 군이 디코딩 노이즈 플로어를 제공하는 사전 등록형 개입 실험. GT 무사용.
 - **신뢰 경계**: 레거시 `evaluate.py`(v1 플랫 빌더 import, 256 tok) 경로의 과거 수치는 하한으로만 유효. 이 세션의 모든 비교 수치는 eval_battery@384 로 통일되어 있다.
 
-### 1.9 실행 하네스 (`f0_clean_chain.sh` / `f0_span_chain.sh`)
+### 1.9 실행 하네스 (`pro_clean_chain.sh` / `pro_span_chain.sh`)
 
 - **smoke 게이트**: 코드 SHA + trl 버전을 키로 8 step(logging 1) 실행 → `reward_log.jsonl` 에서 **grad_norm>0 존재** assert. (B0 no-train 사고의 재발 방지 — 아래 2.7.)
 - **부분 체크포인트 오인 방지**: 학습 시작 전 `TRAINING_DONE` 없는 출력 디렉토리는 `rm -rf` — resume 미지원 대신 "부분 산출물은 절대 완료로 취급하지 않음"을 하드 보장.
@@ -173,7 +173,7 @@ sample 단위 게이트 → pair 단위 routing:
 
 독립 실행(`validate_dataset_file`)으로 전체 데이터셋 사후 재검증도 가능.
 
-### 2.7 ⑤ DPO 학습 (`train_b0_dpo.py`)
+### 2.7 ⑤ DPO 학습 (`train_retro_dpo.py`)
 
 - policy = base + **FAA adapter 를 trainable 로 로드** (FAA 에서 초기화). reference = **FAA adapter 를 얹은 별도 frozen 모델을 명시적으로 전달** — TRL 의 PEFT 경로에서 `ref_model=None` 이면 "adapter off = base" 가 reference 가 되는 함정(:110 주석)을 회피. multi-GPU 시 ref 도 `LOCAL_RANK` 고정 device_map (auto 샤딩 충돌 방지).
 - VLM DPO 규약: 이미지는 `images` **리스트 컬럼** (GRPO 의 `image` 단수와 다름), `cast_column(Sequence(DSImage()))`.
@@ -181,8 +181,8 @@ sample 단위 게이트 → pair 단위 routing:
 
 ### 2.8 ⑥ 평가
 
-- `evaluate_b0.py`: (A) held-out preference margin `m = logπ(chosen) − logπ(rejected)` 를 relation 별 분해, (B) accuracy 를 candidate_recall / conditional / end-to-end 3분해 + recovery/regression 대차, (C) coherence 프록시(API 0). 순수 계산 함수는 smoke 로 검사.
-- **`remeasure_b0_margin.py` (사후 추가)**: 초기 margin 수치(+55.8)가 **길이 미정규화 합산**이라 과대해석 위험 → 단일 토크나이즈 + offset mapping 으로 토큰 logp 를 span(태그 문자 범위)에 귀속시켜 **mean-per-token margin 과 span 별 분해**를 재측정. 결과(906 pairs): B0 +0.287 (reasoning +0.336 / task_belief +0.802 / **action +0.014**), A1 대조 +0.130 (…/ action +0.023). → **margin 이득의 소재는 belief/reasoning 문체이지 action 정렬이 아니다** — 이것이 intro 리팩터의 직접 동기다.
+- `evaluate_retro.py`: (A) held-out preference margin `m = logπ(chosen) − logπ(rejected)` 를 relation 별 분해, (B) accuracy 를 candidate_recall / conditional / end-to-end 3분해 + recovery/regression 대차, (C) coherence 프록시(API 0). 순수 계산 함수는 smoke 로 검사.
+- **`remeasure_retro_margin.py` (사후 추가)**: 초기 margin 수치(+55.8)가 **길이 미정규화 합산**이라 과대해석 위험 → 단일 토크나이즈 + offset mapping 으로 토큰 logp 를 span(태그 문자 범위)에 귀속시켜 **mean-per-token margin 과 span 별 분해**를 재측정. 결과(906 pairs): B0 +0.287 (reasoning +0.336 / task_belief +0.802 / **action +0.014**), A1 대조 +0.130 (…/ action +0.023). → **margin 이득의 소재는 belief/reasoning 문체이지 action 정렬이 아니다** — 이것이 intro 리팩터의 직접 동기다.
 
 ### 2.9 B0-MVP 실측 요약 (eval_battery@384 기준)
 

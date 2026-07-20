@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """vjepa_ek100_smoke.py — 공식 V-JEPA2 EK100 AC 체크포인트로 F0 후보 jsonl 생성 (합성 클립).
 
-목적: colab_smoke_f0.py 의 `--wm real` 경로. 공식 facebookresearch/vjepa2 의
+목적: colab_smoke_pro.py 의 `--wm real` 경로. 공식 facebookresearch/vjepa2 의
   - ViT-g/16 384 백본 (vitg-384.pt)
   - EK100 action-anticipation attentive probe (ek100-vitg-384.pt, 39.7 R@5)
 를 실제로 GPU 에 로드하고, **합성 32프레임 클립**을 forward 시켜 verb/noun/action top-5 +

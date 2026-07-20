@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# f0_we_chain.sh — F0-WE 확정 후보 run: full-trace(reasoning/belief 유지) + GT/outcome
+# pro_we_chain.sh — F0-WE 확정 후보 run: full-trace(reasoning/belief 유지) + GT/outcome
 #   바이너리 + EMA 기준선 REINFORCE (생성 기반, GRPO 그룹-상대 advantage 대체).
 # 자동 분기(사전 등록): F0_GA_DONE 후 f0gr_final.acc − f0g_step500.acc ≥ +0.02 일 때만 실행.
 #   미달 → F0_WE_SKIPPED + F0_FINAL_W (extro = F0-W 최종 확정, run 불필요).
@@ -45,7 +45,7 @@ fi
 if [ ! -f "$BAT/.f0smoke_we" ]; then
   say "smoke: F0-WE 12샘플 full-trace (cuda:0)"
   SDIR=$BAT/f0smoke_we; rm -rf "$SDIR"
-  $PY scripts/step2/f0_gr_train.py --train_jsonl "$TRAIN_JSONL" --output_dir "$SDIR" \
+  $PY scripts/step2/pro_gr_train.py --train_jsonl "$TRAIN_JSONL" --output_dir "$SDIR" \
     --full_trace --max_new_tokens 384 --batch_gen 2 \
     --max_samples 12 --accum 4 --log_every 6 --save_every 100000 --device cuda:0 \
     > "$SDIR.log" 2>&1 || die "WE smoke 실행 실패 — $SDIR.log"
@@ -62,7 +62,7 @@ else say "smoke skip"; fi
 if [ ! -f "$OUT/TRAINING_DONE" ]; then
   rm -rf "$OUT"
   say "F0-WE 학습 (cuda:0, 5000 샘플, batch_gen 4)"
-  $PY scripts/step2/f0_gr_train.py --train_jsonl "$TRAIN_JSONL" --output_dir "$OUT" \
+  $PY scripts/step2/pro_gr_train.py --train_jsonl "$TRAIN_JSONL" --output_dir "$OUT" \
     --full_trace --max_new_tokens 384 --batch_gen 4 \
     --max_samples 5000 --accum 16 --save_every 1250 --device cuda:0 \
     > "$BAT/train_we.log" 2>&1 || die "F0-WE 학습 실패 — $BAT/train_we.log"

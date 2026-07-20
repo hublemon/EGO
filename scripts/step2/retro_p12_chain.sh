@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# b0_p12_chain.sh — B0 재설계 1단계: P1(자기대조) + P2(최소대조) 최소대조 쌍 DPO.
+# retro_p12_chain.sh — B0 재설계 1단계: P1(자기대조) + P2(최소대조) 최소대조 쌍 DPO.
 #   진단: DPO 는 chosen/rejected 의 '가장 쉬운 차이'를 배운다 → MVP/R1 은 문체(다른 모델)를
 #   배웠다(span: belief +0.802 / action +0.014). 처방: 쌍이 가르칠 것만 다르게.
 #     P1 = FAA 자기 롤아웃 중 GT 맞춘 것 ≻ 틀린 것 (문체 상쇄, 정확도 직격)
@@ -44,7 +44,7 @@ print(f"[S1] {len(rows)} 프롬프트 → 2-way")
 PYEOF
   for i in 0 1; do
     [ -s "$PD/faa_extra_$i.jsonl" ] && continue
-    CUDA_VISIBLE_DEVICES=$i $PY -m ego.step2_vlm_alignment.b0.generate_faa_traces \
+    CUDA_VISIBLE_DEVICES=$i $PY -m ego.step2_vlm_alignment.retro.generate_faa_traces \
       --faa_adapter "$FAA" --train_jsonl "$PD/in_$i.jsonl" --out "$PD/faa_extra_$i.jsonl" \
       --num_generations 4 > "$PD/faa_extra_$i.log" 2>&1 & eval "R$i=\$!"
   done
@@ -82,7 +82,7 @@ fi
 # ── S3 P1+P2 쌍 생성 ────────────────────────────────────────────────────────
 if [ ! -s "$PD/pairs_p12.jsonl" ]; then
   say "S3 P1+P2 최소대조 쌍 생성"
-  $PY -m ego.step2_vlm_alignment.b0.build_pairs_contrastive \
+  $PY -m ego.step2_vlm_alignment.retro.build_pairs_contrastive \
     --samples "$PD/b0_samples_8gen.jsonl" --train_jsonl "$TR1F" \
     --out_pairs "$PD/pairs_p12.jsonl" --out_hard "$PD/hard_ids.json" \
     --out_stats "$PD/stats_p12.json" > "$PD/build_p12.log" 2>&1 || die "S3 실패 — $PD/build_p12.log"
@@ -107,7 +107,7 @@ print(f"[S4] 어려운 샘플 {len(rows)} → 2-way")
 PYEOF
   for sh in 0 1; do
     [ -s "$PD/t_train_$sh.jsonl" ] && continue
-    CUDA_VISIBLE_DEVICES=$sh $PY -m ego.step2_vlm_alignment.b0.build_dpo_dataset_r1 \
+    CUDA_VISIBLE_DEVICES=$sh $PY -m ego.step2_vlm_alignment.retro.build_dpo_dataset_r1 \
       --samples "$PD/hard_$sh.jsonl" --train_jsonl "$TR1F" --shard 0 --num_shards 1 \
       --out_train "$PD/t_train_$sh.jsonl" --out_audit "$PD/t_audit_$sh.jsonl" \
       --out_stats "$PD/t_stats_$sh.json" > "$PD/t_build_$sh.log" 2>&1 & eval "T$sh=\$!"
@@ -124,7 +124,7 @@ if [ ! -f "$B0OUT/TRAINING_DONE" ]; then
   N=$(wc -l < "$PD/pairs_all.jsonl"); say "S5 DPO 학습 (cuda:0, $N 쌍)"
   [ "$N" -ge 2000 ] || die "쌍 수 부족($N) — 롤아웃/파싱 점검 필요"
   rm -rf "$B0OUT"
-  CUDA_VISIBLE_DEVICES=0 $PY src/ego/step2_vlm_alignment/b0/train_b0_dpo.py \
+  CUDA_VISIBLE_DEVICES=0 $PY src/ego/step2_vlm_alignment/retro/train_retro_dpo.py \
     --dpo_jsonl "$PD/pairs_all.jsonl" --faa_adapter "$FAA" --output_dir "$B0OUT" \
     --max_length 4096 --max_prompt_length 1024 \
     > "$PD/dpo.log" 2>&1 || die "DPO 실패 — $PD/dpo.log"
@@ -143,7 +143,7 @@ fi
     --adapter "$B0OUT" --out "$BAT/b0p12_gen_1f.json" > "$BAT/b0p12_gen_1f.log" 2>&1 \
     || die "생성 acc 실패"; }
 [ -s "$BAT/remeasure_b0p12.json" ] || { say "S6b span-margin";
-  $PY scripts/step2/remeasure_b0_margin.py --dpo_jsonl "$R1D/b0_r1_dpo_heldout.jsonl" \
+  $PY scripts/step2/remeasure_retro_margin.py --dpo_jsonl "$R1D/b0_r1_dpo_heldout.jsonl" \
     --policies "faa:$FAA,b0p12:$B0OUT" --device cuda:1 \
     --out "$BAT/remeasure_b0p12.json" > "$BAT/remeasure_b0p12.log" 2>&1 || die "margin 실패"; }
 [ -s "$BAT/swap_b0p12.json" ] || { say "S6c ③ swap (참고 — 이 단계 기준 아님)";

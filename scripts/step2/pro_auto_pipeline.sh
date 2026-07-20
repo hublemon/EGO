@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# f0_auto_pipeline.sh — 사전 검증 배터리(①②⑤) → v2 데이터 빌드 → 500-step 검증 run
+# pro_auto_pipeline.sh — 사전 검증 배터리(①②⑤) → v2 데이터 빌드 → 500-step 검증 run
 # → 체크포인트 heldout 평가 → 결과 md 생성까지 무인 진행하는 오케스트레이터.
 #
 # 실행 (VSCode/세션 독립 — setsid nohup):
-#   setsid nohup bash scripts/step2/f0_auto_pipeline.sh > $EGO_ROOT/runs/f0_auto.log 2>&1 < /dev/null &
+#   setsid nohup bash scripts/step2/pro_auto_pipeline.sh > $EGO_ROOT/runs/f0_auto.log 2>&1 < /dev/null &
 #
 # 설계:
 #  - 전 단계 멱등: 산출물이 있으면 건너뜀 → 중단 시 그냥 재실행하면 이어서 진행.
@@ -166,7 +166,7 @@ CKPT_DIR="$REPO/outputs/step2/f0_final_v2_val_${SUF}"
 if [ ! -d "$CKPT_DIR/checkpoint-500" ]; then
   say "[7] 500-step 검증 run 시작 (${SUF})"
   RUN_MODE=validation NUM_FRAMES=$NF EGO_TRAIN_JSONL="$TRAIN_JSONL" \
-    bash scripts/step2/train_f0_final_v2.sh || die "500-step run 실패"
+    bash scripts/step2/train_pro_final_v2.sh || die "500-step run 실패"
 else
   say "[7] skip — checkpoint-500 존재"
 fi

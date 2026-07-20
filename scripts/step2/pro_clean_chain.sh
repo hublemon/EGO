@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# f0_clean_chain.sh — F0 재편 Phase 1 무인 체인 (2026-07-19 통합 핸드오프 반영).
+# pro_clean_chain.sh — F0 재편 Phase 1 무인 체인 (2026-07-19 통합 핸드오프 반영).
 #   F0-W: wm_clean  (validity floor + WM likelihood 단독; think_convergence 제거)
 #   F0-G: gt_only   (validity floor + GT binary; oracle-subset(GT∈top5) 학습; skyline)
 # 두 arm 을 GPU 1대씩 병렬 학습(500 step, F0-L 과 동일 하이퍼) 후 체크포인트 곡선 평가.
