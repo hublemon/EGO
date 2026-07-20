@@ -28,6 +28,25 @@ sys.path.insert(0, str(REPO / "src"))
 from ego.step2_vlm_alignment import train_grpo_action as T  # noqa: E402
 
 
+def _action_token_start(tokenizer, comp_ids, tag: str = "<action>"):
+    """완성 토큰열에서 `<action>` 태그가 **완성되는** 첫 토큰 index+1 을 이진탐색으로 찾는다.
+
+    생성 id 를 그대로 쓰므로 재토큰화 불일치가 없다. 반환 k 는 'k 이후가 action 페이로드'.
+    태그가 없으면 None.
+    """
+    ids = comp_ids.tolist()
+    if tag not in tokenizer.decode(ids, skip_special_tokens=True):
+        return None
+    lo, hi = 1, len(ids)                      # decode(ids[:hi]) 에는 태그가 있다 (위에서 확인)
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if tag in tokenizer.decode(ids[:mid], skip_special_tokens=True):
+            hi = mid
+        else:
+            lo = mid + 1
+    return lo
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--train_jsonl", required=True)
@@ -43,6 +62,9 @@ def main():
     ap.add_argument("--batch_gen", type=int, default=1,
                     help="생성 배치 크기 (autoregressive 생성이 지배 비용)")
     ap.add_argument("--ema", type=float, default=0.99, help="기준선 EMA 모멘텀")
+    ap.add_argument("--credit", choices=["all", "action"], default="all",
+                    help="advantage 를 걸 토큰 범위. all=완성부 전체(기존) · "
+                         "action=<action> 이후만 (credit 국소화 — ③ 인과 겨냥)")
     ap.add_argument("--reward", choices=["gt", "wm"], default="gt",
                     help="gt=바이너리(진단/WE) · wm=후보 정규화 likelihood (W-EMA, GT-free)")
     ap.add_argument("--lora_r", type=int, default=16)
@@ -159,6 +181,15 @@ def main():
          plen = enc["input_ids"].shape[1]
          lp = torch.log_softmax(out_logits[0, plen - 1:-1].float(), dim=-1)
          tok_lp = lp.gather(-1, comp_ids.unsqueeze(-1)).squeeze(-1)
+         # credit=action: advantage 를 <action> 태그 이후 토큰에만 건다. 기본(all)은 완성부 전체.
+         #   R1 진단(belief span +0.917 vs action +0.007)과 F0 ③≈0.008 이 같은 원인 —
+         #   행동으로 정해진 credit 이 reasoning/belief 토큰에 균등 분배된다 — 을 가리켜 도입.
+         if args.credit == "action":
+             k = _action_token_start(processor.tokenizer, comp_ids)
+             span_lp = tok_lp[k:] if (k is not None and k < tok_lp.numel()) else None
+             if span_lp is None or span_lp.numel() == 0:
+                 continue                      # action 태그를 못 찾은 완성 → 스킵(무학습)
+             tok_lp = span_lp
          loss = -(adv * tok_lp.mean()) / args.accum
          loss.backward()
          del out_logits, lp, enc
