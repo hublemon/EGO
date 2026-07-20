@@ -1,0 +1,7 @@
+{
+  "n_train_videos": 583,
+  "n_val_videos": 134,
+  "n_overlap": 0,
+  "overlap_uids": [],
+  "clean": true
+}

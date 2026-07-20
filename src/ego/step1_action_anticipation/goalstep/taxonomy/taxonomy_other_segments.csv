@@ -1,0 +1,158 @@
+video_uid,split,level,start_time,end_time,step_category,verb_class,noun_class,reason
+2f6da5f6-e26c-4ac3-8f71-12386f7588e2,train,step,1226.27525,1985.00457,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+546a1aed-676d-44ed-a63c-8db89fa4d935,train,step,179.98961,185.06685,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+94d5eff8-0fac-4719-adf2-5c0208ab89f7,train,step,782.19665,802.6369,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+78b06017-cd7b-441c-ba48-33c04e37a82a,train,step,898.37832,971.46197,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+c939aae4-e7c8-453c-8671-40573db0c656,train,step,1279.47643,1481.81098,Peel and cut ingredients: Cut coconut,cut,OTHER,unmapped_verb=False unmapped_noun=True
+c939aae4-e7c8-453c-8671-40573db0c656,train,step,1482.00197,1675.13121,Peel and cut ingredients: Cut coconut,cut,OTHER,unmapped_verb=False unmapped_noun=True
+c939aae4-e7c8-453c-8671-40573db0c656,train,step,1675.86773,1748.30515,Peel and cut ingredients: Cut coconut,cut,OTHER,unmapped_verb=False unmapped_noun=True
+c939aae4-e7c8-453c-8671-40573db0c656,train,step,1748.93542,1823.74482,Peel and cut ingredients: Cut coconut,cut,OTHER,unmapped_verb=False unmapped_noun=True
+c939aae4-e7c8-453c-8671-40573db0c656,train,step,1823.74482,1896.039,Peel and cut ingredients: Cut coconut,cut,OTHER,unmapped_verb=False unmapped_noun=True
+c939aae4-e7c8-453c-8671-40573db0c656,train,step,1896.29018,2100.29323,Peel and cut ingredients: Cut coconut,cut,OTHER,unmapped_verb=False unmapped_noun=True
+b4072935-56a6-4765-bb4d-d5f6bbeb95b9,train,step,0.0,9.564,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+b4072935-56a6-4765-bb4d-d5f6bbeb95b9,train,step,83.91914,99.03411,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+b4072935-56a6-4765-bb4d-d5f6bbeb95b9,train,substep,90.82539,98.43459,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+0fe191ef-c28a-422c-aede-46f8aa8532a6,train,substep,2991.76493,2999.59603,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+0fe191ef-c28a-422c-aede-46f8aa8532a6,train,substep,2999.59603,3003.99171,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+0fe191ef-c28a-422c-aede-46f8aa8532a6,train,substep,3003.99171,3008.48641,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+0fe191ef-c28a-422c-aede-46f8aa8532a6,train,substep,3008.48641,3013.54939,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+0fe191ef-c28a-422c-aede-46f8aa8532a6,train,substep,3075.1527,3077.80273,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+1ab9d5f7-0181-458e-a5e7-72ce87501f3e,train,substep,551.53736,553.77129,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+26202090-684d-4be8-b3cc-de04da827e91,train,step,377.50494,380.80097,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+fa35a547-13b5-4355-873c-322c1860349a,train,step,1177.65745,1184.865,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+ebc9f0f8-924b-47d1-a639-de4f2d6e6a4c,train,substep,592.94794,639.61122,Peel and cut ingredients: Cut orange,cut,OTHER,unmapped_verb=False unmapped_noun=True
+ab875220-cd6c-410d-8fbc-94742e51e775,train,substep,2091.85723,2115.25981,Peel and cut ingredients: Cut orange,cut,OTHER,unmapped_verb=False unmapped_noun=True
+269eea13-c70a-42f6-aba5-41ef622d3112,train,substep,2883.25834,2886.64649,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+42e4a840-68a1-4992-923d-7452500b4218,train,step,1950.51737,2009.89368,Make recipes: Make croissant,make,OTHER,unmapped_verb=False unmapped_noun=True
+42e4a840-68a1-4992-923d-7452500b4218,train,step,2018.81933,2056.67827,Make recipes: Make croissant,make,OTHER,unmapped_verb=False unmapped_noun=True
+049cfb89-3bcc-4fa3-8d0e-4e7e218b05ae,train,step,543.67167,557.631,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+d36bb05b-2b9a-468c-93c1-7469aa559baf,train,step,5658.90717,5701.6688,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+7f806670-8a33-4462-b02d-305c1426475b,train,step,50.40558,66.06689,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+ca1773b8-ec8e-4f61-8e8f-7e4211830793,train,step,1073.71251,1276.27908,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+01ce4fd6-197a-4792-8778-775b03780369,train,step,67.30601,76.63300000000001,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+01ce4fd6-197a-4792-8778-775b03780369,train,step,98.93617,103.57449,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+grp-5009ae25-4bc5-47c2-b4be-5a94d53539f3,train,substep,890.82251,894.5422,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+77cdd8dd-402b-45d7-a16c-a16520c737e3,train,step,1.271,163.45187,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+a055e4e8-cc07-47c1-a438-06f45c4f724c,train,substep,815.53967,895.79728,Peel and cut ingredients: Cut coconut,cut,OTHER,unmapped_verb=False unmapped_noun=True
+a055e4e8-cc07-47c1-a438-06f45c4f724c,train,substep,1235.10826,1294.0,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+b936190d-3df3-4ae8-afe2-ce71ab695aae,train,substep,729.55056,750.0068,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+538c2f0a-f89e-47b5-b012-047a1b98de27,train,step,1763.0427,1909.32193,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+6bdc7ecb-0d9c-461f-8f32-ee0fbbe47c49,train,step,86.2136,933.37581,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+826e419a-8788-484f-9543-550964666762,train,substep,773.49025,777.57132,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+826e419a-8788-484f-9543-550964666762,train,substep,2204.94254,2218.86011,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+grp-bfbb0a28-756c-441b-a0a0-de04288fae47,train,step,1976.74463,1986.30984,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+28fe3d66-382b-425a-8409-3cf17f5c8670,train,step,514.34793,547.0942,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+5b4ee633-78b9-4282-b001-5a85373d549e,train,step,1035.39068,1046.1321,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+4f7fb690-4ee7-4555-87bd-0fe6171b4239,train,step,5510.87894,5522.48722,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+9b58e3ab-7b6d-4e79-9eea-c21420b0eedc,train,substep,214.86646,225.27384,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+29e00040-6e0f-4f0e-816d-1ac97c1e5485,train,step,2304.58474,2314.626,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+29e00040-6e0f-4f0e-816d-1ac97c1e5485,train,step,2956.89382,2959.27008,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+51364391-163c-484c-8de5-122abb5898de,train,step,0.0,12.06825,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+51364391-163c-484c-8de5-122abb5898de,train,step,18.911,47.01162,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+1e5ca2af-3f1b-40d5-b3a7-d712ac4b5065,train,substep,409.84971,417.40861,Make recipes: Cook oatmeal until done,cook,OTHER,unmapped_verb=False unmapped_noun=True
+1e5ca2af-3f1b-40d5-b3a7-d712ac4b5065,train,substep,523.97897,526.46426,Make recipes: Cook oatmeal until done,cook,OTHER,unmapped_verb=False unmapped_noun=True
+e0f75a35-4dde-44ef-aee7-cab38e4524f6,train,step,2242.42326,2261.76586,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+7f9f75fd-a660-4635-8890-239c6ad82023,train,step,2611.70066,2615.492,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+95e3cefa-e6a2-4c1e-831d-616a86ff177b,train,step,6.49163,20.22276,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+2725d34b-04d5-411a-b405-c5e12d167ade,train,substep,749.10391,769.47473,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+2725d34b-04d5-411a-b405-c5e12d167ade,train,substep,806.00018,818.84421,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+cb235c78-e524-417a-89fd-57b682bb223b,train,substep,0.11311,2.458085,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+grp-7f959a19-7aaa-40f7-8159-726e85aa513b,train,substep,144.55424,209.542,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+grp-7f959a19-7aaa-40f7-8159-726e85aa513b,train,substep,489.08089,493.80514,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+grp-7f959a19-7aaa-40f7-8159-726e85aa513b,train,substep,532.57337,534.64245,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+9d1f1f10-32fc-4d7d-8131-4254c68fb845,train,step,555.39645,562.83088,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+7e3b7dff-bf38-4352-8adc-43799beb556f,train,step,2971.37232,2973.7864,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+grp-f7b7c31e-cfdb-4029-b850-9f7ba98e42c2,train,step,1321.86461,1326.88125,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+aa30794e-fd69-4e30-99a8-5c44dd3ecbf7,train,step,568.46096,601.35064,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+aa30794e-fd69-4e30-99a8-5c44dd3ecbf7,train,step,703.74608,711.9544,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+grp-a790b051-6a4a-47d2-ba1c-349a1dd29049,train,step,357.14409,362.27605,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+grp-a790b051-6a4a-47d2-ba1c-349a1dd29049,train,step,969.0146,1021.913,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+grp-0d32d3bd-bfc8-4631-9002-7ffd97e4d65f,train,substep,255.31775,268.15606,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+6f3bbdad-4454-4de7-a97f-d3840fe2ff0a,train,step,1713.59824,1718.4773,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+5dd8a212-e71d-48b1-956a-cf3e99d74953,train,substep,28.18439,31.95809,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+4d19cd93-f45a-4b94-aecd-6a4be2e524ec,train,substep,1039.44392,1054.33527,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+4d19cd93-f45a-4b94-aecd-6a4be2e524ec,train,substep,1127.8449,1153.21249,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+c7e49f16-df6f-456d-9b3b-c04354f26add,train,step,572.74199,587.37824,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+c7e49f16-df6f-456d-9b3b-c04354f26add,train,step,704.96728,831.10123,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+78e73d85-db28-4fd0-ab07-df18f397388f,train,step,13.31241,20.50148,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+grp-b21c02b1-0ac9-4739-8524-f7b061d92777,train,step,942.15546,1049.937,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+c8f8ebf1-5613-4f4a-802c-ada5e4c4b651,train,step,16.67787,33.33841,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+29e45749-f8d5-42c7-af09-7fbb3d6697e9,train,step,17.83082,26.31722,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+29e45749-f8d5-42c7-af09-7fbb3d6697e9,train,step,400.32018,405.02612,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+a49bdcc8-8f23-445d-bae0-8d9e5c4d9c63,train,step,6.46685,13.31508,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+a49bdcc8-8f23-445d-bae0-8d9e5c4d9c63,train,substep,202.3792,203.81484,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+c19c69ba-ac3a-4ba9-82ea-d09e77876f7e,train,substep,3540.98427,3607.01391,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+324ec8a1-3bd1-46b6-9abb-a824e53c0879,train,step,1888.26472,1910.77159,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+eaa560d5-6432-4030-a03a-b6ba512e621d,train,step,130.03176,138.22814,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+2413dce7-2c3e-43cd-8482-fbc3ed465adf,train,substep,791.99706,806.46113,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+2413dce7-2c3e-43cd-8482-fbc3ed465adf,train,substep,945.18684,972.11601,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+89857b33-fa50-469a-bbb3-91c8ab655931,train,step,152.30532,164.06667,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+15758e99-690c-49d0-ae5f-92acc47df06e,train,substep,63.18107,91.52885,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+15758e99-690c-49d0-ae5f-92acc47df06e,train,substep,106.68127,113.97792,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+grp-5e15c5d1-06b5-408b-bd16-c5e277a2da82,train,step,210.79279,220.75408,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+3728f856-0d47-4614-824f-37b6dda8e357,train,substep,236.91542,238.51803,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+3728f856-0d47-4614-824f-37b6dda8e357,train,step,1102.80743,1105.34514,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+3728f856-0d47-4614-824f-37b6dda8e357,train,step,1131.51843,1133.12748,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+6628a2fb-19e2-4fe5-aedb-92fe5ceee9c9,train,step,1.31568,42.46485,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+6628a2fb-19e2-4fe5-aedb-92fe5ceee9c9,train,substep,19.0229,42.03755,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+9a30454f-b06b-45b7-a8a0-90d3f4ea2eb1,train,step,0.0,48.40126,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+38ead8a1-4d57-4bfb-b7dc-a9785b22f93a,train,substep,200.67348,219.37023,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+c2d06df7-5d3a-4116-9edb-f1c81a4f669b,val,step,271.73906,279.77343,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+b739682e-97d3-468c-ab32-eff051aaf9ec,val,step,505.09995,1083.061,Peel and cut ingredients: Cut orange,cut,OTHER,unmapped_verb=False unmapped_noun=True
+b739682e-97d3-468c-ab32-eff051aaf9ec,val,substep,508.32639,530.50127,Peel and cut ingredients: Cut orange,cut,OTHER,unmapped_verb=False unmapped_noun=True
+b739682e-97d3-468c-ab32-eff051aaf9ec,val,substep,536.44486,802.27992,Peel and cut ingredients: Cut orange,cut,OTHER,unmapped_verb=False unmapped_noun=True
+b739682e-97d3-468c-ab32-eff051aaf9ec,val,substep,835.96709,936.09891,Peel and cut ingredients: Cut orange,cut,OTHER,unmapped_verb=False unmapped_noun=True
+b739682e-97d3-468c-ab32-eff051aaf9ec,val,substep,947.90244,973.70574,Peel and cut ingredients: Cut orange,cut,OTHER,unmapped_verb=False unmapped_noun=True
+b739682e-97d3-468c-ab32-eff051aaf9ec,val,substep,973.85446,976.07504,Peel and cut ingredients: Cut orange,cut,OTHER,unmapped_verb=False unmapped_noun=True
+b739682e-97d3-468c-ab32-eff051aaf9ec,val,substep,1010.93145,1029.24088,Peel and cut ingredients: Cut orange,cut,OTHER,unmapped_verb=False unmapped_noun=True
+b739682e-97d3-468c-ab32-eff051aaf9ec,val,substep,1031.47627,1045.572,Peel and cut ingredients: Cut orange,cut,OTHER,unmapped_verb=False unmapped_noun=True
+b739682e-97d3-468c-ab32-eff051aaf9ec,val,substep,1069.24948,1073.42525,Peel and cut ingredients: Cut orange,cut,OTHER,unmapped_verb=False unmapped_noun=True
+b739682e-97d3-468c-ab32-eff051aaf9ec,val,step,1110.77996,1747.18289,Peel and cut ingredients: Cut orange,cut,OTHER,unmapped_verb=False unmapped_noun=True
+b739682e-97d3-468c-ab32-eff051aaf9ec,val,substep,1110.779,1148.94879,Peel and cut ingredients: Cut orange,cut,OTHER,unmapped_verb=False unmapped_noun=True
+b739682e-97d3-468c-ab32-eff051aaf9ec,val,substep,1177.53958,1290.56729,Peel and cut ingredients: Cut orange,cut,OTHER,unmapped_verb=False unmapped_noun=True
+b739682e-97d3-468c-ab32-eff051aaf9ec,val,substep,1296.85809,1316.01378,Peel and cut ingredients: Cut orange,cut,OTHER,unmapped_verb=False unmapped_noun=True
+b739682e-97d3-468c-ab32-eff051aaf9ec,val,substep,1339.21408,1645.98538,Peel and cut ingredients: Cut orange,cut,OTHER,unmapped_verb=False unmapped_noun=True
+cc575a16-64fd-4cda-9248-5d85f506fdfd,val,substep,25.8273,29.25628,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+cc575a16-64fd-4cda-9248-5d85f506fdfd,val,substep,133.6004,135.80593,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+cc575a16-64fd-4cda-9248-5d85f506fdfd,val,substep,178.1736,179.34758,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+cc575a16-64fd-4cda-9248-5d85f506fdfd,val,substep,190.17908,191.50506,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+cc575a16-64fd-4cda-9248-5d85f506fdfd,val,substep,335.75888,337.86482,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+cc575a16-64fd-4cda-9248-5d85f506fdfd,val,substep,363.86517,365.15257,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+cc575a16-64fd-4cda-9248-5d85f506fdfd,val,substep,379.43514,380.46968,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+cc575a16-64fd-4cda-9248-5d85f506fdfd,val,substep,383.05522,384.36342,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+cc575a16-64fd-4cda-9248-5d85f506fdfd,val,substep,386.50469,387.59253,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+cc575a16-64fd-4cda-9248-5d85f506fdfd,val,substep,389.890625,391.56271,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+cc575a16-64fd-4cda-9248-5d85f506fdfd,val,substep,394.32881,395.4239,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+cc575a16-64fd-4cda-9248-5d85f506fdfd,val,substep,399.05351,401.0847,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+cc575a16-64fd-4cda-9248-5d85f506fdfd,val,substep,518.21556,533.4293,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+cc575a16-64fd-4cda-9248-5d85f506fdfd,val,step,1215.82685,1226.45959,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+77362fa3-e23a-4942-bd53-7d58b23b979b,val,substep,35.496,43.93254,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+77362fa3-e23a-4942-bd53-7d58b23b979b,val,substep,203.78007,208.47275,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+106e9447-8a09-4e89-964e-61c927827a56,val,step,479.16759,484.73941,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+106e9447-8a09-4e89-964e-61c927827a56,val,step,498.88593,513.43435,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+89af735b-7c13-4366-befe-efd6cd5402ff,val,substep,1383.11869,1409.24201,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+1a327b0c-b78b-4ae2-add0-49334bccddcd,val,step,687.94863,1685.459,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+3bd5bf35-d6ac-43b2-ab75-1558a37c8550,val,step,1055.07522,1071.38466,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+3bd5bf35-d6ac-43b2-ab75-1558a37c8550,val,step,1071.56031,1074.66925,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+3bd5bf35-d6ac-43b2-ab75-1558a37c8550,val,step,2753.20038,2772.06462,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+6af04762-9ccf-41aa-bbfb-48a443c7cec3,val,step,1236.63626,1272.61213,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+f5449610-c326-452c-a769-04a7ffeacb7d,val,step,2284.63259,2417.41207,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+f5449610-c326-452c-a769-04a7ffeacb7d,val,substep,2312.12489,2341.21566,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,step,41.11057,76.19255,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+7ddbf8a2-5b3e-44cd-b9dc-db17ec06831b,val,step,1027.17373,1044.13439,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+7ddbf8a2-5b3e-44cd-b9dc-db17ec06831b,val,step,2353.3242,2400.0,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+7ddbf8a2-5b3e-44cd-b9dc-db17ec06831b,val,step,2407.77894,2442.93331,Add ingredients to the recipe: Add coconut to recipe,add,OTHER,unmapped_verb=False unmapped_noun=True
+3a158275-c4c2-4bde-a186-788341e43ed4,val,step,1003.75104,1007.09023,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+3a158275-c4c2-4bde-a186-788341e43ed4,val,step,1022.95858,1125.741,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+3a158275-c4c2-4bde-a186-788341e43ed4,val,substep,1028.39597,1092.09864,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+3a158275-c4c2-4bde-a186-788341e43ed4,val,substep,1103.96095,1115.91178,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+16d55886-6e1e-4195-9918-12dc4568320e,val,step,3810.56241,3814.88361,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+16d55886-6e1e-4195-9918-12dc4568320e,val,step,4293.23603,4296.05419,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+478d7fa4-b174-4266-b0ff-bd180ba0b806,val,substep,302.26903,308.45832,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+478d7fa4-b174-4266-b0ff-bd180ba0b806,val,substep,404.402885,551.78405,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+grp-7fb63b81-0a4f-4e9e-906b-60d1935d53c7,val,step,2018.58256,2033.964,Peel and cut ingredients: Cut coconut,cut,OTHER,unmapped_verb=False unmapped_noun=True
+grp-7fb63b81-0a4f-4e9e-906b-60d1935d53c7,val,substep,2023.53748,2029.574335,Peel and cut ingredients: Cut coconut,cut,OTHER,unmapped_verb=False unmapped_noun=True
+grp-7fb63b81-0a4f-4e9e-906b-60d1935d53c7,val,step,2636.29326,2638.26353,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+7bca86ab-7327-4a38-8d2f-0a668da52f5d,val,step,642.77908,649.84804,Make recipes: Make croissant,make,OTHER,unmapped_verb=False unmapped_noun=True
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,step,457.04948,460.89741,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True
+f33dd5b7-ac69-4082-b152-a2db14b3a8cf,val,substep,216.44066,2928.38476,General activity: Non cooking miscellaneous,non,OTHER,unmapped_verb=True unmapped_noun=True

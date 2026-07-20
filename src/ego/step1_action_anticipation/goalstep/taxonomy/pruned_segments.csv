@@ -1,0 +1,714 @@
+video_uid,split,level,step_category,action_label,action_support
+09bccca1-368b-4776-9433-3c8835837110,train,step,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+grp-090c6bc0-49da-4d3b-b209-a1a60aeb0317,train,substep,Add ingredients to the recipe: Add bacon to recipe,add bacon,8
+4c642620-db0e-4096-9ece-2b2c6fdb47b0,train,substep,Make baked goods: Score the dough for bake,score dough,10
+4c642620-db0e-4096-9ece-2b2c6fdb47b0,train,step,Make baked goods: Score the dough for bake,score dough,10
+4c642620-db0e-4096-9ece-2b2c6fdb47b0,train,substep,Make baked goods: Score the dough for bake,score dough,10
+4c642620-db0e-4096-9ece-2b2c6fdb47b0,train,substep,Make baked goods: Score the dough for bake,score dough,10
+4c642620-db0e-4096-9ece-2b2c6fdb47b0,train,substep,Make baked goods: Score the dough for bake,score dough,10
+94d5eff8-0fac-4719-adf2-5c0208ab89f7,train,step,General activity: Open door or window,open door,8
+68205f0f-9b30-4d81-986d-f8816e70bddd,train,substep,Add ingredients to the recipe: Add chocolate to recipe,add chocolate,7
+68205f0f-9b30-4d81-986d-f8816e70bddd,train,substep,Add ingredients to the recipe: Add chocolate to recipe,add chocolate,7
+68205f0f-9b30-4d81-986d-f8816e70bddd,train,substep,Add ingredients to the recipe: Add chocolate to recipe,add chocolate,7
+68205f0f-9b30-4d81-986d-f8816e70bddd,train,substep,Add ingredients to the recipe: Add chocolate to recipe,add chocolate,7
+68205f0f-9b30-4d81-986d-f8816e70bddd,train,substep,Add ingredients to the recipe: Add chocolate to recipe,add chocolate,7
+0ebb682e-6aec-482c-bbb7-774ec5eca906,train,step,General kitchen activity: Dispose dough in the trash bin,dispose dough,7
+grp-0cf6e8bd-48a6-4764-9367-c59603a00e4e,train,substep,Peel and cut ingredients: Cut melon,cut melon,3
+grp-0cf6e8bd-48a6-4764-9367-c59603a00e4e,train,substep,General kitchen activity: Attach a handle to a pan or pot,attach handle,5
+f5b87541-3879-444f-be65-2b17f1d95735,train,substep,Add ingredients to the recipe: Add broth or soup to recipe,add broth,5
+8383791d-2df9-4bac-89b6-4cc01df5f4d1,train,step,General activity: Write a note,write note,7
+8383791d-2df9-4bac-89b6-4cc01df5f4d1,train,step,General activity: Write a note,write note,7
+8383791d-2df9-4bac-89b6-4cc01df5f4d1,train,substep,Make coffee: Add ground coffee to brew,add coffee,6
+8383791d-2df9-4bac-89b6-4cc01df5f4d1,train,substep,Stir and mix ingredients on kitchenware to cook: Stir coffee or tea,stir coffee,8
+8383791d-2df9-4bac-89b6-4cc01df5f4d1,train,step,General cooking activity: Separate egg yolk and egg white into separate parts,separate yolk,1
+8383791d-2df9-4bac-89b6-4cc01df5f4d1,train,substep,Stir and mix ingredients on kitchenware to cook: Stir coffee or tea,stir coffee,8
+8383791d-2df9-4bac-89b6-4cc01df5f4d1,train,substep,Make recipes: Poach eggs in simmering water or broth until the egg white is set,poach egg,1
+8383791d-2df9-4bac-89b6-4cc01df5f4d1,train,step,Stir and mix ingredients on kitchenware to cook: Stir coffee or tea,stir coffee,8
+grp-9f28e782-417c-4c8b-a7ae-42fc96a0e94f,train,step,Kitchen cleaning activity: Wash lids in kitchen sink,wash lid,10
+f52ff936-bd41-46f0-a1c2-44eb5dd6e575,train,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+f52ff936-bd41-46f0-a1c2-44eb5dd6e575,train,substep,Make recipes: Put the rice in a pot and cover it with water,put rice,5
+f52ff936-bd41-46f0-a1c2-44eb5dd6e575,train,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+f52ff936-bd41-46f0-a1c2-44eb5dd6e575,train,substep,Cook on a stovetop: Fill a pot with water or oil and place it on the stove,fill pot,3
+f52ff936-bd41-46f0-a1c2-44eb5dd6e575,train,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+f52ff936-bd41-46f0-a1c2-44eb5dd6e575,train,substep,Cook on a stovetop: Fill a pot with water or oil and place it on the stove,fill pot,3
+737e9619-7768-407c-8a4f-6fe1e8d61f04,train,substep,General cooking activity: Pat dry ingredients with towel,pat ingredient,9
+737e9619-7768-407c-8a4f-6fe1e8d61f04,train,substep,Make recipes: Put the rice in a pot and cover it with water,put rice,5
+737e9619-7768-407c-8a4f-6fe1e8d61f04,train,step,General activity: Open door or window,open door,8
+737e9619-7768-407c-8a4f-6fe1e8d61f04,train,step,General activity: Open door or window,open door,8
+0fe191ef-c28a-422c-aede-46f8aa8532a6,train,step,Make recipes: Make hazelnut spread,make spread,10
+0fe191ef-c28a-422c-aede-46f8aa8532a6,train,step,Make recipes: Make hazelnut spread,make spread,10
+0fe191ef-c28a-422c-aede-46f8aa8532a6,train,step,Make recipes: Make hazelnut spread,make spread,10
+0fe191ef-c28a-422c-aede-46f8aa8532a6,train,step,Make recipes: Make hazelnut spread,make spread,10
+0fe191ef-c28a-422c-aede-46f8aa8532a6,train,step,Make recipes: Make hazelnut spread,make spread,10
+0fe191ef-c28a-422c-aede-46f8aa8532a6,train,step,Make recipes: Make hazelnut spread,make spread,10
+0fe191ef-c28a-422c-aede-46f8aa8532a6,train,step,Make recipes: Make hazelnut spread,make spread,10
+0fe191ef-c28a-422c-aede-46f8aa8532a6,train,step,Make recipes: Pour hazelnut spread into a jar and store in the refrigerator,pour hazelnut,4
+0fe191ef-c28a-422c-aede-46f8aa8532a6,train,step,Make recipes: Make hazelnut spread,make spread,10
+0fe191ef-c28a-422c-aede-46f8aa8532a6,train,step,Make recipes: Make hazelnut spread,make spread,10
+0fe191ef-c28a-422c-aede-46f8aa8532a6,train,step,Make recipes: Make hazelnut spread,make spread,10
+0fe191ef-c28a-422c-aede-46f8aa8532a6,train,step,Make recipes: Pour hazelnut spread into a jar and store in the refrigerator,pour hazelnut,4
+0fe191ef-c28a-422c-aede-46f8aa8532a6,train,substep,Cook in a blender: Remove blender jar from base,remove jar,3
+0fe191ef-c28a-422c-aede-46f8aa8532a6,train,substep,Make recipes: Pour hazelnut spread into a jar and store in the refrigerator,pour hazelnut,4
+0fe191ef-c28a-422c-aede-46f8aa8532a6,train,substep,Kitchen cleaning activity: Adjust water tap in kitchen sink,adjust tap,3
+0fe191ef-c28a-422c-aede-46f8aa8532a6,train,step,Make recipes: Pour hazelnut spread into a jar and store in the refrigerator,pour hazelnut,4
+0fe191ef-c28a-422c-aede-46f8aa8532a6,train,step,Kitchen cleaning activity: Adjust water tap in kitchen sink,adjust tap,3
+1ab9d5f7-0181-458e-a5e7-72ce87501f3e,train,substep,Add ingredients to the recipe: Add avocado to recipe,add avocado,8
+grp-0eb88d90-6da1-4957-bc4f-1ced804cd7ce,train,substep,Make recipes: Take two slices of bread and put them on a plate,get slice,7
+97811639-7def-4034-8083-a82a59156234,train,substep,Add ingredients to the recipe: Add ice to recipe,add ice,9
+grp-0b215326-8706-4611-9b76-3402d617f19e,train,substep,Kitchen cleaning activity: Add dish soap to a dish to wash,add soap,5
+grp-0b215326-8706-4611-9b76-3402d617f19e,train,step,Peel and cut ingredients: Cut seafood,cut seafood,8
+grp-0b215326-8706-4611-9b76-3402d617f19e,train,substep,Peel and cut ingredients: Cut seafood,cut seafood,8
+grp-0b215326-8706-4611-9b76-3402d617f19e,train,step,Peel and cut ingredients: Cut seafood,cut seafood,8
+2c27b5f1-4af6-49ad-a43c-3efb0c150868,train,substep,General activity: Play music,play music,5
+ec3556de-be79-4ad4-aa0f-eaca48abb5d5,train,step,General activity: Open door or window,open door,8
+58b2a4a4-b721-4753-bfc3-478cdb5bd1a8,train,substep,Make recipes: Wait for the tea to steep,wait tea,2
+26202090-684d-4be8-b3cc-de04da827e91,train,step,Cook on a wood stove: Start the fire in the wood stove,start fire,10
+26202090-684d-4be8-b3cc-de04da827e91,train,step,General kitchen activity: Dispose paper in the trash bin,dispose paper,9
+26202090-684d-4be8-b3cc-de04da827e91,train,step,General kitchen activity: Dispose dough in the trash bin,dispose dough,7
+26202090-684d-4be8-b3cc-de04da827e91,train,step,General kitchen activity: Serve cheese,serve cheese,1
+26202090-684d-4be8-b3cc-de04da827e91,train,step,Make recipes: Sprinkle cheese over the pizza sauce,sprinkle cheese,5
+26202090-684d-4be8-b3cc-de04da827e91,train,step,Make recipes: Sprinkle cheese over the pizza sauce,sprinkle cheese,5
+f4cc5fdc-f64f-4dd7-9b95-61db9bbf33d5,train,step,General cooking activity: Move pan for miscellaneous reasons,move pan,4
+grp-fc70c4fe-13e1-4691-ab97-501a22b3a71e,train,substep,Add ingredients to the recipe: Add avocado to recipe,add avocado,8
+grp-fc70c4fe-13e1-4691-ab97-501a22b3a71e,train,substep,Add ingredients to the recipe: Add avocado to recipe,add avocado,8
+be8889c4-114f-4cb2-9e2c-fef576dbb00d,train,substep,General cooking activity: Preheat toaster oven,preheat toaster,2
+d13dab0f-6165-43a5-b68a-79921dfba509,train,step,Peel and cut ingredients: Cut seafood,cut seafood,8
+d13dab0f-6165-43a5-b68a-79921dfba509,train,step,Peel and cut ingredients: Cut seafood,cut seafood,8
+grp-86b7a8dc-e0ba-4b21-a097-eed463fb2747,train,step,Peel and cut ingredients: Cut butter,cut butter,2
+2f46d1e6-2a85-4d46-b955-10c2eded661c,train,step,General activity: Open door or window,open door,8
+272e8bcd-32a8-48ce-a9c4-a5f0a4f15145,train,substep,Cook in an oven: Place the pastry shapes on a baking sheet lined with parchment paper,put shape,9
+272e8bcd-32a8-48ce-a9c4-a5f0a4f15145,train,substep,Cook in an oven: Place the pastry shapes on a baking sheet lined with parchment paper,put shape,9
+272e8bcd-32a8-48ce-a9c4-a5f0a4f15145,train,substep,Cook in an oven: Place the pastry shapes on a baking sheet lined with parchment paper,put shape,9
+272e8bcd-32a8-48ce-a9c4-a5f0a4f15145,train,substep,Cook in an oven: Place the pastry shapes on a baking sheet lined with parchment paper,put shape,9
+272e8bcd-32a8-48ce-a9c4-a5f0a4f15145,train,substep,Cook in an oven: Place the pastry shapes on a baking sheet lined with parchment paper,put shape,9
+ab875220-cd6c-410d-8fbc-94742e51e775,train,step,Make recipes: Make drinks,make drink,5
+grp-65403036-df60-4ccb-ac72-2808b841665c,train,step,Peel and cut ingredients: Cut pawpaw,cut pawpaw,4
+grp-65403036-df60-4ccb-ac72-2808b841665c,train,substep,Peel and cut ingredients: Cut pawpaw,cut pawpaw,4
+grp-65403036-df60-4ccb-ac72-2808b841665c,train,substep,Peel and cut ingredients: Cut pawpaw,cut pawpaw,4
+grp-d59f69bd-8250-4d06-998b-f057f51e6a8f,train,substep,Kitchen cleaning activity: Wash lids in kitchen sink,wash lid,10
+42e4a840-68a1-4992-923d-7452500b4218,train,step,Make baked goods: Fold in butter to the dough,fold butter,9
+42e4a840-68a1-4992-923d-7452500b4218,train,step,General kitchen activity: Dispose dough in the trash bin,dispose dough,7
+049cfb89-3bcc-4fa3-8d0e-4e7e218b05ae,train,step,General cooking activity: Cook with or prepare milk,cook milk,5
+049cfb89-3bcc-4fa3-8d0e-4e7e218b05ae,train,step,Make coffee: Add ground coffee to brew,add coffee,6
+049cfb89-3bcc-4fa3-8d0e-4e7e218b05ae,train,step,Stir and mix ingredients on kitchenware to cook: Stir coffee or tea,stir coffee,8
+5093842e-7cf9-4509-bf04-6e0ec6b75b27,train,step,Make baked goods: Score the dough for bake,score dough,10
+grp-530dd2a8-462c-450b-9f38-1dfff28f139e,train,substep,Kitchen cleaning activity: Remove excess oil from a pan,remove oil,4
+grp-530dd2a8-462c-450b-9f38-1dfff28f139e,train,substep,Kitchen cleaning activity: Remove excess oil from a pan,remove oil,4
+f735d4bb-d65e-4965-ac0d-270c0b9e5993,train,step,General activity: Play music,play music,5
+grp-229e8124-605e-4c86-b4ac-fc03e0a71111,train,substep,General cooking activity: Pat dry ingredients with towel,pat ingredient,9
+grp-74462b79-89be-40c4-8148-e176fc150265,train,step,General kitchen activity: Collect waste from kitchen sink,get waste,6
+7f806670-8a33-4462-b02d-305c1426475b,train,step,Make recipes: Put sand into a large pot to cook puffed rice,put sand,2
+7f806670-8a33-4462-b02d-305c1426475b,train,step,Make recipes: Put sand into a large pot to cook puffed rice,put sand,2
+58aff1ab-21a8-4ba3-a006-8d3bb12b2ccc,train,step,Kitchen cleaning activity: Wash lids in kitchen sink,wash lid,10
+a9c13069-d229-4e09-92e8-bd6cf3c3448a,train,substep,Make baked goods: Clean up dough residue,clean dough,7
+a9c13069-d229-4e09-92e8-bd6cf3c3448a,train,substep,Make baked goods: Clean up dough residue,clean dough,7
+a9c13069-d229-4e09-92e8-bd6cf3c3448a,train,substep,Make baked goods: Clean up dough residue,clean dough,7
+a9c13069-d229-4e09-92e8-bd6cf3c3448a,train,substep,Make baked goods: Clean up dough residue,clean dough,7
+a9c13069-d229-4e09-92e8-bd6cf3c3448a,train,substep,Make baked goods: Clean up dough residue,clean dough,7
+a9c13069-d229-4e09-92e8-bd6cf3c3448a,train,substep,Make baked goods: Clean up dough residue,clean dough,7
+7913c8a8-1f99-4c2d-8a5d-9a5793162447,train,step,Make baked goods: Score the dough for bake,score dough,10
+7913c8a8-1f99-4c2d-8a5d-9a5793162447,train,step,General cooking activity: Pat dry ingredients with towel,pat ingredient,9
+7913c8a8-1f99-4c2d-8a5d-9a5793162447,train,step,General cooking activity: Pat dry ingredients with towel,pat ingredient,9
+6dafeac7-75b6-4d69-96f7-d08708a0a99e,train,step,General activity: Clean nose,clean nose,5
+254e8485-eb84-461a-aed5-a71716588fad,train,substep,Make coffee: Add ground coffee to brew,add coffee,6
+254e8485-eb84-461a-aed5-a71716588fad,train,step,Make recipes: Make drinks,make drink,5
+466c9201-dba2-44e9-93c4-82788ac6282b,train,step,General activity: Adjust camera,adjust camera,6
+9e9c5b05-c7d4-450d-9850-e6ae83caa9a5,train,step,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+9e9c5b05-c7d4-450d-9850-e6ae83caa9a5,train,substep,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+grp-8e92e289-96dd-4777-b485-3dd1efb2d757,train,step,General cooking activity: Coat ingredients in a dry mixture,coat ingredient,8
+grp-8e92e289-96dd-4777-b485-3dd1efb2d757,train,substep,General cooking activity: Coat ingredients in a dry mixture,coat ingredient,8
+grp-8e92e289-96dd-4777-b485-3dd1efb2d757,train,step,General cooking activity: Coat ingredients in a dry mixture,coat ingredient,8
+grp-8e92e289-96dd-4777-b485-3dd1efb2d757,train,step,General cooking activity: Cook with or prepare milk,cook milk,5
+grp-8e92e289-96dd-4777-b485-3dd1efb2d757,train,step,General kitchen activity: Collect waste from kitchen sink,get waste,6
+ac582760-09b1-4a6e-be08-f19f9bf5dfcb,train,step,Add ingredients to the recipe: Add hotdog to the broth,add hotdog,4
+ac582760-09b1-4a6e-be08-f19f9bf5dfcb,train,substep,Add ingredients to the recipe: Add hotdog to the broth,add hotdog,4
+ac582760-09b1-4a6e-be08-f19f9bf5dfcb,train,substep,Add ingredients to the recipe: Add hotdog to the broth,add hotdog,4
+grp-22db2380-7ca6-4747-ad13-79a1a084bf54,train,step,Boil ingredients in water: Boil edamame in water,boil edamame,2
+grp-22db2380-7ca6-4747-ad13-79a1a084bf54,train,substep,Boil ingredients in water: Boil edamame in water,boil edamame,2
+016bfe72-74ef-4956-9cc9-7a7ad2f6ab48,train,step,General kitchen activity: Dispose paper in the trash bin,dispose paper,9
+e6bdfe96-48c7-48c9-a5c8-5f09aee849b7,train,substep,General kitchen activity: Dispose stem or tip of ingredients in the trash bin,dispose stem,4
+e6bdfe96-48c7-48c9-a5c8-5f09aee849b7,train,substep,General kitchen activity: Dispose stem or tip of ingredients in the trash bin,dispose stem,4
+e6bdfe96-48c7-48c9-a5c8-5f09aee849b7,train,step,Make recipes: Make burrito,make burrito,2
+bf6e4f01-7891-42fe-9b52-1b5033379b44,train,step,Make recipes: Make lasagna layers,make layer,3
+bf6e4f01-7891-42fe-9b52-1b5033379b44,train,step,Make recipes: Make lasagna layers,make layer,3
+bf6e4f01-7891-42fe-9b52-1b5033379b44,train,step,Make recipes: Make lasagna layers,make layer,3
+grp-b0c747fb-6126-4d24-8a98-eed8c211834e,train,step,Make recipes: Make omelet,make omelet,4
+grp-ef348048-3886-484a-8662-6bb59d3fd829,train,substep,Add ingredients to the recipe: Add broth or soup to recipe,add broth,5
+grp-42686a5b-10d2-499f-b9a8-8043f528efdd,train,step,Add ingredients to the recipe: Add avocado to recipe,add avocado,8
+grp-64246b7f-86c9-4062-a11f-3352fae1fca1,train,substep,Peel and cut ingredients: Cut seafood,cut seafood,8
+grp-64246b7f-86c9-4062-a11f-3352fae1fca1,train,step,Peel and cut ingredients: Cut seaweed,cut seaweed,3
+grp-292b2447-407d-45b5-8663-8d92a3f03064,train,step,Add ingredients to the recipe: Add avocado to recipe,add avocado,8
+a055e4e8-cc07-47c1-a438-06f45c4f724c,train,step,Make recipes: Remove the teabag and discard it,remove teabag,4
+a055e4e8-cc07-47c1-a438-06f45c4f724c,train,substep,Kitchen cleaning activity: Wash lids in kitchen sink,wash lid,10
+a055e4e8-cc07-47c1-a438-06f45c4f724c,train,step,Kitchen cleaning activity: Wash lids in kitchen sink,wash lid,10
+a055e4e8-cc07-47c1-a438-06f45c4f724c,train,substep,General cooking activity: Cook with or prepare milk,cook milk,5
+538c2f0a-f89e-47b5-b012-047a1b98de27,train,step,General activity: Clean nose,clean nose,5
+538c2f0a-f89e-47b5-b012-047a1b98de27,train,step,General activity: Clean nose,clean nose,5
+538c2f0a-f89e-47b5-b012-047a1b98de27,train,step,General activity: Clean nose,clean nose,5
+538c2f0a-f89e-47b5-b012-047a1b98de27,train,step,General cooking activity: Cook with or prepare milk,cook milk,5
+c0f702e1-d2e3-4277-8981-7177d106174a,train,substep,Make recipes: Pour syrup on pancake,pour syrup,3
+c0f702e1-d2e3-4277-8981-7177d106174a,train,substep,Make recipes: Pour syrup on pancake,pour syrup,3
+c0f702e1-d2e3-4277-8981-7177d106174a,train,substep,Make recipes: Pour syrup on pancake,pour syrup,3
+grp-51cb7800-2c5a-473c-86d3-e87f4bc5e65d,train,step,Peel and cut ingredients: Cut seaweed,cut seaweed,3
+grp-51cb7800-2c5a-473c-86d3-e87f4bc5e65d,train,substep,Peel and cut ingredients: Cut seaweed,cut seaweed,3
+6bdc7ecb-0d9c-461f-8f32-ee0fbbe47c49,train,step,General activity: Write a note,write note,7
+grp-8c309d88-bf71-49f3-9d05-b7a1d84babd4,train,substep,Add ingredients to the recipe: Add chocolate to recipe,add chocolate,7
+grp-8c309d88-bf71-49f3-9d05-b7a1d84babd4,train,substep,Add ingredients to the recipe: Add chocolate to recipe,add chocolate,7
+bf198d9c-8e12-4426-9d42-7017cf4a5aeb,train,substep,Peel and cut ingredients: Cut corn,cut corn,9
+bf198d9c-8e12-4426-9d42-7017cf4a5aeb,train,substep,Peel and cut ingredients: Cut corn,cut corn,9
+b17ff269-ec2d-4ad8-88aa-b00b75921427,train,substep,Make coffee: Add ground coffee to brew,add coffee,6
+grp-e230ee03-c90d-426c-91d2-256bdc0a3e68,train,step,Peel and cut ingredients: Cut butter,cut butter,2
+grp-bfbb0a28-756c-441b-a0a0-de04288fae47,train,step,General kitchen activity: Attach a handle to a pan or pot,attach handle,5
+grp-bfbb0a28-756c-441b-a0a0-de04288fae47,train,step,Add ingredients to the recipe: Add bacon to recipe,add bacon,8
+543e4c99-5d9f-407d-be75-c397d633fe56,train,step,Make recipes: Take two slices of bread and put them on a plate,get slice,7
+cf95d6a4-6ad7-462c-9700-9f04bd993667,train,substep,Add ingredients to the recipe: Add avocado to recipe,add avocado,8
+457ddf5b-8154-4099-aadf-df0c08fe15a4,train,step,General activity: Adjust camera,adjust camera,6
+115774b6-534d-444f-b7aa-d1b834eb0ee7,train,step,Kitchen cleaning activity: Wash lids in kitchen sink,wash lid,10
+115774b6-534d-444f-b7aa-d1b834eb0ee7,train,step,General kitchen activity: Wear apron,wear apron,4
+7fdfeb1d-f27d-4689-9e19-1367fad530f9,train,substep,Peel and cut ingredients: Cut corn,cut corn,9
+7fdfeb1d-f27d-4689-9e19-1367fad530f9,train,substep,Peel and cut ingredients: Cut corn,cut corn,9
+7fdfeb1d-f27d-4689-9e19-1367fad530f9,train,substep,Peel and cut ingredients: Cut corn,cut corn,9
+7fdfeb1d-f27d-4689-9e19-1367fad530f9,train,substep,Peel and cut ingredients: Cut corn,cut corn,9
+7fdfeb1d-f27d-4689-9e19-1367fad530f9,train,substep,Peel and cut ingredients: Cut corn,cut corn,9
+7fdfeb1d-f27d-4689-9e19-1367fad530f9,train,substep,Peel and cut ingredients: Cut corn,cut corn,9
+206cef4f-5301-4a9e-8f87-1fa3905bf9bd,train,step,Kitchen cleaning activity: Add dish soap to a dish to wash,add soap,5
+206cef4f-5301-4a9e-8f87-1fa3905bf9bd,train,substep,Kitchen cleaning activity: Add dish soap to a dish to wash,add soap,5
+grp-ece7309f-9e11-4cd0-93e7-e5bcf38eb78b,train,substep,General cooking activity: Deactivate rice cooker,deactivate cooker,2
+grp-ece7309f-9e11-4cd0-93e7-e5bcf38eb78b,train,substep,Make recipes: Make omelet,make omelet,4
+4f7fb690-4ee7-4555-87bd-0fe6171b4239,train,step,Make recipes: Remove the teabag and discard it,remove teabag,4
+4f7fb690-4ee7-4555-87bd-0fe6171b4239,train,step,Make recipes: Wait for the tea to steep,wait tea,2
+4f7fb690-4ee7-4555-87bd-0fe6171b4239,train,step,General cooking activity: Pat dry ingredients with towel,pat ingredient,9
+dfaba491-c7e9-43c0-8294-b5b96d22fa7e,train,step,Kitchen cleaning activity: Adjust water tap in kitchen sink,adjust tap,3
+dfaba491-c7e9-43c0-8294-b5b96d22fa7e,train,step,General activity: Open door or window,open door,8
+f9a98d72-b5f1-4840-9093-d351586269c0,train,substep,Add ingredients to the recipe: Add butternut squash to recipe,add squash,8
+f9a98d72-b5f1-4840-9093-d351586269c0,train,substep,Add ingredients to the recipe: Add butternut squash to recipe,add squash,8
+f9a98d72-b5f1-4840-9093-d351586269c0,train,substep,Add ingredients to the recipe: Add butternut squash to recipe,add squash,8
+f9a98d72-b5f1-4840-9093-d351586269c0,train,substep,Add ingredients to the recipe: Add butternut squash to recipe,add squash,8
+f9a98d72-b5f1-4840-9093-d351586269c0,train,substep,Add ingredients to the recipe: Add butternut squash to recipe,add squash,8
+f9a98d72-b5f1-4840-9093-d351586269c0,train,substep,Add ingredients to the recipe: Add butternut squash to recipe,add squash,8
+f9a98d72-b5f1-4840-9093-d351586269c0,train,substep,Add ingredients to the recipe: Add butternut squash to recipe,add squash,8
+b9c91169-7019-4bfa-8a63-97df8cbefe97,train,substep,Peel and cut ingredients: Cut kitchen wrap or foil,cut wrap,3
+29e00040-6e0f-4f0e-816d-1ac97c1e5485,train,step,General activity: Use smartwatch,use smartwatch,6
+29e00040-6e0f-4f0e-816d-1ac97c1e5485,train,step,General activity: Use smartwatch,use smartwatch,6
+29e00040-6e0f-4f0e-816d-1ac97c1e5485,train,step,General activity: Use smartwatch,use smartwatch,6
+c13c132e-97df-4969-b525-9cca74ad218e,train,step,General activity: Play music,play music,5
+c13c132e-97df-4969-b525-9cca74ad218e,train,step,General activity: Play music,play music,5
+4d620f82-6792-49eb-8bd4-e831a252c70b,train,step,General activity: Use smartwatch,use smartwatch,6
+6a5fa00b-64de-4851-98fa-7e96f3f441f6,train,substep,General kitchen activity: Place trash bag for use,put bag,2
+6a5fa00b-64de-4851-98fa-7e96f3f441f6,train,step,General kitchen activity: Place trash bag for use,put bag,2
+70f2a750-f403-41b8-aabb-480eb3ab4ed4,train,substep,Kitchen cleaning activity: Wash lids in kitchen sink,wash lid,10
+grp-c8e39184-6bf1-48e4-9c62-441b58f6e391,train,step,General kitchen activity: Collect waste from kitchen sink,get waste,6
+1e5ca2af-3f1b-40d5-b3a7-d712ac4b5065,train,substep,Make coffee: Add ground coffee to brew,add coffee,6
+cba13243-5ad3-4360-87df-6286867c473a,train,substep,Cook on a wood stove: Start the fire in the wood stove,start fire,10
+cba13243-5ad3-4360-87df-6286867c473a,train,substep,Cook on a wood stove: Start the fire in the wood stove,start fire,10
+cba13243-5ad3-4360-87df-6286867c473a,train,substep,Cook on a wood stove: Start the fire in the wood stove,start fire,10
+f3a0487b-70f6-4446-99a0-16dc78019ee7,train,substep,Cook in a microwave: Turn off microwave,turn microwave,4
+8c3e4a8e-f4dd-44f8-be1f-3b4d4d503556,train,step,General kitchen activity: Dispose dough in the trash bin,dispose dough,7
+grp-b59f7f5d-2991-49a6-8e88-0e2f2db92585,train,substep,Kitchen cleaning activity: Remove excess oil from a pan,remove oil,4
+2978ddbc-cdc9-4bfa-9a7c-4bf056904010,train,step,General kitchen activity: Dispose stem or tip of ingredients in the trash bin,dispose stem,4
+grp-8d30335e-635c-43b6-b1e1-09fa12033416,train,step,Add ingredients to the recipe: Add ice to recipe,add ice,9
+grp-8d30335e-635c-43b6-b1e1-09fa12033416,train,substep,Add ingredients to the recipe: Add ice to recipe,add ice,9
+a1cf9215-730c-4c5a-9980-3108250984c2,train,step,Make recipes: Make egg salad,make egg,3
+7f9f75fd-a660-4635-8890-239c6ad82023,train,step,General kitchen activity: Wear apron,wear apron,4
+7a176aa7-d8b0-4df6-b694-36361f80a77a,train,step,Peel and cut ingredients: Cut melon,cut melon,3
+95e3cefa-e6a2-4c1e-831d-616a86ff177b,train,step,General kitchen activity: Dispose dough in the trash bin,dispose dough,7
+95e3cefa-e6a2-4c1e-831d-616a86ff177b,train,substep,Add ingredients to the recipe: Add ice to recipe,add ice,9
+e339898f-5e79-4723-89d7-44ba33b163de,train,substep,Make baked goods: Clean up dough residue,clean dough,7
+2725d34b-04d5-411a-b405-c5e12d167ade,train,step,General cooking activity: Cook with or prepare milk,cook milk,5
+8fc2c084-ff56-4112-af4a-dfa2609f17c3,train,step,Make recipes: Make salsa,make salsa,2
+8fc2c084-ff56-4112-af4a-dfa2609f17c3,train,step,Make recipes: Make salsa,make salsa,2
+8fc2c084-ff56-4112-af4a-dfa2609f17c3,train,substep,Make recipes: Roll up the tortilla,roll tortilla,2
+8fc2c084-ff56-4112-af4a-dfa2609f17c3,train,substep,Make recipes: Roll up the tortilla,roll tortilla,2
+8fc2c084-ff56-4112-af4a-dfa2609f17c3,train,step,Make recipes: Cook the burrito on a skillet,cook burrito,1
+cb235c78-e524-417a-89fd-57b682bb223b,train,substep,General cooking activity: Baste melted butter or pan joices over food,baste butter,1
+1a894d3c-b3ef-448a-a3de-2b38677cef36,train,substep,Make baked goods: Score the dough for bake,score dough,10
+8dcbac26-8ea1-4b55-b269-882eda459ee1,train,step,Make recipes: Sprinkle cheese over the pizza sauce,sprinkle cheese,5
+8dcbac26-8ea1-4b55-b269-882eda459ee1,train,step,Make recipes: Sprinkle cheese over the pizza sauce,sprinkle cheese,5
+8dcbac26-8ea1-4b55-b269-882eda459ee1,train,step,General kitchen activity: Dispose paper in the trash bin,dispose paper,9
+8dcbac26-8ea1-4b55-b269-882eda459ee1,train,step,General kitchen activity: Dispose paper in the trash bin,dispose paper,9
+98434f4c-6216-4067-ad59-4a89cb47bb9b,train,substep,Make recipes: Prepare food for pets,prepare food,5
+98434f4c-6216-4067-ad59-4a89cb47bb9b,train,substep,Make recipes: Prepare food for pets,prepare food,5
+98434f4c-6216-4067-ad59-4a89cb47bb9b,train,substep,Make recipes: Prepare food for pets,prepare food,5
+98434f4c-6216-4067-ad59-4a89cb47bb9b,train,substep,Make recipes: Prepare food for pets,prepare food,5
+grp-8b9b9816-d6eb-4544-818e-9d59e400b80d,train,substep,General kitchen activity: Attach a handle to a pan or pot,attach handle,5
+grp-8b9b9816-d6eb-4544-818e-9d59e400b80d,train,substep,General kitchen activity: Attach a handle to a pan or pot,attach handle,5
+grp-7f959a19-7aaa-40f7-8159-726e85aa513b,train,substep,General kitchen activity: Collect waste from kitchen sink,get waste,6
+grp-7f959a19-7aaa-40f7-8159-726e85aa513b,train,step,General cooking activity: Coat ingredients in a dry mixture,coat ingredient,8
+grp-7f959a19-7aaa-40f7-8159-726e85aa513b,train,step,General cooking activity: Coat ingredients in a dry mixture,coat ingredient,8
+grp-7f959a19-7aaa-40f7-8159-726e85aa513b,train,step,General cooking activity: Coat ingredients in a dry mixture,coat ingredient,8
+grp-7f959a19-7aaa-40f7-8159-726e85aa513b,train,substep,General kitchen activity: Collect waste from kitchen sink,get waste,6
+a6419de9-1e40-4793-b21b-9c8d9038835a,train,substep,Kitchen cleaning activity: Add dish soap to a dish to wash,add soap,5
+grp-40d6688c-fc38-4b92-ab7a-62ebfb4d310e,train,step,Make recipes: Make egg salad,make egg,3
+grp-40d6688c-fc38-4b92-ab7a-62ebfb4d310e,train,substep,Make recipes: Mash boiled eggs to create a creamy texture,boil texture,5
+grp-40d6688c-fc38-4b92-ab7a-62ebfb4d310e,train,substep,Make recipes: Mash boiled eggs to create a creamy texture,boil texture,5
+grp-40d6688c-fc38-4b92-ab7a-62ebfb4d310e,train,substep,Make recipes: Mash boiled eggs to create a creamy texture,boil texture,5
+grp-40d6688c-fc38-4b92-ab7a-62ebfb4d310e,train,substep,Make recipes: Mash boiled eggs to create a creamy texture,boil texture,5
+grp-40d6688c-fc38-4b92-ab7a-62ebfb4d310e,train,substep,Make recipes: Mash boiled eggs to create a creamy texture,boil texture,5
+grp-40d6688c-fc38-4b92-ab7a-62ebfb4d310e,train,substep,Add ingredients to the recipe: Add bacon to recipe,add bacon,8
+grp-40d6688c-fc38-4b92-ab7a-62ebfb4d310e,train,substep,Peel and cut ingredients: Cut off rough edges of sandwich,cut edge,4
+grp-40d6688c-fc38-4b92-ab7a-62ebfb4d310e,train,substep,Peel and cut ingredients: Cut off rough edges of sandwich,cut edge,4
+grp-40d6688c-fc38-4b92-ab7a-62ebfb4d310e,train,substep,Make recipes: Take two slices of bread and put them on a plate,get slice,7
+grp-40d6688c-fc38-4b92-ab7a-62ebfb4d310e,train,substep,Peel and cut ingredients: Cut off rough edges of sandwich,cut edge,4
+grp-97f3c1c5-3fc2-4bc8-8956-b6e679ace868,train,substep,Add ingredients to the recipe: Add ice to recipe,add ice,9
+d2de811c-9255-4c4f-8a54-a2fc65527f59,train,substep,Cook in a blender: Adjust settings on the blender,adjust setting,4
+d2de811c-9255-4c4f-8a54-a2fc65527f59,train,substep,Cook in a blender: Adjust settings on the blender,adjust setting,4
+d2de811c-9255-4c4f-8a54-a2fc65527f59,train,substep,Cook in a blender: Adjust settings on the blender,adjust setting,4
+d27d4db8-c1c5-46e0-af9f-bc9aa24f1d4c,train,substep,Cook in a blender: Remove blender jar from base,remove jar,3
+8d27f903-5c76-4a63-9d0b-2ff2d29ae9a9,train,step,Add ingredients to the recipe: Add ice to recipe,add ice,9
+grp-7f70ae0a-d097-4dda-9afa-318188dfce2d,train,substep,General cooking activity: Coat ingredients in a dry mixture,coat ingredient,8
+9d1f1f10-32fc-4d7d-8131-4254c68fb845,train,step,Peel and cut ingredients: Place the spice in a spice grinder,put spice,4
+9d1f1f10-32fc-4d7d-8131-4254c68fb845,train,step,Peel and cut ingredients: Remove the ground spice from the spice grinder,remove spice,6
+9d1f1f10-32fc-4d7d-8131-4254c68fb845,train,substep,Peel and cut ingredients: Put papers on the ground to prevent spills while grounding spice,put paper,2
+9d1f1f10-32fc-4d7d-8131-4254c68fb845,train,substep,Peel and cut ingredients: Remove the ground spice from the spice grinder,remove spice,6
+9d1f1f10-32fc-4d7d-8131-4254c68fb845,train,substep,Peel and cut ingredients: Put papers on the ground to prevent spills while grounding spice,put paper,2
+9d1f1f10-32fc-4d7d-8131-4254c68fb845,train,step,Peel and cut ingredients: Place the spice in a spice grinder,put spice,4
+9d1f1f10-32fc-4d7d-8131-4254c68fb845,train,step,Peel and cut ingredients: Remove the ground spice from the spice grinder,remove spice,6
+9d1f1f10-32fc-4d7d-8131-4254c68fb845,train,step,Peel and cut ingredients: Place the spice in a spice grinder,put spice,4
+9d1f1f10-32fc-4d7d-8131-4254c68fb845,train,step,Peel and cut ingredients: Remove the ground spice from the spice grinder,remove spice,6
+9d1f1f10-32fc-4d7d-8131-4254c68fb845,train,step,Peel and cut ingredients: Place the spice in a spice grinder,put spice,4
+9d1f1f10-32fc-4d7d-8131-4254c68fb845,train,step,Peel and cut ingredients: Remove the ground spice from the spice grinder,remove spice,6
+9d1f1f10-32fc-4d7d-8131-4254c68fb845,train,step,Peel and cut ingredients: Remove the ground spice from the spice grinder,remove spice,6
+grp-63f522db-8a30-4eab-a1a1-d4e89c800dd0,train,step,Add ingredients to the recipe: Add broth or soup to recipe,add broth,5
+2ba0becb-58c2-43a1-97bb-7e153a34eb47,train,substep,Add ingredients to the recipe: Add avocado to recipe,add avocado,8
+grp-cecd4a27-9e08-4e56-b288-f3eeab2ac8a6,train,step,Peel and cut ingredients: Cut pawpaw,cut pawpaw,4
+026dac2d-2ab3-4f9c-9e1d-6198db4fb080,train,step,General cooking activity: Season the steak,season steak,8
+026dac2d-2ab3-4f9c-9e1d-6198db4fb080,train,substep,General cooking activity: Season the steak,season steak,8
+026dac2d-2ab3-4f9c-9e1d-6198db4fb080,train,substep,General cooking activity: Season the steak,season steak,8
+026dac2d-2ab3-4f9c-9e1d-6198db4fb080,train,substep,General cooking activity: Season the steak,season steak,8
+026dac2d-2ab3-4f9c-9e1d-6198db4fb080,train,substep,General cooking activity: Season the steak,season steak,8
+026dac2d-2ab3-4f9c-9e1d-6198db4fb080,train,substep,General cooking activity: Season the steak,season steak,8
+026dac2d-2ab3-4f9c-9e1d-6198db4fb080,train,substep,General cooking activity: Season the steak,season steak,8
+026dac2d-2ab3-4f9c-9e1d-6198db4fb080,train,substep,General cooking activity: Season the steak,season steak,8
+db532215-0f8f-4cb9-8118-004746c5786f,train,step,Make baked goods: Fold in butter to the dough,fold butter,9
+db532215-0f8f-4cb9-8118-004746c5786f,train,step,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+db532215-0f8f-4cb9-8118-004746c5786f,train,step,Make baked goods: Fold in butter to the dough,fold butter,9
+db532215-0f8f-4cb9-8118-004746c5786f,train,step,Make baked goods: Fold in butter to the dough,fold butter,9
+db532215-0f8f-4cb9-8118-004746c5786f,train,step,Make baked goods: Fold in butter to the dough,fold butter,9
+db532215-0f8f-4cb9-8118-004746c5786f,train,step,Make baked goods: Fold in butter to the dough,fold butter,9
+db532215-0f8f-4cb9-8118-004746c5786f,train,step,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+db532215-0f8f-4cb9-8118-004746c5786f,train,step,Make baked goods: Fold in butter to the dough,fold butter,9
+db532215-0f8f-4cb9-8118-004746c5786f,train,step,Make baked goods: Fold in butter to the dough,fold butter,9
+db532215-0f8f-4cb9-8118-004746c5786f,train,step,Make baked goods: Fold in butter to the dough,fold butter,9
+db532215-0f8f-4cb9-8118-004746c5786f,train,step,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+5dab6f94-5ca7-4985-bcd0-67f4fc04687a,train,substep,Cook in a blender: Remove blender jar from base,remove jar,3
+20ef0632-9c41-43d0-aea4-60307be7431a,train,step,Add ingredients to the recipe: Add ice to recipe,add ice,9
+20ef0632-9c41-43d0-aea4-60307be7431a,train,substep,Kitchen cleaning activity: Add dish soap to a dish to wash,add soap,5
+grp-63932be6-4b53-4390-bf5b-1706282353f9,train,substep,Make recipes: Make burrito,make burrito,2
+grp-f30e01bb-e8f1-42d2-922c-aa7b66da9035,train,substep,Add ingredients to the recipe: Add bacon to recipe,add bacon,8
+grp-3f0bd238-228d-4796-a3e4-820308fb04b0,train,substep,Kitchen cleaning activity: Wash lids in kitchen sink,wash lid,10
+c5a22c25-2649-4441-8bb0-777af79d544e,train,step,Make recipes: Add yogurt to a bowl,add yogurt,3
+grp-a790b051-6a4a-47d2-ba1c-349a1dd29049,train,substep,Add ingredients to the recipe: Add hotdog to the broth,add hotdog,4
+grp-a790b051-6a4a-47d2-ba1c-349a1dd29049,train,substep,General kitchen activity: Remove kitchen gloves,remove glove,1
+grp-9c9a1df7-2423-4e84-8f81-152869f98862,train,step,Make recipes: Make drinks,make drink,5
+grp-9c9a1df7-2423-4e84-8f81-152869f98862,train,substep,Add ingredients to the recipe: Add ice to recipe,add ice,9
+d3146817-e038-4fce-b407-fa955b2d1963,train,step,Cook on a wood stove: Start the fire in the wood stove,start fire,10
+d3146817-e038-4fce-b407-fa955b2d1963,train,substep,Cook on a wood stove: Start the fire in the wood stove,start fire,10
+d3146817-e038-4fce-b407-fa955b2d1963,train,substep,Cook on a wood stove: Start the fire in the wood stove,start fire,10
+d3146817-e038-4fce-b407-fa955b2d1963,train,substep,Cook on a wood stove: Start the fire in the wood stove,start fire,10
+d3146817-e038-4fce-b407-fa955b2d1963,train,substep,Cook on a wood stove: Start the fire in the wood stove,start fire,10
+d3146817-e038-4fce-b407-fa955b2d1963,train,step,Cook on a wood stove: Start the fire in the wood stove,start fire,10
+grp-69c9d98e-c125-4d24-b180-aea768ef900a,train,step,Peel and cut ingredients: Cut japanese mustard green,cut mustard,3
+grp-69c9d98e-c125-4d24-b180-aea768ef900a,train,substep,Peel and cut ingredients: Cut japanese mustard green,cut mustard,3
+grp-69c9d98e-c125-4d24-b180-aea768ef900a,train,substep,Peel and cut ingredients: Cut japanese mustard green,cut mustard,3
+db8e8171-882a-4359-ae23-89de26c98e84,train,step,Make recipes: Make dumplings,make dumpling,2
+db8e8171-882a-4359-ae23-89de26c98e84,train,step,Make recipes: Make dumplings,make dumpling,2
+5baf4e1b-582a-4fbc-9391-3e794057c759,train,substep,General cooking activity: Preheat toaster oven,preheat toaster,2
+5baf4e1b-582a-4fbc-9391-3e794057c759,train,substep,Make recipes: Put the rice in a pot and cover it with water,put rice,5
+5baf4e1b-582a-4fbc-9391-3e794057c759,train,substep,Make recipes: Put the rice in a pot and cover it with water,put rice,5
+5baf4e1b-582a-4fbc-9391-3e794057c759,train,substep,Make recipes: Put the rice in a pot and cover it with water,put rice,5
+5baf4e1b-582a-4fbc-9391-3e794057c759,train,substep,General cooking activity: Deactivate rice cooker,deactivate cooker,2
+5baf4e1b-582a-4fbc-9391-3e794057c759,train,step,General activity: Use smartwatch,use smartwatch,6
+4bc033f3-9bfe-4b00-8595-09148707bb02,train,step,General kitchen activity: Dispose paper in the trash bin,dispose paper,9
+grp-33b87859-7487-423d-b899-36c84abffd02,train,substep,Add ingredients to the recipe: Add cinnamon to recipe,add cinnamon,3
+grp-96677cbb-14bc-457a-9dbc-498e3c457f3b,train,substep,Add ingredients to the recipe: Add broth or soup to recipe,add broth,5
+6f3bbdad-4454-4de7-a97f-d3840fe2ff0a,train,substep,Boil ingredients in water: Boil potato pieces in water,boil piece,1
+6f3bbdad-4454-4de7-a97f-d3840fe2ff0a,train,step,General activity: Open door or window,open door,8
+grp-20bdff17-7831-4982-a4d2-705697c49b42,train,step,General kitchen activity: Wear apron,wear apron,4
+grp-20bdff17-7831-4982-a4d2-705697c49b42,train,step,Add ingredients to the recipe: Add bacon to recipe,add bacon,8
+5dde766e-e93a-4d48-b3c7-96774f24d39d,train,step,Stir and mix ingredients on kitchenware to cook: Stir fry bacon in a pan,stir bacon,2
+5dde766e-e93a-4d48-b3c7-96774f24d39d,train,step,Stir and mix ingredients on kitchenware to cook: Stir fry bacon in a pan,stir bacon,2
+5dde766e-e93a-4d48-b3c7-96774f24d39d,train,step,Cook in a microwave: Turn off microwave,turn microwave,4
+5dde766e-e93a-4d48-b3c7-96774f24d39d,train,step,Kitchen cleaning activity: Remove excess oil from a pan,remove oil,4
+5dde766e-e93a-4d48-b3c7-96774f24d39d,train,substep,Make recipes: Cook fried eggs,cook egg,2
+5dde766e-e93a-4d48-b3c7-96774f24d39d,train,substep,Make recipes: Cook fried eggs,cook egg,2
+5dde766e-e93a-4d48-b3c7-96774f24d39d,train,substep,Add ingredients to the recipe: Add bacon to recipe,add bacon,8
+53da674a-089d-428a-a719-e322b2de002b,train,substep,Cook in an oven: Place the pastry shapes on a baking sheet lined with parchment paper,put shape,9
+53da674a-089d-428a-a719-e322b2de002b,train,substep,Cook in an oven: Place the pastry shapes on a baking sheet lined with parchment paper,put shape,9
+53da674a-089d-428a-a719-e322b2de002b,train,substep,Cook in an oven: Place the pastry shapes on a baking sheet lined with parchment paper,put shape,9
+53da674a-089d-428a-a719-e322b2de002b,train,substep,General cooking activity: Move pan for miscellaneous reasons,move pan,4
+53da674a-089d-428a-a719-e322b2de002b,train,substep,Kitchen cleaning activity: Clean up flour dust,clean dust,4
+53da674a-089d-428a-a719-e322b2de002b,train,substep,General cooking activity: Move pan for miscellaneous reasons,move pan,4
+53da674a-089d-428a-a719-e322b2de002b,train,substep,Cook in an oven: Place the pastry shapes on a baking sheet lined with parchment paper,put shape,9
+53da674a-089d-428a-a719-e322b2de002b,train,substep,General cooking activity: Move pan for miscellaneous reasons,move pan,4
+53da674a-089d-428a-a719-e322b2de002b,train,substep,General kitchen activity: Dispose dough in the trash bin,dispose dough,7
+53da674a-089d-428a-a719-e322b2de002b,train,step,General kitchen activity: Dispose dough in the trash bin,dispose dough,7
+5ce1f996-f784-4c9e-8208-e370bf8adf39,train,step,Peel and cut ingredients: Cut melon,cut melon,3
+495172da-f1f8-459e-bffa-e8cec7dfc52e,train,step,General activity: Adjust camera,adjust camera,6
+18c05110-1ef1-4da2-8b59-c80bf0cc9751,train,step,Make recipes: Add yogurt to a bowl,add yogurt,3
+d0cd84b0-afb3-4dde-9263-baaa4f40463a,train,step,General activity: Write a note,write note,7
+grp-342c7d2a-509b-4a35-83d3-0dd14c58a4da,train,step,Make recipes: Make omelet,make omelet,4
+907fd0e7-6821-4e2d-9c62-6d7afad5a9d1,train,step,General activity: Adjust camera,adjust camera,6
+907fd0e7-6821-4e2d-9c62-6d7afad5a9d1,train,step,General activity: Adjust camera,adjust camera,6
+fd0839c6-2472-4e23-a69f-31e2f62c2c95,train,step,Make coffee: Grind coffee beans,grind bean,1
+fd0839c6-2472-4e23-a69f-31e2f62c2c95,train,step,Make recipes: Remove the teabag and discard it,remove teabag,4
+fd0839c6-2472-4e23-a69f-31e2f62c2c95,train,step,Make recipes: Remove the teabag and discard it,remove teabag,4
+grp-d813a821-8cc1-4700-a7a4-d4e6edfed26e,train,substep,General kitchen activity: Collect waste from kitchen sink,get waste,6
+grp-d813a821-8cc1-4700-a7a4-d4e6edfed26e,train,step,Peel and cut ingredients: Cut seafood,cut seafood,8
+grp-d813a821-8cc1-4700-a7a4-d4e6edfed26e,train,substep,Peel and cut ingredients: Cut seafood,cut seafood,8
+994616c8-63b0-47bd-a526-0680f4acff9e,train,step,General activity: Use lotion on hands,use lotion,3
+c8f8ebf1-5613-4f4a-802c-ada5e4c4b651,train,step,General activity: Clean nose,clean nose,5
+ff8a5283-bf6e-40ef-b662-c91216d24c0d,train,substep,General kitchen activity: Dispose paper in the trash bin,dispose paper,9
+ff8a5283-bf6e-40ef-b662-c91216d24c0d,train,step,Kitchen cleaning activity: Clean up flour dust,clean dust,4
+ff8a5283-bf6e-40ef-b662-c91216d24c0d,train,step,General kitchen activity: Dispose paper in the trash bin,dispose paper,9
+ff8a5283-bf6e-40ef-b662-c91216d24c0d,train,step,Kitchen cleaning activity: Clean up flour dust,clean dust,4
+375ca7e7-1e3c-4159-9f7f-4691ef11f322,train,step,Peel and cut ingredients: Cut kitchen wrap or foil,cut wrap,3
+29e45749-f8d5-42c7-af09-7fbb3d6697e9,train,step,General kitchen activity: Dispose stem or tip of ingredients in the trash bin,dispose stem,4
+grp-c9d4550d-76d9-47f7-b1e4-916cbef743e5,train,step,General cooking activity: Soak sliced onions in water,soak onion,1
+a49bdcc8-8f23-445d-bae0-8d9e5c4d9c63,train,step,General activity: Play music,play music,5
+a49bdcc8-8f23-445d-bae0-8d9e5c4d9c63,train,step,General activity: Write a note,write note,7
+a49bdcc8-8f23-445d-bae0-8d9e5c4d9c63,train,step,General activity: Write a note,write note,7
+95114c1f-5849-4b40-ab78-7d415034d6f8,train,step,Make recipes: Sprinkle cheese over the pizza sauce,sprinkle cheese,5
+95114c1f-5849-4b40-ab78-7d415034d6f8,train,step,Kitchen cleaning activity: Clean up flour dust,clean dust,4
+daf5384b-ea5c-4cce-bb8a-540a360075bf,train,step,General kitchen activity: Dispose paper in the trash bin,dispose paper,9
+c19c69ba-ac3a-4ba9-82ea-d09e77876f7e,train,step,Make coffee: Add ground coffee to brew,add coffee,6
+adf4d8c5-2c49-4d25-9a20-7dc29bbda0ce,train,step,General cooking activity: Coat ingredients in a dry mixture,coat ingredient,8
+2b8a34f9-10ac-4961-86e1-b09de51a15cd,train,substep,Make recipes: Prepare food for pets,prepare food,5
+grp-19fed6e1-5a0b-4042-9d6e-bb606936cb50,train,step,Add ingredients to the recipe: Add cinnamon to recipe,add cinnamon,3
+grp-19fed6e1-5a0b-4042-9d6e-bb606936cb50,train,step,Add ingredients to the recipe: Add cinnamon to recipe,add cinnamon,3
+201af2e0-72dd-466c-8280-8c3dc00a7981,train,step,General activity: Write a note,write note,7
+ba11fcda-0048-4440-a7e8-fd15d1661a27,train,step,Add ingredients to the recipe: Add ice to recipe,add ice,9
+grp-7b271797-e305-491d-a4f2-58cf4b1e1456,train,substep,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+8dfdf47b-b446-4866-b38f-54add1a8e702,train,step,Add ingredients to the recipe: Add broth or soup to recipe,add broth,5
+grp-82ace2ff-4a87-4abe-ba45-3965bbc13658,train,substep,Add ingredients to the recipe: Add bacon to recipe,add bacon,8
+grp-82ace2ff-4a87-4abe-ba45-3965bbc13658,train,substep,Add ingredients to the recipe: Add bacon to recipe,add bacon,8
+grp-82ace2ff-4a87-4abe-ba45-3965bbc13658,train,substep,Make recipes: Add yogurt to a bowl,add yogurt,3
+2dbb7845-1de0-4e26-877a-035c051d12a5,train,step,Make baked goods: Score the dough for bake,score dough,10
+2dbb7845-1de0-4e26-877a-035c051d12a5,train,substep,Make baked goods: Score the dough for bake,score dough,10
+115cb95f-7030-4eab-b5de-120b63b3f21c,train,step,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+115cb95f-7030-4eab-b5de-120b63b3f21c,train,step,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+grp-ffd863cb-f06b-404e-a013-54acb61f1ed9,train,substep,General cooking activity: Defrost frozen ingredients in water,defrost ingredient,4
+grp-ffd863cb-f06b-404e-a013-54acb61f1ed9,train,substep,General cooking activity: Pat dry ingredients with towel,pat ingredient,9
+grp-bb9b356a-c038-4214-85dd-9039ab41cffc,train,step,General cooking activity: Pat dry ingredients with towel,pat ingredient,9
+grp-bb9b356a-c038-4214-85dd-9039ab41cffc,train,step,General cooking activity: Defrost frozen ingredients in water,defrost ingredient,4
+grp-bb9b356a-c038-4214-85dd-9039ab41cffc,train,step,General kitchen activity: Attach a handle to a pan or pot,attach handle,5
+grp-deea1ad6-01dd-4ea5-b5f0-932b2292bed1,train,step,Make recipes: Take two slices of bread and put them on a plate,get slice,7
+grp-deea1ad6-01dd-4ea5-b5f0-932b2292bed1,train,step,Stir and mix ingredients on kitchenware to cook: Stir coffee or tea,stir coffee,8
+grp-deea1ad6-01dd-4ea5-b5f0-932b2292bed1,train,substep,Stir and mix ingredients on kitchenware to cook: Stir coffee or tea,stir coffee,8
+grp-deea1ad6-01dd-4ea5-b5f0-932b2292bed1,train,substep,Stir and mix ingredients on kitchenware to cook: Stir coffee or tea,stir coffee,8
+grp-deea1ad6-01dd-4ea5-b5f0-932b2292bed1,train,substep,Stir and mix ingredients on kitchenware to cook: Stir coffee or tea,stir coffee,8
+grp-deea1ad6-01dd-4ea5-b5f0-932b2292bed1,train,substep,Make recipes: Take two slices of bread and put them on a plate,get slice,7
+grp-deea1ad6-01dd-4ea5-b5f0-932b2292bed1,train,substep,Peel and cut ingredients: Cut off rough edges of sandwich,cut edge,4
+grp-deea1ad6-01dd-4ea5-b5f0-932b2292bed1,train,step,Make recipes: Make drinks,make drink,5
+bdb9673c-8585-4d1c-9459-fbe4b56c2149,train,substep,Peel and cut ingredients: Cut corn,cut corn,9
+e6185339-0e35-4337-8260-5d43b46ecbff,train,step,Make recipes: Make drinks,make drink,5
+c615d305-14fe-41cd-9099-caf420beb604,train,step,Cook on a stovetop: Fill a pot with water or oil and place it on the stove,fill pot,3
+grp-a9b2b5ec-dff3-4154-a34c-a0ec3722495d,train,step,Make recipes: Make egg salad,make egg,3
+grp-a9b2b5ec-dff3-4154-a34c-a0ec3722495d,train,substep,Add ingredients to the recipe: Add dressing to salad,add dress,1
+grp-5e15c5d1-06b5-408b-bd16-c5e277a2da82,train,step,Add ingredients to the recipe: Add avocado to recipe,add avocado,8
+grp-5e15c5d1-06b5-408b-bd16-c5e277a2da82,train,step,Kitchen cleaning activity: Wash lids in kitchen sink,wash lid,10
+grp-cd12361d-4162-4d47-826e-7f0bcd8878a1,train,step,General kitchen activity: Wear apron,wear apron,4
+grp-cd12361d-4162-4d47-826e-7f0bcd8878a1,train,substep,Add ingredients to the recipe: Add butternut squash to recipe,add squash,8
+3728f856-0d47-4614-824f-37b6dda8e357,train,step,Peel and cut ingredients: Cut kitchen wrap or foil,cut wrap,3
+4a3fe6c1-bfdc-4bbb-a430-3cc19fbd484b,train,step,General activity: Use smartwatch,use smartwatch,6
+grp-a82e3cde-345a-4e63-a405-a3c32d4d3314,train,substep,General activity: Open door or window,open door,8
+grp-a82e3cde-345a-4e63-a405-a3c32d4d3314,train,step,Make recipes: Make omelet,make omelet,4
+grp-a82e3cde-345a-4e63-a405-a3c32d4d3314,train,substep,Kitchen cleaning activity: Wash lids in kitchen sink,wash lid,10
+grp-a82e3cde-345a-4e63-a405-a3c32d4d3314,train,substep,Cook in a microwave: Turn off microwave,turn microwave,4
+6628a2fb-19e2-4fe5-aedb-92fe5ceee9c9,train,substep,General activity: Use lotion on hands,use lotion,3
+6628a2fb-19e2-4fe5-aedb-92fe5ceee9c9,train,substep,General activity: Use lotion on hands,use lotion,3
+f2ee7e0b-c4f3-4f8b-af9e-8d1cea686be5,train,step,General activity: Adjust camera,adjust camera,6
+f2ee7e0b-c4f3-4f8b-af9e-8d1cea686be5,train,step,General kitchen activity: Dispose paper in the trash bin,dispose paper,9
+7921902b-293f-49e2-9401-d96791a90e15,train,substep,Make recipes: Take two slices of bread and put them on a plate,get slice,7
+7921902b-293f-49e2-9401-d96791a90e15,train,substep,Make recipes: Take two slices of bread and put them on a plate,get slice,7
+e250017c-16ff-4825-9c30-160f391e1549,train,step,General activity: Go to a store and buy some items,go item,1
+e250017c-16ff-4825-9c30-160f391e1549,train,step,General activity: Bring items home after shopping,bring item,1
+cddbe0c1-8b82-4cc8-bd9f-152081bc51fc,train,step,Cook in a microwave: Turn off microwave,turn microwave,4
+ae2d99c2-1720-4354-bc4d-f7bc3e4ee28d,train,substep,General cooking activity: Pat dry ingredients with towel,pat ingredient,9
+ae2d99c2-1720-4354-bc4d-f7bc3e4ee28d,train,substep,General cooking activity: Pat dry ingredients with towel,pat ingredient,9
+7e34a240-f880-42a1-ba19-79dba39a6cb0,train,substep,Cook in a blender: Adjust settings on the blender,adjust setting,4
+3e057cdc-bf48-4090-81d6-b66bb18542e7,train,substep,Make recipes: Dilute drink with cold water,dilute drink,4
+3e057cdc-bf48-4090-81d6-b66bb18542e7,train,substep,Make recipes: Dilute drink with cold water,dilute drink,4
+3e057cdc-bf48-4090-81d6-b66bb18542e7,train,substep,Make recipes: Dilute drink with cold water,dilute drink,4
+3e057cdc-bf48-4090-81d6-b66bb18542e7,train,substep,Make recipes: Dilute drink with cold water,dilute drink,4
+3e057cdc-bf48-4090-81d6-b66bb18542e7,train,step,General cooking activity: Defrost frozen ingredients in water,defrost ingredient,4
+3e057cdc-bf48-4090-81d6-b66bb18542e7,train,substep,General cooking activity: Defrost frozen ingredients in water,defrost ingredient,4
+0e6fb738-05fc-4dd5-9746-a8e10efe8c20,val,step,Cook on a stovetop: Fill a pot with water or oil and place it on the stove,fill pot,3
+grp-88bae242-7f3a-45d4-b129-5d69b1a1e15a,val,substep,General cooking activity: Coat ingredients in a dry mixture,coat ingredient,8
+grp-719d9e89-4eb2-49ea-be14-dc2637dc303f,val,step,Stir and mix ingredients on kitchenware to cook: Stir fry bacon in a pan,stir bacon,2
+grp-719d9e89-4eb2-49ea-be14-dc2637dc303f,val,substep,Add ingredients to the recipe: Add bacon to recipe,add bacon,8
+grp-719d9e89-4eb2-49ea-be14-dc2637dc303f,val,substep,Stir and mix ingredients on kitchenware to cook: Stir fry bacon in a pan,stir bacon,2
+grp-719d9e89-4eb2-49ea-be14-dc2637dc303f,val,step,Stir and mix ingredients on kitchenware to cook: Stir fry bacon in a pan,stir bacon,2
+grp-719d9e89-4eb2-49ea-be14-dc2637dc303f,val,step,Stir and mix ingredients on kitchenware to cook: Stir fry bacon in a pan,stir bacon,2
+grp-719d9e89-4eb2-49ea-be14-dc2637dc303f,val,step,Stir and mix ingredients on kitchenware to cook: Stir fry bacon in a pan,stir bacon,2
+90e4acc5-28a2-4bd4-972c-c6f7e18e1cde,val,substep,Make baked goods: Score the dough for bake,score dough,10
+a13a145f-920a-44ec-8aef-b489c097f4a7,val,step,General activity: Write a note,write note,7
+228eb02a-6c89-4aa0-9cd4-0cdab1550c83,val,step,Kitchen cleaning activity: Wash lids in kitchen sink,wash lid,10
+228eb02a-6c89-4aa0-9cd4-0cdab1550c83,val,substep,Kitchen cleaning activity: Wash lids in kitchen sink,wash lid,10
+228eb02a-6c89-4aa0-9cd4-0cdab1550c83,val,step,Cook on a stovetop: Fill a pot with water or oil and place it on the stove,fill pot,3
+228eb02a-6c89-4aa0-9cd4-0cdab1550c83,val,substep,Make recipes: Put the rice in a pot and cover it with water,put rice,5
+228eb02a-6c89-4aa0-9cd4-0cdab1550c83,val,step,Kitchen cleaning activity: Wash lids in kitchen sink,wash lid,10
+0a01978c-e16d-4587-95f1-49efa3ab15d9,val,step,Make recipes: Soak the pancakes in a bowl of syrup,soak pancake,0
+0a01978c-e16d-4587-95f1-49efa3ab15d9,val,step,Make recipes: Soak the pancakes in a bowl of syrup,soak pancake,0
+0a01978c-e16d-4587-95f1-49efa3ab15d9,val,substep,Make recipes: Soak the pancakes in a bowl of syrup,soak pancake,0
+0a01978c-e16d-4587-95f1-49efa3ab15d9,val,substep,Make recipes: Soak the pancakes in a bowl of syrup,soak pancake,0
+0a01978c-e16d-4587-95f1-49efa3ab15d9,val,step,Make recipes: Soak the pancakes in a bowl of syrup,soak pancake,0
+0a01978c-e16d-4587-95f1-49efa3ab15d9,val,step,Make recipes: Soak the pancakes in a bowl of syrup,soak pancake,0
+0a01978c-e16d-4587-95f1-49efa3ab15d9,val,substep,Make recipes: Soak the pancakes in a bowl of syrup,soak pancake,0
+0a01978c-e16d-4587-95f1-49efa3ab15d9,val,substep,Kitchen cleaning activity: Remove excess oil from a pan,remove oil,4
+0a01978c-e16d-4587-95f1-49efa3ab15d9,val,step,Make recipes: Soak the pancakes in a bowl of syrup,soak pancake,0
+0a01978c-e16d-4587-95f1-49efa3ab15d9,val,substep,Make recipes: Soak the pancakes in a bowl of syrup,soak pancake,0
+0a01978c-e16d-4587-95f1-49efa3ab15d9,val,substep,Make recipes: Soak the pancakes in a bowl of syrup,soak pancake,0
+0a01978c-e16d-4587-95f1-49efa3ab15d9,val,substep,Make recipes: Mash boiled eggs to create a creamy texture,boil texture,5
+0a01978c-e16d-4587-95f1-49efa3ab15d9,val,step,Make recipes: Soak the pancakes in a bowl of syrup,soak pancake,0
+0a01978c-e16d-4587-95f1-49efa3ab15d9,val,substep,Make recipes: Pour syrup on pancake,pour syrup,3
+0a01978c-e16d-4587-95f1-49efa3ab15d9,val,substep,Make recipes: Mash boiled eggs to create a creamy texture,boil texture,5
+0a01978c-e16d-4587-95f1-49efa3ab15d9,val,substep,Make recipes: Pour syrup on pancake,pour syrup,3
+0a01978c-e16d-4587-95f1-49efa3ab15d9,val,step,Make recipes: Soak the pancakes in a bowl of syrup,soak pancake,0
+0a01978c-e16d-4587-95f1-49efa3ab15d9,val,substep,Make recipes: Soak the pancakes in a bowl of syrup,soak pancake,0
+106e9447-8a09-4e89-964e-61c927827a56,val,step,General activity: Play music,play music,5
+106e9447-8a09-4e89-964e-61c927827a56,val,step,Kitchen cleaning activity: Wash lids in kitchen sink,wash lid,10
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,step,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,step,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,substep,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,substep,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,step,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,step,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,substep,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,substep,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,step,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,substep,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,substep,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,step,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,substep,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,step,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,substep,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,step,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,substep,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,step,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,substep,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,step,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,substep,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,step,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,substep,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,step,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,substep,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,step,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,substep,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,step,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,substep,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,substep,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,step,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,substep,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,step,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+b2a1b8ca-99d6-4f26-953f-426e89649e90,val,substep,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+89af735b-7c13-4366-befe-efd6cd5402ff,val,step,General cooking activity: Cook with or prepare milk,cook milk,5
+8253ab0b-51ab-4168-8c63-3bb179be485a,val,step,Peel and cut ingredients: Cut melon,cut melon,3
+26f1c77e-814e-4609-ad67-12447d1627e1,val,step,Make coffee: Add ground coffee to brew,add coffee,6
+26f1c77e-814e-4609-ad67-12447d1627e1,val,substep,Make coffee: Add ground coffee to brew,add coffee,6
+e6f1accd-e18d-43ec-b854-e7633b15cbf7,val,substep,General cooking activity: Soak sliced onions in water,soak onion,1
+e6f1accd-e18d-43ec-b854-e7633b15cbf7,val,substep,General cooking activity: Soak sliced onions in water,soak onion,1
+e6f1accd-e18d-43ec-b854-e7633b15cbf7,val,substep,General cooking activity: Soak sliced onions in water,soak onion,1
+e6f1accd-e18d-43ec-b854-e7633b15cbf7,val,substep,General cooking activity: Soak sliced onions in water,soak onion,1
+d20f6551-0272-4a69-8b02-da7ffcf29e0f,val,step,Kitchen cleaning activity: Add dish soap to a dish to wash,add soap,5
+d20f6551-0272-4a69-8b02-da7ffcf29e0f,val,substep,Kitchen cleaning activity: Add dish soap to a dish to wash,add soap,5
+d20f6551-0272-4a69-8b02-da7ffcf29e0f,val,step,Add ingredients to the recipe: Add broth or soup to recipe,add broth,5
+d20f6551-0272-4a69-8b02-da7ffcf29e0f,val,substep,General kitchen activity: Collect waste from kitchen sink,get waste,6
+d2606d87-2a9b-48df-96b2-5df1a4457215,val,substep,Cook in a blender: Adjust settings on the blender,adjust setting,4
+26b4e1c1-54c7-419f-b2d3-63ea52fd3540,val,step,Peel and cut ingredients: Cut butter,cut butter,2
+f26ca7c3-2dfe-4e74-be61-529635df723f,val,step,Make recipes: Cook the burrito on a skillet,cook burrito,1
+f26ca7c3-2dfe-4e74-be61-529635df723f,val,step,Make recipes: Make burrito,make burrito,2
+f26ca7c3-2dfe-4e74-be61-529635df723f,val,substep,Make recipes: Lay out the tortilla on a flat surface,lie tortilla,0
+f26ca7c3-2dfe-4e74-be61-529635df723f,val,step,Make recipes: Roll up the tortilla,roll tortilla,2
+f26ca7c3-2dfe-4e74-be61-529635df723f,val,step,Make recipes: Make burrito,make burrito,2
+2c0c6508-397f-4c48-aeb7-abc7a3cae8d1,val,step,Make recipes: Lay out the tortilla on a flat surface,lie tortilla,0
+2c0c6508-397f-4c48-aeb7-abc7a3cae8d1,val,substep,Make recipes: Lay out the tortilla on a flat surface,lie tortilla,0
+grp-3d7ccb44-b05d-4b67-baae-4e0f55d8307b,val,substep,Stir and mix ingredients on kitchenware to cook: Stir zucchini,stir zucchini,6
+grp-3d7ccb44-b05d-4b67-baae-4e0f55d8307b,val,step,General cooking activity: Coat ingredients in a dry mixture,coat ingredient,8
+28bc1ee7-b0c1-4f30-934a-0ab665779d90,val,step,Peel and cut ingredients: Cut pawpaw,cut pawpaw,4
+28bc1ee7-b0c1-4f30-934a-0ab665779d90,val,step,General cooking activity: Cook with or prepare milk,cook milk,5
+28bc1ee7-b0c1-4f30-934a-0ab665779d90,val,substep,General cooking activity: Cook with or prepare milk,cook milk,5
+bb2297d3-91b7-4ec4-b39b-cc64694929db,val,step,General kitchen activity: Place trash bag for use,put bag,2
+bb2297d3-91b7-4ec4-b39b-cc64694929db,val,substep,General kitchen activity: Place trash bag for use,put bag,2
+bb2297d3-91b7-4ec4-b39b-cc64694929db,val,step,General kitchen activity: Place trash bag for use,put bag,2
+eb1b6e62-7197-4a75-bc39-c373e558fd97,val,substep,Make baked goods: Score the dough for bake,score dough,10
+6af04762-9ccf-41aa-bbfb-48a443c7cec3,val,step,General activity: Adjust camera,adjust camera,6
+6af04762-9ccf-41aa-bbfb-48a443c7cec3,val,step,General cooking activity: Pat dry ingredients with towel,pat ingredient,9
+97c1c805-291f-4b2f-bef9-0495d9d2fc92,val,step,General cooking activity: Cook with or prepare milk,cook milk,5
+97c1c805-291f-4b2f-bef9-0495d9d2fc92,val,step,Add ingredients to the recipe: Add chocolate to recipe,add chocolate,7
+97c1c805-291f-4b2f-bef9-0495d9d2fc92,val,step,Add ingredients to the recipe: Add chocolate to recipe,add chocolate,7
+97c1c805-291f-4b2f-bef9-0495d9d2fc92,val,step,General cooking activity: Cook with or prepare milk,cook milk,5
+grp-2bccee1b-0ade-47ad-8e15-ad6c00861540,val,step,General cooking activity: Defrost frozen ingredients in water,defrost ingredient,4
+grp-2bccee1b-0ade-47ad-8e15-ad6c00861540,val,step,General kitchen activity: Serve cheese,serve cheese,1
+grp-c56fa4ea-b7e1-4d2c-b1f3-b97bb6fe0c56,val,substep,Add ingredients to the recipe: Add avocado to recipe,add avocado,8
+44e3114f-8654-48ee-97c5-9506311ba188,val,substep,Cook in an oven: Place the pastry shapes on a baking sheet lined with parchment paper,put shape,9
+44e3114f-8654-48ee-97c5-9506311ba188,val,substep,Cook in an oven: Place the pastry shapes on a baking sheet lined with parchment paper,put shape,9
+44e3114f-8654-48ee-97c5-9506311ba188,val,substep,Cook in an oven: Place the pastry shapes on a baking sheet lined with parchment paper,put shape,9
+44e3114f-8654-48ee-97c5-9506311ba188,val,substep,Cook in an oven: Place the pastry shapes on a baking sheet lined with parchment paper,put shape,9
+44e3114f-8654-48ee-97c5-9506311ba188,val,substep,Cook in an oven: Place the pastry shapes on a baking sheet lined with parchment paper,put shape,9
+f5449610-c326-452c-a769-04a7ffeacb7d,val,substep,Peel and cut ingredients: Cut kitchen wrap or foil,cut wrap,3
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,step,General activity: Stretch or do yoga on a mat,stretch yoga,0
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,substep,General activity: Stretch or do yoga on a mat,stretch yoga,0
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,substep,General activity: Stretch or do yoga on a mat,stretch yoga,0
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,step,General activity: Stretch or do yoga on a mat,stretch yoga,0
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,step,General activity: Stretch or do yoga on a mat,stretch yoga,0
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,step,General activity: Stretch or do yoga on a mat,stretch yoga,0
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,step,General activity: Stretch or do yoga on a mat,stretch yoga,0
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,step,General activity: Stretch or do yoga on a mat,stretch yoga,0
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,step,General activity: Stretch or do yoga on a mat,stretch yoga,0
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,step,General cooking activity: Pan fry eggy bread slice to golden brown,pan slice,0
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,substep,General cooking activity: Pan fry eggy bread slice to golden brown,pan slice,0
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,step,General cooking activity: Pan fry eggy bread slice to golden brown,pan slice,0
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,step,General cooking activity: Pan fry eggy bread slice to golden brown,pan slice,0
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,step,General cooking activity: Pan fry eggy bread slice to golden brown,pan slice,0
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,step,General cooking activity: Pan fry eggy bread slice to golden brown,pan slice,0
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,step,General cooking activity: Pan fry eggy bread slice to golden brown,pan slice,0
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,substep,General cooking activity: Pan fry eggy bread slice to golden brown,pan slice,0
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,step,General cooking activity: Pan fry eggy bread slice to golden brown,pan slice,0
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,substep,General cooking activity: Pan fry eggy bread slice to golden brown,pan slice,0
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,step,General cooking activity: Pan fry eggy bread slice to golden brown,pan slice,0
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,step,General cooking activity: Pan fry eggy bread slice to golden brown,pan slice,0
+04ac4c40-22fd-42aa-a7f0-ee597ffb7058,val,step,General activity: Write a note,write note,7
+grp-b93ab731-52c3-43b2-9d99-4229663ba67c,val,substep,General cooking activity: Soak sliced onions in water,soak onion,1
+grp-b93ab731-52c3-43b2-9d99-4229663ba67c,val,substep,General cooking activity: Soak sliced onions in water,soak onion,1
+grp-b93ab731-52c3-43b2-9d99-4229663ba67c,val,substep,General cooking activity: Soak sliced onions in water,soak onion,1
+grp-b93ab731-52c3-43b2-9d99-4229663ba67c,val,substep,General cooking activity: Soak sliced onions in water,soak onion,1
+grp-b93ab731-52c3-43b2-9d99-4229663ba67c,val,substep,General cooking activity: Soak sliced onions in water,soak onion,1
+grp-b93ab731-52c3-43b2-9d99-4229663ba67c,val,substep,General cooking activity: Soak sliced onions in water,soak onion,1
+grp-b93ab731-52c3-43b2-9d99-4229663ba67c,val,step,Make recipes: Make egg salad,make egg,3
+54337e20-df12-4133-9e34-618e0381265e,val,substep,Kitchen cleaning activity: Remove excess oil from a pan,remove oil,4
+603a427f-9191-4ca4-a1b0-dd3c5e7fda70,val,step,General kitchen activity: Wear apron,wear apron,4
+89a95cd8-ca13-4edf-807e-d62138fd30e0,val,step,General activity: Open door or window,open door,8
+aa14c20d-cadf-4393-935f-52175427539d,val,substep,Kitchen cleaning activity: Remove excess oil from a pan,remove oil,4
+7ddbf8a2-5b3e-44cd-b9dc-db17ec06831b,val,step,General cooking activity: Cook with or prepare milk,cook milk,5
+grp-d8f0089b-cac5-41f4-af66-e11d6f54a43c,val,step,Peel and cut ingredients: Cut seafood,cut seafood,8
+grp-d8f0089b-cac5-41f4-af66-e11d6f54a43c,val,substep,Peel and cut ingredients: Cut seafood,cut seafood,8
+grp-d8f0089b-cac5-41f4-af66-e11d6f54a43c,val,step,Peel and cut ingredients: Cut seafood,cut seafood,8
+grp-d8f0089b-cac5-41f4-af66-e11d6f54a43c,val,substep,Peel and cut ingredients: Cut seafood,cut seafood,8
+grp-d8f0089b-cac5-41f4-af66-e11d6f54a43c,val,step,Make recipes: Make drinks,make drink,5
+grp-d8f0089b-cac5-41f4-af66-e11d6f54a43c,val,substep,Add ingredients to the recipe: Add ice to recipe,add ice,9
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,step,Boil ingredients in water: Cook lasagna noodle in boiling water,cook noodle,0
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,step,Boil ingredients in water: Cook lasagna noodle in boiling water,cook noodle,0
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,step,Boil ingredients in water: Cook lasagna noodle in boiling water,cook noodle,0
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,substep,Boil ingredients in water: Cook lasagna noodle in boiling water,cook noodle,0
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,step,Make recipes: Make lasagna layers,make layer,3
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,step,Boil ingredients in water: Cook lasagna noodle in boiling water,cook noodle,0
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,step,Boil ingredients in water: Cook lasagna noodle in boiling water,cook noodle,0
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,substep,Boil ingredients in water: Cook lasagna noodle in boiling water,cook noodle,0
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,substep,Boil ingredients in water: Cook lasagna noodle in boiling water,cook noodle,0
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,step,Make recipes: Make lasagna layers,make layer,3
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,step,Make recipes: Make lasagna layers,make layer,3
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,step,Make recipes: Make lasagna layers,make layer,3
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,step,Boil ingredients in water: Cook lasagna noodle in boiling water,cook noodle,0
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,step,Make recipes: Make lasagna layers,make layer,3
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,step,Make recipes: Sprinkle cheese over the pizza sauce,sprinkle cheese,5
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,step,Make recipes: Make lasagna layers,make layer,3
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,step,Make recipes: Make lasagna layers,make layer,3
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,step,Make recipes: Sprinkle cheese over the pizza sauce,sprinkle cheese,5
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,step,Boil ingredients in water: Cook lasagna noodle in boiling water,cook noodle,0
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,step,Make recipes: Make lasagna layers,make layer,3
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,step,Make recipes: Make lasagna layers,make layer,3
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,step,Make recipes: Make lasagna layers,make layer,3
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,substep,Boil ingredients in water: Cook lasagna noodle in boiling water,cook noodle,0
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,step,Make recipes: Make lasagna layers,make layer,3
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,step,Make recipes: Sprinkle cheese over the pizza sauce,sprinkle cheese,5
+f40e0f92-2250-46c9-98a0-8ccf23d164e0,val,step,Make recipes: Sprinkle cheese over the pizza sauce,sprinkle cheese,5
+ae2cd423-6d11-4b18-959c-9e6ad872249f,val,substep,Make recipes: Take two slices of bread and put them on a plate,get slice,7
+ae2cd423-6d11-4b18-959c-9e6ad872249f,val,substep,Make recipes: Take two slices of bread and put them on a plate,get slice,7
+grp-84322f50-7fce-4d49-a04b-9ecd7afd4119,val,step,Make recipes: Take two slices of bread and put them on a plate,get slice,7
+grp-84322f50-7fce-4d49-a04b-9ecd7afd4119,val,substep,General cooking activity: Preheat toaster oven,preheat toaster,2
+grp-79f47a60-f1e9-4232-88b8-a1836e7dfd30,val,substep,Add ingredients to the recipe: Add ice to recipe,add ice,9
+grp-5b24c19c-0bde-46ce-a32e-418b5ffaa8a3,val,step,General cooking activity: Defrost frozen ingredients in water,defrost ingredient,4
+04fe8f4d-081e-437e-a56a-2d53b6233fc9,val,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+04fe8f4d-081e-437e-a56a-2d53b6233fc9,val,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+04fe8f4d-081e-437e-a56a-2d53b6233fc9,val,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+04fe8f4d-081e-437e-a56a-2d53b6233fc9,val,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+04fe8f4d-081e-437e-a56a-2d53b6233fc9,val,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+04fe8f4d-081e-437e-a56a-2d53b6233fc9,val,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+04fe8f4d-081e-437e-a56a-2d53b6233fc9,val,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+04fe8f4d-081e-437e-a56a-2d53b6233fc9,val,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+04fe8f4d-081e-437e-a56a-2d53b6233fc9,val,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+04fe8f4d-081e-437e-a56a-2d53b6233fc9,val,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+04fe8f4d-081e-437e-a56a-2d53b6233fc9,val,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+04fe8f4d-081e-437e-a56a-2d53b6233fc9,val,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+04fe8f4d-081e-437e-a56a-2d53b6233fc9,val,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+04fe8f4d-081e-437e-a56a-2d53b6233fc9,val,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+04fe8f4d-081e-437e-a56a-2d53b6233fc9,val,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+04fe8f4d-081e-437e-a56a-2d53b6233fc9,val,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+04fe8f4d-081e-437e-a56a-2d53b6233fc9,val,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+04fe8f4d-081e-437e-a56a-2d53b6233fc9,val,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+04fe8f4d-081e-437e-a56a-2d53b6233fc9,val,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+04fe8f4d-081e-437e-a56a-2d53b6233fc9,val,substep,Make recipes: Remove puffed rice from pot and place it on a clean cloth or paper towel to drain off excess oil,remove rice,3
+afbab8ce-797a-4c6e-800b-5acd9bf1653e,val,step,General kitchen activity: Place trash bag for use,put bag,2
+afbab8ce-797a-4c6e-800b-5acd9bf1653e,val,step,General activity: Use smartwatch,use smartwatch,6
+16d55886-6e1e-4195-9918-12dc4568320e,val,substep,Add ingredients to the recipe: Add cinnamon to recipe,add cinnamon,3
+grp-5251b41e-91b1-4b87-9a18-c631b1d17e2e,val,substep,Make sushi roll: Lay a sheet of nori on a sushi rolling mat,lie sheet,0
+grp-5251b41e-91b1-4b87-9a18-c631b1d17e2e,val,substep,Make sushi roll: Spread rice evenly over the nori sheet,spread rice,0
+grp-5251b41e-91b1-4b87-9a18-c631b1d17e2e,val,substep,Make sushi roll: Place your desired fillings on top of the rice,put filling,0
+grp-5251b41e-91b1-4b87-9a18-c631b1d17e2e,val,substep,Make sushi roll: Roll up the mat until the fillings are completely covered by the rice,roll mat,0
+grp-5251b41e-91b1-4b87-9a18-c631b1d17e2e,val,substep,Make sushi roll: Lay a sheet of nori on a sushi rolling mat,lie sheet,0
+grp-5251b41e-91b1-4b87-9a18-c631b1d17e2e,val,substep,Make sushi roll: Spread rice evenly over the nori sheet,spread rice,0
+grp-5251b41e-91b1-4b87-9a18-c631b1d17e2e,val,substep,Make sushi roll: Place your desired fillings on top of the rice,put filling,0
+grp-5251b41e-91b1-4b87-9a18-c631b1d17e2e,val,substep,Make sushi roll: Roll up the mat until the fillings are completely covered by the rice,roll mat,0
+grp-5251b41e-91b1-4b87-9a18-c631b1d17e2e,val,substep,Make sushi roll: Lay a sheet of nori on a sushi rolling mat,lie sheet,0
+grp-5251b41e-91b1-4b87-9a18-c631b1d17e2e,val,substep,Make sushi roll: Spread rice evenly over the nori sheet,spread rice,0
+grp-5251b41e-91b1-4b87-9a18-c631b1d17e2e,val,substep,Make sushi roll: Spread rice evenly over the nori sheet,spread rice,0
+grp-5251b41e-91b1-4b87-9a18-c631b1d17e2e,val,substep,Make sushi roll: Place your desired fillings on top of the rice,put filling,0
+grp-5251b41e-91b1-4b87-9a18-c631b1d17e2e,val,substep,Make sushi roll: Roll up the mat until the fillings are completely covered by the rice,roll mat,0
+grp-5251b41e-91b1-4b87-9a18-c631b1d17e2e,val,substep,Make sushi roll: Lay a sheet of nori on a sushi rolling mat,lie sheet,0
+grp-5251b41e-91b1-4b87-9a18-c631b1d17e2e,val,substep,Make sushi roll: Spread rice evenly over the nori sheet,spread rice,0
+grp-5251b41e-91b1-4b87-9a18-c631b1d17e2e,val,substep,Make sushi roll: Place your desired fillings on top of the rice,put filling,0
+grp-5251b41e-91b1-4b87-9a18-c631b1d17e2e,val,substep,Make sushi roll: Roll up the mat until the fillings are completely covered by the rice,roll mat,0
+grp-5251b41e-91b1-4b87-9a18-c631b1d17e2e,val,step,Make sushi roll: Use a sharp knife to cut the sushi roll into 6-8 pieces,use knife,0
+grp-5251b41e-91b1-4b87-9a18-c631b1d17e2e,val,step,Make recipes: Make drinks,make drink,5
+478d7fa4-b174-4266-b0ff-bd180ba0b806,val,substep,Cook on a wood stove: Start the fire in the wood stove,start fire,10
+grp-27825332-6946-4c1c-9b4f-e4de4f13b718,val,step,Stir and mix ingredients on kitchenware to cook: Stir coffee or tea,stir coffee,8
+grp-27825332-6946-4c1c-9b4f-e4de4f13b718,val,step,General kitchen activity: Serve cheese,serve cheese,1
+grp-7fb63b81-0a4f-4e9e-906b-60d1935d53c7,val,step,General cooking activity: Soak sliced onions in water,soak onion,1
+grp-7fb63b81-0a4f-4e9e-906b-60d1935d53c7,val,substep,General cooking activity: Soak sliced onions in water,soak onion,1
+grp-7fb63b81-0a4f-4e9e-906b-60d1935d53c7,val,substep,General kitchen activity: Dispose stem or tip of ingredients in the trash bin,dispose stem,4
+grp-7fb63b81-0a4f-4e9e-906b-60d1935d53c7,val,substep,General kitchen activity: Dispose stem or tip of ingredients in the trash bin,dispose stem,4
+grp-7fb63b81-0a4f-4e9e-906b-60d1935d53c7,val,step,Peel and cut ingredients: Cut seafood,cut seafood,8
+grp-7fb63b81-0a4f-4e9e-906b-60d1935d53c7,val,substep,Peel and cut ingredients: Cut seafood,cut seafood,8
+grp-7fb63b81-0a4f-4e9e-906b-60d1935d53c7,val,substep,General kitchen activity: Dispose stem or tip of ingredients in the trash bin,dispose stem,4
+grp-7fb63b81-0a4f-4e9e-906b-60d1935d53c7,val,substep,Kitchen cleaning activity: Wash lids in kitchen sink,wash lid,10
+grp-7fb63b81-0a4f-4e9e-906b-60d1935d53c7,val,substep,Kitchen cleaning activity: Wash lids in kitchen sink,wash lid,10
+grp-7fb63b81-0a4f-4e9e-906b-60d1935d53c7,val,substep,Kitchen cleaning activity: Wash lids in kitchen sink,wash lid,10
+grp-7fb63b81-0a4f-4e9e-906b-60d1935d53c7,val,substep,Kitchen cleaning activity: Add dish soap to a dish to wash,add soap,5
+f9ce56a3-3e9b-4edd-b133-c05eed792ec0,val,step,General cooking activity: Separate egg yolk and egg white into separate parts,separate yolk,1
+f9ce56a3-3e9b-4edd-b133-c05eed792ec0,val,step,General cooking activity: Separate egg yolk and egg white into separate parts,separate yolk,1
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,step,Make recipes: Add yogurt to a bowl,add yogurt,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,substep,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,substep,Make recipes: Add yogurt to a bowl,add yogurt,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,substep,Make recipes: Add yogurt to a bowl,add yogurt,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,substep,Make recipes: Add yogurt to a bowl,add yogurt,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,substep,Make recipes: Add yogurt to a bowl,add yogurt,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,substep,Make recipes: Add yogurt to a bowl,add yogurt,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,substep,Make recipes: Add yogurt to a bowl,add yogurt,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,substep,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,step,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,step,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,step,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,step,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,substep,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,substep,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,substep,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,substep,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,substep,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,substep,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,step,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,step,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,substep,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,substep,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,step,Make recipes: Add yogurt to a bowl,add yogurt,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,step,General activity: Clean nose,clean nose,5
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,step,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,substep,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,substep,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,step,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,substep,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,substep,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+grp-cfe4d1f3-20c1-45d9-8bd3-5a7a8e7443f4,val,substep,"Make recipes: Add mix-ins to yogurt such as fruits, nuts, granola, seeds, honey, and spices",add in,3
+623bc0af-7d4f-4b85-9263-2d04e016283d,val,step,General activity: Open door or window,open door,8
+grp-0ee8d0ef-c5ba-42c5-9c40-8718faa081ec,val,step,Boil ingredients in water: Boil dumplings in water,boil dumpling,0
+grp-0ee8d0ef-c5ba-42c5-9c40-8718faa081ec,val,substep,Boil ingredients in water: Boil dumplings in water,boil dumpling,0
+47078bd8-6b58-458c-8c34-8d905e21079a,val,substep,General activity: Adjust camera,adjust camera,6

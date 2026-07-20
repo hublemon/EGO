@@ -2,18 +2,18 @@
 # of videos. Same model/probe/loss as z1.yaml; only the data scope and epoch
 # budget shrink. Numbers produced here are meaningless as results.
 #
-#   head -n 6 outputs/goalstep/index/video_uids.txt > outputs/goalstep/index_smoke/uids.txt   # (train uids)
-#   python scripts/step1/goalstep/build_goalstep_z1_index.py \
+#   head -n 6 src/ego/step1_action_anticipation/goalstep/index/video_uids.txt > outputs/goalstep/index_smoke/uids.txt   # (train uids)
+#   python src/ego/step1_action_anticipation/goalstep/build_goalstep_z1_index.py \
 #       --video-uid-subset outputs/goalstep/index_smoke/uids.txt \
 #       --output-dir outputs/goalstep/index_smoke
-#   python scripts/step1/goalstep/download_goalstep_videos.py \
+#   python src/ego/step1_action_anticipation/goalstep/download_goalstep_videos.py \
 #       --uid-list outputs/goalstep/index_smoke/video_uids.txt \
 #       --manifest data/Ego4D/v2/video_540ss/manifest.csv \
 #       --manifest data/Ego4D/v2/full_scale/manifest.csv \
 #       --out-dir data/Ego4D/v2/goalstep_videos
 #   python scripts/step1/ego4d_lta/extract_features.py --config configs/step1/goalstep/smoke.yaml --split train
 #   python scripts/step1/ego4d_lta/extract_features.py --config configs/step1/goalstep/smoke.yaml --split val
-#   python scripts/step1/goalstep/train_goalstep_z1.py --config configs/step1/goalstep/smoke.yaml
+#   python src/ego/step1_action_anticipation/goalstep/train_goalstep_z1.py --config configs/step1/goalstep/smoke.yaml
 
 experiment:
   name: goalstep_z1_smoke

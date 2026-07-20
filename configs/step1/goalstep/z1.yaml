@@ -5,20 +5,20 @@
 # spec, same attentive probe (4 blocks, 16 heads, 3 query tokens), same focal
 # loss and warmup-cosine schedule. Only the data paths, the val split layout,
 # and the epoch budget differ; head out_features come from
-# outputs/goalstep/index/action_registry.json (verb 98 / noun 188 / action 390).
+# src/ego/step1_action_anticipation/goalstep/index/action_registry.json (verb 81 / noun 140 / action 293, k=10 pruned).
 #
 # Pipeline:
-#   python scripts/step1/goalstep/check_overlap.py
-#   python scripts/step1/goalstep/build_goalstep_taxonomy.py
-#   python scripts/step1/goalstep/build_goalstep_z1_index.py
-#   python scripts/step1/goalstep/download_goalstep_videos.py \
-#       --uid-list outputs/goalstep/index/video_uids.txt \
+#   python src/ego/step1_action_anticipation/goalstep/check_overlap.py
+#   python src/ego/step1_action_anticipation/goalstep/build_goalstep_taxonomy.py
+#   python src/ego/step1_action_anticipation/goalstep/build_goalstep_z1_index.py
+#   python src/ego/step1_action_anticipation/goalstep/download_goalstep_videos.py \
+#       --uid-list src/ego/step1_action_anticipation/goalstep/index/video_uids.txt \
 #       --manifest data/Ego4D/v2/video_540ss/manifest.csv \
 #       --manifest data/Ego4D/v2/full_scale/manifest.csv \
 #       --out-dir data/Ego4D/v2/goalstep_videos
 #   python scripts/step1/ego4d_lta/extract_features.py --config configs/step1/goalstep/z1.yaml --split train
 #   python scripts/step1/ego4d_lta/extract_features.py --config configs/step1/goalstep/z1.yaml --split val
-#   python scripts/step1/goalstep/train_goalstep_z1.py --config configs/step1/goalstep/z1.yaml
+#   python src/ego/step1_action_anticipation/goalstep/train_goalstep_z1.py --config configs/step1/goalstep/z1.yaml
 
 experiment:
   name: goalstep_z1
@@ -26,7 +26,7 @@ experiment:
   output_dir: outputs/goalstep/runs/z1
 
 dataset:
-  index_dir: outputs/goalstep/index
+  index_dir: src/ego/step1_action_anticipation/goalstep/index
   feature_cache_dir: data/Ego4D/goalstep_feature_cache
   # GoalStep timestamps are video-relative and there is no clip layer, so the
   # index's clip_uid == video_uid and features come from whole parent videos.
