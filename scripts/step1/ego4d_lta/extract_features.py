@@ -63,7 +63,9 @@ def _find_index_file(index_dir: Path, split: str) -> Path:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--config", required=True)
-    parser.add_argument("--split", choices=["train", "dev", "heldout"], default="train")
+    # "val" exists for GoalStep (scripts/step1/goalstep), whose index is a plain
+    # train/val pair rather than FHO's train/dev/heldout re-split.
+    parser.add_argument("--split", choices=["train", "dev", "heldout", "val"], default="train")
     parser.add_argument("--cache-dir", default=None, help="Override dataset.feature_cache_dir from config")
     parser.add_argument("--device", default="cuda")
     args = parser.parse_args()

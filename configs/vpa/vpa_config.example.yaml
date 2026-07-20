@@ -1,0 +1,34 @@
+# GoalStep VPA (Visual Planning for Assistance) — example config.
+# These are the DEFAULTS the scripts already use; this file documents the knobs.
+# Scripts are driven by CLI flags (see --help); this YAML is a reference, not
+# auto-loaded.
+
+data:
+  val_json:   data/Ego4D/v2/annotations/goalstep_val.json    # 134 eval videos (labels present)
+  train_json: data/Ego4D/v2/annotations/goalstep_train.json  # baselines / overlap check ONLY
+  flat_csv:   outputs/goalstep/inspection/goalstep_annotations_flat.csv  # inspection only
+
+build:                     # build_goalstep_vpa.py
+  level: step              # step | substep
+  label_field: step_category   # step_category | step_description
+  essential_only: true     # keep only is_relevant == "essential"
+  min_observed: 1          # min observed steps before a stop point
+  horizons: [3, 4]
+  dev_frac: 0.5            # video-level dev/test split
+  seed: 42
+  vocab_scope: val         # candidate vocabulary source
+
+eval:                      # eval_vpa.py
+  split: test              # report on test only; dev is for model selection
+  n_boot: 1000             # bootstrap resamples for 95% CI
+  fuzzy_cutoff: 0.6        # difflib similarity threshold for out-of-vocab preds
+
+frontier:                  # run_frontier_baseline.py  (secrets via ENV ONLY)
+  # FRONTIER_API_KEY  -> environment variable, never in this file
+  base_url: https://api.openai.com/v1   # FRONTIER_BASE_URL
+  model: gpt-4o-mini                    # FRONTIER_MODEL
+  limit: 5                              # cost control while smoke-testing
+
+qwen:                      # run_qwen_baseline.py
+  model_path: Qwen/Qwen3-VL-7B-Instruct
+  dry_run: true            # verify plumbing without weights
