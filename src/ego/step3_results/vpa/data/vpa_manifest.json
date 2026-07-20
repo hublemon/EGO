@@ -1,0 +1,30 @@
+{
+  "val_json": "data/Ego4D/v2/annotations/goalstep_val.json",
+  "level": "step",
+  "label_mode": "action",
+  "label_field": "step_category",
+  "essential_only": true,
+  "dev_frac": 0.5,
+  "seed": 42,
+  "min_observed": 1,
+  "n_videos": 134,
+  "n_dev_videos": 67,
+  "n_test_videos": 67,
+  "vocab_size": 287,
+  "horizons": {
+    "3": {
+      "file": "src/ego/step3_results/vpa/data/goalstep_vpa_T3.json",
+      "n_samples": 1930,
+      "dev": 888,
+      "test": 1042,
+      "avg_samples_per_video": 18.56
+    },
+    "4": {
+      "file": "src/ego/step3_results/vpa/data/goalstep_vpa_T4.json",
+      "n_samples": 1826,
+      "dev": 838,
+      "test": 988,
+      "avg_samples_per_video": 18.26
+    }
+  }
+}

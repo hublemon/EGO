@@ -1,8 +1,16 @@
 vjepa2:
-  repository: null
-  tested_commit: null
-  checkpoint_name: null
-  checkpoint_source: null
+  repository: https://github.com/facebookresearch/vjepa2
+  tested_commit: 204698b45b3712590f06245fbfba32d3be539812
+  # Encoder + predictor source (src/models, src/masks, src/utils subset,
+  # app/vjepa_2_1/models) is vendored verbatim under third_party/vjepa2/,
+  # licensed under V-JEPA2's own MIT license (see LICENSE-VJEPA2 /
+  # APACHE-LICENSE-VJEPA2 alongside it). Only the minimal set of files needed
+  # to instantiate and run the frozen backbone was copied -- not the full
+  # upstream repo (training scripts, other apps, etc. were left out).
+  checkpoint_name: vitl.pt
+  checkpoint_source: local (copied from the EvE/V-JEPA2 prototype checkpoint download)
+  local_checkpoint_path: checkpoints/vjepa2/vitl.pt
+  architecture: vit_large, patch_size=16, tubelet_size=2, resolution=256
 
 qwen3_vl:
   model_id: Qwen/Qwen3-VL-8B-Instruct

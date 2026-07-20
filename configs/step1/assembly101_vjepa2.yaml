@@ -1,0 +1,79 @@
+experiment:
+  name: assembly101_vjepa2_action_anticipation
+  seed: 42
+  output_dir: outputs/step1/assembly101_vjepa2
+
+dataset:
+  name: assembly101
+  annotation_train: data/Assembly101/annotations/fine-grained/train.csv
+  annotation_val: data/Assembly101/annotations/fine-grained/validation.csv
+  # HuggingFace download layout: data/Assembly101/videos/recordings/<sequence>/HMC_21176875_mono10bit.mp4
+  video_root: data/Assembly101/videos/recordings
+  views: ["e1"]
+  frames_per_clip: 32
+  frames_per_second: 8
+  resolution: 256
+  anticipation_time_sec: [1.0, 1.0]
+  train_anticipation_time_sec: [0.25, 1.75]
+  auto_augment: false
+  motion_shift: false
+  reprob: 0.0
+  random_resize_scale: [1.0, 1.0]
+  num_workers: 4
+  pin_memory: true
+  # Assembly101 is ~300GB; decoding video every epoch is impractical, so
+  # training runs against a one-time-extracted feature cache instead (see
+  # training.use_feature_cache below and ego.step1_action_anticipation.data.feature_cache).
+  feature_cache_dir: data/Assembly101/feature_cache
+
+model:
+  backbone: vjepa2
+  checkpoint: checkpoints/vjepa2/vitl.pt
+  repository_dir: third_party/vjepa2
+  classifier:
+    num_probe_blocks: 4
+    num_heads: 16
+  model_kwargs:
+    use_v2_1: false
+    encoder:
+      model_name: vit_large
+      checkpoint_key: target_encoder
+      tubelet_size: 2
+      patch_size: 16
+      uniform_power: true
+      use_rope: true
+    predictor:
+      model_name: vit_predictor
+      checkpoint_key: predictor
+      num_frames: 64
+      depth: 12
+      num_heads: 12
+      predictor_embed_dim: 384
+      num_mask_tokens: 10
+      uniform_power: true
+      use_mask_tokens: true
+      use_sdpa: true
+      use_silu: false
+      wide_silu: false
+      use_rope: true
+  wrapper_kwargs:
+    no_predictor: false
+    num_output_frames: 2
+    num_steps: 1
+
+training:
+  use_feature_cache: true
+  extract_batch_size: 11
+  batch_size: 64
+  learning_rate: 0.0004
+  weight_decay: 0.04
+  final_weight_decay: 0.4
+  start_lr: 0.000001
+  final_lr: 0.000001
+  warmup_epochs: 0.1
+  epochs: 5
+  use_bfloat16: true
+  use_focal_loss: true
+
+checkpoint:
+  output_dir: checkpoints/step1/assembly101_vjepa2

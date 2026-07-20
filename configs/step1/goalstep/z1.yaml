@@ -1,0 +1,101 @@
+# GoalStep Z=1 anticipation -- Step 1 probe training config.
+#
+# Skeleton is byte-for-byte the FHO-LTA setup (configs/step1/ego4d_lta/full.yaml):
+# same frozen V-JEPA2 ViT-L encoder+predictor, same T=32 / 8 fps / 256px input
+# spec, same attentive probe (4 blocks, 16 heads, 3 query tokens), same focal
+# loss and warmup-cosine schedule. Only the data paths, the val split layout,
+# and the epoch budget differ; head out_features come from
+# src/ego/step1_action_anticipation/goalstep/index/action_registry.json (verb 81 / noun 140 / action 293, k=10 pruned).
+#
+# Pipeline:
+#   python src/ego/step1_action_anticipation/goalstep/check_overlap.py
+#   python src/ego/step1_action_anticipation/goalstep/build_goalstep_taxonomy.py
+#   python src/ego/step1_action_anticipation/goalstep/build_goalstep_z1_index.py
+#   python src/ego/step1_action_anticipation/goalstep/download_goalstep_videos.py \
+#       --uid-list src/ego/step1_action_anticipation/goalstep/index/video_uids.txt \
+#       --manifest data/Ego4D/v2/video_540ss/manifest.csv \
+#       --manifest data/Ego4D/v2/full_scale/manifest.csv \
+#       --out-dir data/Ego4D/v2/goalstep_videos
+#   python scripts/step1/ego4d_lta/extract_features.py --config configs/step1/goalstep/z1.yaml --split train
+#   python scripts/step1/ego4d_lta/extract_features.py --config configs/step1/goalstep/z1.yaml --split val
+#   python src/ego/step1_action_anticipation/goalstep/train_goalstep_z1.py --config configs/step1/goalstep/z1.yaml
+
+experiment:
+  name: goalstep_z1
+  seed: 42
+  output_dir: outputs/goalstep/runs/z1
+
+dataset:
+  index_dir: src/ego/step1_action_anticipation/goalstep/index
+  feature_cache_dir: data/Ego4D/goalstep_feature_cache
+  # GoalStep timestamps are video-relative and there is no clip layer, so the
+  # index's clip_uid == video_uid and features come from whole parent videos.
+  video_root: data/Ego4D/v2/goalstep_videos
+  video_source: full_scale
+  tau_a: 1.0            # matches FHO-LTA / EK100
+  # 3.875 == 31/8: makes the inter-frame gap exactly 1/8 s, i.e. the paper's
+  # "32 frames at 8 fps" EK100 setup, so frames_per_second below is truthful
+  # and the predictor's tau_a offset lands on exactly 1.0 s (see plan doc S6.2).
+  l_obs: 3.875
+  frames_per_clip: 32   # matches EK100/FHO
+  frames_per_second: 8  # matches EK100/FHO
+  resolution: 256       # matches EK100/FHO
+  num_workers: 8
+
+model:
+  backbone: vjepa2
+  checkpoint: checkpoints/vjepa2/vitl.pt
+  repository_dir: third_party/vjepa2
+  classifier:
+    num_probe_blocks: 4   # unchanged from EK100/FHO
+    num_heads: 16         # unchanged from EK100/FHO
+  model_kwargs:
+    use_v2_1: false
+    encoder:
+      model_name: vit_large
+      checkpoint_key: target_encoder
+      tubelet_size: 2
+      patch_size: 16
+      uniform_power: true
+      use_rope: true
+    predictor:
+      model_name: vit_predictor
+      checkpoint_key: predictor
+      num_frames: 64
+      depth: 12
+      num_heads: 12
+      predictor_embed_dim: 384
+      num_mask_tokens: 10
+      uniform_power: true
+      use_mask_tokens: true
+      use_sdpa: true
+      use_silu: false
+      wide_silu: false
+      use_rope: true
+  wrapper_kwargs:
+    no_predictor: false     # predictor stays on: "tau_a-seconds-ahead mask token"
+    num_output_frames: 2
+    num_steps: 1
+
+extraction:
+  batch_size: 8
+
+training:
+  batch_size: 32
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  final_weight_decay: 0.0001
+  start_lr: 0.0
+  final_lr: 0.0
+  warmup_epochs: 1
+  epochs: 10
+  # GoalStep scenario == GoalStep goal_category (80 cooking goals), so the
+  # FHO scenario-stratified sampler keeps working unchanged.
+  sampler: scenario_stratified   # random | scenario_stratified
+  focal_gamma: 2.0
+  focal_alpha: 0.25
+  # Per-epoch validation runs on this many val samples, drawn once with
+  # val_subset_seed and reused for every epoch; best.pt is re-scored on the
+  # full val split once at the end.
+  val_subset_size: 500
+  val_subset_seed: 42

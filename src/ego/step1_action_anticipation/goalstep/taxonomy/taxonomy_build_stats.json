@@ -1,0 +1,17 @@
+{
+  "level": "both",
+  "num_verbs_taxonomy": 81,
+  "num_nouns_taxonomy": 140,
+  "num_verbs_registered": 81,
+  "num_nouns_registered": 140,
+  "num_actions_registered": 293,
+  "instances_total": 38392,
+  "instances_mapped": 38392,
+  "instances_other": 0,
+  "other_rate": 0.0,
+  "reused_parse_time_assignment": 38392,
+  "remapped_via_members": 0,
+  "train_instances": 31035,
+  "val_instances": 7357,
+  "val_instances_with_unseen_action_pair": 0
+}
