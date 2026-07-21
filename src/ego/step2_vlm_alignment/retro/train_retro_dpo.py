@@ -13,7 +13,11 @@ import argparse
 import inspect
 import json
 import os
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))   # 스크립트 직접 실행 대비
+from ego.common.run_provenance import write_run_config  # noqa: E402
 
 
 def load_dpo_dataset(path: str, limit: int | None = None):
@@ -61,6 +65,11 @@ def main() -> None:
     ap.add_argument("--save_steps", type=int, default=100)
     ap.add_argument("--logging_steps", type=int, default=2)
     args = ap.parse_args()
+
+    # 개선 0: 실행 출처(argv·git SHA·입력 데이터 지문)를 산출물로 남긴다 — 모델 로드 전에 기록
+    write_run_config(args.output_dir, args,
+                     data_paths=[args.dpo_jsonl, args.faa_adapter],
+                     extra={"runner": "train_retro_dpo"})
 
     import torch
     from peft import LoraConfig, PeftModel

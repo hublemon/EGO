@@ -91,6 +91,97 @@ def parse_pred(text: str):
                 mn.group(1).strip() if mn else None)
 
 
+def load_convs(jsonl: str, limit: int | None = None, seed: int = 42):
+    """heldout jsonl → (convs, raws). 프롬프트 빌더·필터·seed 규약의 단일 출처.
+
+    ⚠ rng 는 행 순서대로 소비되므로 `limit` 을 바꾸면 앞쪽 샘플의 프롬프트는 그대로지만
+      슬라이싱 지점이 달라진다 — subset 비교는 **전량 1회 생성 후 records 를 분할**해야
+      동일 프롬프트 위에서 비교된다 (eval_harness_v2 가 그렇게 한다).
+    """
+    rows = [json.loads(l) for l in open(jsonl, encoding="utf-8") if l.strip()]
+    if limit:
+        rows = rows[:limit]
+    rng = random.Random(seed)  # evaluate.py 와 동일 seed — 셔플 재현
+    convs, raws = [], []
+    for ex in rows:
+        if not Path(ex["image_path"]).exists() or not ex.get("topk_actions"):
+            continue
+        convs.append(T.build_joint_conversation(ex, top_k=5, rng=rng))
+        raws.append(ex)
+    return convs, raws
+
+
+def score_predictions(preds, convs, raws):
+    """생성 텍스트 → (지표 카운터 m, per-sample records). **지표 정의의 단일 출처.**
+
+    eval_harness_v2 가 subset·bootstrap 재집계에 그대로 재사용한다 — 여기서만 정의를 바꾼다.
+    """
+    n = len(preds)
+    m = dict(n=n, parsed=0, acc=0, verb_acc=0, noun_acc=0, in_joint5=0, wm_follow=0,
+             wm_top1_gt=0, gt_in_top5=0, g2_n=0, g2_correct=0, acc_in5=0,
+             belief_present=0, belief_restate=0, reasoning_words=0)
+    records = []
+    for pred_text, conv, ex in zip(preds, convs, raws):
+        v, nn_ = parse_pred(pred_text)
+        gt_v, gt_n = ex["gt_verb"], ex["gt_noun"]
+        top5 = [(a["verb"], a["noun"]) for a in ex["topk_actions"][:5]]
+        wm1 = top5[0]
+        disp = [(d["verb"], d["noun"]) for d in json.loads(conv["topk_actions_display"])]
+        gt_in5 = (gt_v, gt_n) in top5
+        m["wm_top1_gt"] += int(wm1 == (gt_v, gt_n))
+        m["gt_in_top5"] += int(gt_in5)
+        g2 = gt_in5 and wm1 != (gt_v, gt_n)
+        m["g2_n"] += int(g2)
+        ok = v is not None and nn_ is not None
+        m["parsed"] += int(ok)
+        correct = ok and (v, nn_) == (gt_v, gt_n)
+        m["acc"] += int(correct)
+        m["verb_acc"] += int(ok and v == gt_v)
+        m["noun_acc"] += int(ok and nn_ == gt_n)
+        m["in_joint5"] += int(ok and (v, nn_) in disp)
+        m["wm_follow"] += int(ok and (v, nn_) == wm1)
+        m["g2_correct"] += int(g2 and correct)
+        m["acc_in5"] += int(gt_in5 and correct)      # conditional acc 분자 (GT∈top5)
+        mb = re.search(r"<task_belief>(.*?)</task_belief>", pred_text, re.DOTALL)
+        belief = (mb.group(1).strip() if mb else "")
+        m["belief_present"] += int(bool(belief))
+        m["belief_restate"] += int(bool(belief) and ok and v in belief and nn_ in belief)
+        mr = re.search(r"<reasoning>(.*?)</reasoning>", pred_text, re.DOTALL)
+        m["reasoning_words"] += len((mr.group(1) if mr else "").split())
+        records.append({"sample_id": conv["sample_id"], "pred_verb": v, "pred_noun": nn_,
+                        "gt_verb": gt_v, "gt_noun": gt_n, "correct": correct,
+                        "g2": g2, "wm_follow": ok and (v, nn_) == wm1,
+                        "n_frames": conv["n_frames"], "completion": pred_text})
+    return m, records
+
+
+def summarize_metrics(m):
+    """카운터 → 비율 지표. 실행 메타(jsonl/adapter/time 등)는 호출자가 덧붙인다."""
+    n = m["n"]
+
+    def rate(k, d=None):
+        den = m[d] if d else n
+        return round(m[k] / den, 4) if den else None
+
+    return {
+        "n": n,
+        "parse_rate": rate("parsed"), "acc": rate("acc"),
+        "verb_acc": rate("verb_acc"), "noun_acc": rate("noun_acc"),
+        "in_joint5": rate("in_joint5"), "wm_follow": rate("wm_follow"),
+        "wm_top1_gt_acc": rate("wm_top1_gt"), "gt_in_top5_rate": rate("gt_in_top5"),
+        "g2_n": m["g2_n"], "g2_acc": rate("g2_correct", "g2_n"), "g2_chance": 0.2,
+        # oracle-subset 해석용 3분리 (통합 핸드오프 2.4): coverage / conditional / overall
+        "acc_given_gt_in_top5": rate("acc_in5", "gt_in_top5") if m["gt_in_top5"] else None,
+        "oracle_upper_bound_proxy": (round(m["gt_in_top5"] / n * (m["acc_in5"] / m["gt_in_top5"]), 4)
+                                     if m["gt_in_top5"] else None),
+        "rank1_given_in5": rate("wm_follow", "wm_top1_gt") if m["wm_top1_gt"] else None,
+        "belief_present_rate": rate("belief_present"),
+        "belief_restatement_rate": rate("belief_restate", "belief_present")
+        if m["belief_present"] else None,
+        "mean_reasoning_words": round(m["reasoning_words"] / n, 1) if n else None,
+    }
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--jsonl", required=True)
@@ -128,16 +219,7 @@ def main():
         T.MASK_FRAME_PROB = 1.0
         T.BLANK_IMAGE_PATH = T._prepare_blank_image(str(out.parent))
 
-    rows = [json.loads(l) for l in open(args.jsonl, encoding="utf-8") if l.strip()]
-    if args.limit:
-        rows = rows[: args.limit]
-    rng = random.Random(42)  # evaluate.py 와 동일 seed — 셔플 재현
-    convs, raws = [], []
-    for ex in rows:
-        if not Path(ex["image_path"]).exists() or not ex.get("topk_actions"):
-            continue
-        convs.append(T.build_joint_conversation(ex, top_k=5, rng=rng))
-        raws.append(ex)
+    convs, raws = load_convs(args.jsonl, args.limit)
     print(f"[load] {len(convs)} samples  no_memory={args.no_memory} "
           f"history_only={args.history_only}")
     if convs:
@@ -161,65 +243,12 @@ def main():
                                     args.max_new_tokens,
                                     multi_image_dir=args.multi_image_dir))
 
-    n = len(preds)
-    m = dict(n=n, parsed=0, acc=0, verb_acc=0, noun_acc=0, in_joint5=0, wm_follow=0,
-             wm_top1_gt=0, gt_in_top5=0, g2_n=0, g2_correct=0, acc_in5=0,
-             belief_present=0, belief_restate=0, reasoning_words=0)
-    records = []
-    for pred_text, conv, ex in zip(preds, convs, raws):
-        v, nn_ = parse_pred(pred_text)
-        gt_v, gt_n = ex["gt_verb"], ex["gt_noun"]
-        top5 = [(a["verb"], a["noun"]) for a in ex["topk_actions"][:5]]
-        wm1 = top5[0]
-        disp = [(d["verb"], d["noun"]) for d in json.loads(conv["topk_actions_display"])]
-        gt_in5 = (gt_v, gt_n) in top5
-        m["wm_top1_gt"] += int(wm1 == (gt_v, gt_n))
-        m["gt_in_top5"] += int(gt_in5)
-        g2 = gt_in5 and wm1 != (gt_v, gt_n)
-        m["g2_n"] += int(g2)
-        ok = v is not None and nn_ is not None
-        m["parsed"] += int(ok)
-        correct = ok and (v, nn_) == (gt_v, gt_n)
-        m["acc"] += int(correct)
-        m["verb_acc"] += int(ok and v == gt_v)
-        m["noun_acc"] += int(ok and nn_ == gt_n)
-        m["in_joint5"] += int(ok and (v, nn_) in disp)
-        m["wm_follow"] += int(ok and (v, nn_) == wm1)
-        m["g2_correct"] += int(g2 and correct)
-        m["acc_in5"] += int(gt_in5 and correct)      # conditional acc 분자 (GT∈top5)
-        mb = re.search(r"<task_belief>(.*?)</task_belief>", pred_text, re.DOTALL)
-        belief = (mb.group(1).strip() if mb else "")
-        m["belief_present"] += int(bool(belief))
-        m["belief_restate"] += int(bool(belief) and ok and v in belief and nn_ in belief)
-        mr = re.search(r"<reasoning>(.*?)</reasoning>", pred_text, re.DOTALL)
-        m["reasoning_words"] += len((mr.group(1) if mr else "").split())
-        records.append({"sample_id": conv["sample_id"], "pred_verb": v, "pred_noun": nn_,
-                        "gt_verb": gt_v, "gt_noun": gt_n, "correct": correct,
-                        "g2": g2, "wm_follow": ok and (v, nn_) == wm1,
-                        "n_frames": conv["n_frames"], "completion": pred_text})
-
-    def rate(k, d=None):
-        den = m[d] if d else n
-        return round(m[k] / den, 4) if den else None
-
+    m, records = score_predictions(preds, convs, raws)
     summary = {
-        "n": n, "jsonl": args.jsonl, "model": args.model_name, "adapter": args.adapter,
+        "n": m["n"], "jsonl": args.jsonl, "model": args.model_name, "adapter": args.adapter,
         "no_memory": args.no_memory, "history_only": args.history_only,
         "n_frames": convs[0]["n_frames"] if convs else None,
-        "parse_rate": rate("parsed"), "acc": rate("acc"),
-        "verb_acc": rate("verb_acc"), "noun_acc": rate("noun_acc"),
-        "in_joint5": rate("in_joint5"), "wm_follow": rate("wm_follow"),
-        "wm_top1_gt_acc": rate("wm_top1_gt"), "gt_in_top5_rate": rate("gt_in_top5"),
-        "g2_n": m["g2_n"], "g2_acc": rate("g2_correct", "g2_n"), "g2_chance": 0.2,
-        # oracle-subset 해석용 3분리 (통합 핸드오프 2.4): coverage / conditional / overall
-        "acc_given_gt_in_top5": rate("acc_in5", "gt_in_top5") if m["gt_in_top5"] else None,
-        "oracle_upper_bound_proxy": (round(m["gt_in_top5"] / n * (m["acc_in5"] / m["gt_in_top5"]), 4)
-                                     if m["gt_in_top5"] else None),
-        "rank1_given_in5": rate("wm_follow", "wm_top1_gt") if m["wm_top1_gt"] else None,
-        "belief_present_rate": rate("belief_present"),
-        "belief_restatement_rate": rate("belief_restate", "belief_present")
-        if m["belief_present"] else None,
-        "mean_reasoning_words": round(m["reasoning_words"] / n, 1) if n else None,
+        **summarize_metrics(m),
         "max_new_tokens": args.max_new_tokens,
         "max_pixels": args.max_pixels,
         "multi_image": bool(args.multi_image_dir),
