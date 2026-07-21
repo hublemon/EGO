@@ -1,0 +1,68 @@
+experiment:
+  name: goalstep_sweep_s4_d1_wd_rand
+  seed: 42
+  output_dir: outputs/goalstep/sweep/s4_d1_wd_rand
+dataset:
+  index_dir: src/ego/step1_action_anticipation/goalstep/index
+  feature_cache_dir: ../datasets/Ego4D/goalstep_feature_cache_jihun2
+  video_root: ../datasets/Ego4D/v2/goalstep_videos
+  video_source: full_scale
+  tau_a: 1.0
+  l_obs: 3.875
+  frames_per_clip: 32
+  frames_per_second: 8
+  resolution: 256
+  num_workers: 8
+model:
+  backbone: vjepa2
+  checkpoint: ../EGO_jihun/checkpoints/vjepa2/vitl.pt
+  repository_dir: third_party/vjepa2
+  classifier:
+    num_probe_blocks: 1
+    num_heads: 16
+  model_kwargs:
+    use_v2_1: false
+    encoder:
+      model_name: vit_large
+      checkpoint_key: target_encoder
+      tubelet_size: 2
+      patch_size: 16
+      uniform_power: true
+      use_rope: true
+    predictor:
+      model_name: vit_predictor
+      checkpoint_key: predictor
+      num_frames: 64
+      depth: 12
+      num_heads: 12
+      predictor_embed_dim: 384
+      num_mask_tokens: 10
+      uniform_power: true
+      use_mask_tokens: true
+      use_sdpa: true
+      use_silu: false
+      wide_silu: false
+      use_rope: true
+  wrapper_kwargs:
+    no_predictor: false
+    num_output_frames: 2
+    num_steps: 1
+extraction:
+  batch_size: 8
+training:
+  train_heads:
+  - action
+  batch_size: 32
+  learning_rate: 0.0003
+  weight_decay: 0.04
+  final_weight_decay: 0.4
+  start_lr: 0.0
+  final_lr: 0.0
+  warmup_epochs: 1
+  epochs: 15
+  sampler: random
+  focal_gamma: 2.0
+  focal_alpha: 0.25
+  precision: bf16
+  val_subset_size: 2000
+  val_subset_seed: 42

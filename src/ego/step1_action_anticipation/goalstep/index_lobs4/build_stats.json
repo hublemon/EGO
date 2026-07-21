@@ -1,0 +1,33 @@
+{
+  "level": "both",
+  "tau_a": 1.0,
+  "l_obs": 4.0,
+  "min_obs_sec": 0.5,
+  "boundary_policy": "truncate",
+  "drop_duplicate_windows": true,
+  "seed": 42,
+  "num_verbs_taxonomy": 81,
+  "num_nouns_taxonomy": 140,
+  "num_registered_actions": 293,
+  "train": {
+    "total_actions": 31035,
+    "kept": 30387,
+    "truncated": 87,
+    "excluded_min_obs": 66,
+    "excluded_first_action": 582,
+    "boundary_policy": "truncate"
+  },
+  "val": {
+    "total_actions": 7357,
+    "kept": 7217,
+    "truncated": 24,
+    "excluded_min_obs": 7,
+    "excluded_first_action": 133,
+    "boundary_policy": "truncate"
+  },
+  "train_samples": 30374,
+  "val_samples": 7214,
+  "train_videos": 570,
+  "val_videos": 130,
+  "num_scenarios": 79
+}
