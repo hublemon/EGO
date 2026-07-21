@@ -42,14 +42,18 @@ say "GPU 0 확보"
 
 for TAG in belief_sum_gt belief_sum_wm; do
   REC="$OUT/eval_${TAG}.records.jsonl"
-  AD="${ADAPTERS[$TAG]}"
-  [ -d "$AD/checkpoint-final" ] && AD="$AD/checkpoint-final"
 
   # 체인이 이 tag 의 생성 평가를 끝낼 때까지 기다린다 (최대 60분).
   waited=0
   while [ ! -s "$REC" ] && [ $waited -lt 3600 ]; do sleep 60; waited=$((waited+60)); done
   if [ ! -s "$REC" ]; then say "SKIP $TAG — records 없음 ($REC)"; continue; fi
   if [ -s "$OUT/swap_${TAG}.json" ]; then say "SKIP $TAG — 이미 측정됨"; continue; fi
+
+  # 어댑터 경로는 반드시 대기 **후에** 정한다. 대기 전에 정하면 아직 학습이 끝나지
+  # 않은 tag 의 checkpoint-final 이 없어서 부모 디렉터리로 굳고, PeftModel 이
+  # adapter_config.json 을 못 찾아 rc=1 로 죽는다.
+  AD="${ADAPTERS[$TAG]}"
+  [ -d "$AD/checkpoint-final" ] && AD="$AD/checkpoint-final"
 
   say "--- ③ 측정: $TAG (records $(wc -l < "$REC")건) ---"
   $PY scripts/step2/eval_belief_swap.py \
