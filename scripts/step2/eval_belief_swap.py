@@ -87,14 +87,18 @@ def main():
     ap.add_argument("--records", required=True, help="trace 원천: eval_battery *.records.jsonl")
     ap.add_argument("--model_name", default="Qwen/Qwen3-VL-8B-Instruct")
     ap.add_argument("--adapter", default=None)
-    ap.add_argument("--limit", type=int, default=500)
+    ap.add_argument("--limit", type=int, default=500,
+                    help="0=heldout 전량 (개선 1: ③ 도 전량으로 재고. 기본값 500 은 기존 호환)")
     ap.add_argument("--batch_size", type=int, default=24)
     ap.add_argument("--swap_offset", type=int, default=250, help="derangement 간격")
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
 
-    rows = [json.loads(l) for l in open(args.jsonl, encoding="utf-8")][: args.limit]
+    # `--limit 0` 은 '전량'(eval_battery 규약). 이전 코드는 [:0] 이라 빈 실행이 됐다.
+    rows = [json.loads(l) for l in open(args.jsonl, encoding="utf-8")]
+    if args.limit:
+        rows = rows[: args.limit]
     recs = {r["sample_id"]: r for r in map(json.loads, open(args.records, encoding="utf-8"))}
     rng = random.Random(42)  # eval_battery 와 동일 — 동일 프롬프트(셔플 포함) 재현
     convs = []
