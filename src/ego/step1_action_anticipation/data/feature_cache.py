@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 import torch
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, Subset
 
 from ego.common.io import ensure_dir
 from ego.common.logging import step_log
@@ -34,15 +34,28 @@ def extract_and_cache_features(
     across process restarts. Returns ``{"saved", "skipped", "total"}``.
     """
     cache_dir = ensure_dir(cache_dir)
+
+    # Resume before decode: Ego4D's dataset can expose a sample_id through
+    # get_sample_metadata() without opening the video. Filtering here avoids
+    # decoding every already-cached clip after an interrupted extraction.
+    pending_indices: list[int] | None = None
+    get_metadata = getattr(dataset, "get_sample_metadata", None)
+    if callable(get_metadata):
+        pending_indices = [
+            index for index in range(len(dataset))
+            if not (cache_dir / f"{get_metadata(index).sample_id}.pt").is_file()
+        ]
+    loader_dataset = Subset(dataset, pending_indices) if pending_indices is not None else dataset
     loader = DataLoader(
-        dataset,
+        loader_dataset,
         batch_size=batch_size,
         shuffle=False,
         num_workers=num_workers,
         collate_fn=anticipation_collate,
     )
 
-    saved = skipped = 0
+    saved = 0
+    skipped = len(dataset) - len(loader_dataset)
     for batch_idx, batch in enumerate(loader):
         sample_ids = batch["sample_id"]
         pending = [i for i, sid in enumerate(sample_ids) if not (cache_dir / f"{sid}.pt").exists()]

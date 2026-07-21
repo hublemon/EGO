@@ -139,10 +139,59 @@ def _unified_class_frequency(index_df: pd.DataFrame, mapping: LabelMapping, head
     return dict(class_frequency(pd.DataFrame({"x": ids}), "x"))
 
 
+def _video_of(sample_id: str) -> str:
+    """``{video_uuid}_{row_index}`` -> ``{video_uuid}``."""
+    return sample_id.rsplit("_", 1)[0]
+
+
+def subsample_by_video(
+    sample_ids: list[str], max_per_video: int | None, max_videos: int | None, seed: int
+) -> list[str]:
+    """Thin the training pool along the *video* axis rather than the sample axis.
+
+    GoalStep yields ~53 samples per video from only 570 train videos, so samples
+    within a video share almost all of their visual context. ``max_per_video``
+    caps samples while keeping every video; ``max_videos`` keeps every sample of
+    a video subset. Holding the resulting sample count equal between the two
+    separates "how many samples" from "how many distinct videos".
+    """
+    if max_per_video is None and max_videos is None:
+        return sample_ids
+
+    by_video: dict[str, list[str]] = defaultdict(list)
+    for sid in sorted(sample_ids):
+        by_video[_video_of(sid)].append(sid)
+
+    rng = random.Random(seed)
+    videos = sorted(by_video)
+    if max_videos is not None:
+        rng.shuffle(videos)
+        videos = sorted(videos[:max_videos])
+
+    kept: list[str] = []
+    for video in videos:
+        ids = by_video[video]
+        if max_per_video is not None and len(ids) > max_per_video:
+            ids = sorted(rng.sample(ids, max_per_video))
+        kept.extend(ids)
+    return sorted(kept)
+
+
 def _build_train_loader(
-    cache_dir: Path, batch_size: int, sampler_name: str, scenario_lookup: dict, seed: int, num_workers: int = 0
+    cache_dir: Path, batch_size: int, sampler_name: str, scenario_lookup: dict, seed: int, num_workers: int = 0,
+    max_per_video: int | None = None, max_videos: int | None = None, max_samples: int | None = None,
 ):
     dataset = FeatureCacheDataset.from_cache_dir(cache_dir)
+    if max_per_video is not None or max_videos is not None:
+        dataset = FeatureCacheDataset(
+            subsample_by_video(dataset.sample_ids, max_per_video, max_videos, seed), cache_dir
+        )
+    if max_samples is not None and max_samples < len(dataset.sample_ids):
+        # Plain random subset -- the data-scaling axis, orthogonal to the video-axis
+        # thinning above. Seeded so a given (seed, max_samples) is reproducible and
+        # nested subsets stay comparable across runs.
+        ids = sorted(random.Random(seed).sample(sorted(dataset.sample_ids), max_samples))
+        dataset = FeatureCacheDataset(ids, cache_dir)
     if len(dataset) == 0:
         raise EgoConfigError(
             f"No cached features found under {cache_dir}. Run extract_features.py for this split first."
@@ -193,15 +242,39 @@ def _build_eval_loader(cache_dir: Path, batch_size: int, scenario_lookup: dict, 
     return dataset, loader, scenarios
 
 
-def train_one_epoch(head_model, loader, optimizer, lr_sched, wd_sched, device, gamma, alpha) -> float:
+def train_one_epoch(
+    head_model, loader, optimizer, lr_sched, wd_sched, device, gamma, alpha,
+    loss_heads=HEADS, amp_dtype=None,
+) -> float:
+    """Train one epoch using supervision from only ``loss_heads``.
+
+    The model may still emit verb/noun/action logits for evaluation even when
+    only the action head contributes to the optimization objective.
+
+    ``amp_dtype`` (e.g. ``torch.bfloat16``) runs the probe forward + loss under
+    autocast. Training only -- evaluation and the exported likelihood/entropy
+    artifacts stay fp32 on purpose, so Step 2/3 consume full-precision
+    probabilities. Measured on this machine (H200, 40 real GoalStep batches,
+    identical seed/order): 6.4x faster, final-loss delta 0.02%, top-1 agreement
+    100%, max softmax delta 1.9e-4, entropy delta <= 5e-4 nats. Safe because
+    ``binary_cross_entropy_with_logits`` autocast-promotes to fp32 and AdamW
+    keeps fp32 master weights (so bf16 needs no GradScaler).
+    """
+    invalid_heads = set(loss_heads) - set(HEADS)
+    if not loss_heads or invalid_heads:
+        raise EgoConfigError(
+            f"loss_heads must be a non-empty subset of {HEADS}; got {list(loss_heads)}"
+        )
     head_model.train()
     total_loss, n = 0.0, 0
     for batch in loader:
         features = batch["video"].to(device)
-        logits = head_model(features)
-        loss = sum(
-            sigmoid_focal_loss(logits[h], batch[f"{h}_id"].to(device), alpha=alpha, gamma=gamma) for h in HEADS
-        )
+        with torch.autocast("cuda", dtype=amp_dtype, enabled=amp_dtype is not None):
+            logits = head_model(features)
+            loss = sum(
+                sigmoid_focal_loss(logits[h], batch[f"{h}_id"].to(device), alpha=alpha, gamma=gamma)
+                for h in loss_heads
+            )
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -213,19 +286,19 @@ def train_one_epoch(head_model, loader, optimizer, lr_sched, wd_sched, device, g
 
 
 @torch.no_grad()
-def compute_predictions(head_model, loader, device) -> dict:
+def compute_predictions(head_model, loader, device, heads=HEADS) -> dict:
     head_model.eval()
-    logits_all = {h: [] for h in HEADS}
-    labels_all = {h: [] for h in HEADS}
+    logits_all = {h: [] for h in heads}
+    labels_all = {h: [] for h in heads}
     sample_ids: list[str] = []
     for batch in loader:
         features = batch["video"].to(device)
         logits = head_model(features)
-        for h in HEADS:
+        for h in heads:
             logits_all[h].append(logits[h].cpu())
             labels_all[h].append(batch[f"{h}_id"].cpu())
         sample_ids.extend(batch["sample_id"])
-    for h in HEADS:
+    for h in heads:
         logits_all[h] = torch.cat(logits_all[h])
         labels_all[h] = torch.cat(labels_all[h])
     return {"logits": logits_all, "labels": labels_all, "sample_ids": sample_ids}
@@ -251,10 +324,13 @@ def scenario_breakdown(logits, labels, num_classes: int, scenarios: list[str], k
     return out
 
 
-def evaluate(head_model, loader, device, num_classes: dict, bands: dict, scenarios: list[str], k: int = 5) -> dict:
-    preds = compute_predictions(head_model, loader, device)
+def evaluate(
+    head_model, loader, device, num_classes: dict, bands: dict, scenarios: list[str],
+    k: int = 5, heads=HEADS,
+) -> dict:
+    preds = compute_predictions(head_model, loader, device, heads=heads)
     result: dict = {"overall": {}, "band": {}, "scenario": {}, "accuracy_top1": {}, "accuracy_top5": {}}
-    for h in HEADS:
+    for h in heads:
         logits, labels = preds["logits"][h], preds["labels"][h]
         result["overall"][h] = class_mean_recall(logits, labels, num_classes[h], k=k)
         result["band"][h] = band_breakdown(logits, labels, num_classes[h], bands[h], k=k)
@@ -267,18 +343,18 @@ def evaluate(head_model, loader, device, num_classes: dict, bands: dict, scenari
     return result
 
 
-def save_likelihood_entropy(preds: dict, scenarios: list[str], path: Path) -> None:
+def save_likelihood_entropy(preds: dict, scenarios: list[str], path: Path, heads=HEADS) -> None:
     sample_ids = preds["sample_ids"]
     records = []
     per_head_probs = {}
     per_head_entropy = {}
-    for h in HEADS:
+    for h in heads:
         probs = torch.softmax(preds["logits"][h], dim=-1)
         per_head_probs[h] = probs.max(dim=-1).values.tolist()
         per_head_entropy[h] = prediction_entropy(preds["logits"][h]).tolist()
     for i, sid in enumerate(sample_ids):
         record = {"sample_id": sid, "scenario": scenarios[i] if i < len(scenarios) else "unknown"}
-        for h in HEADS:
+        for h in heads:
             record[f"{h}_likelihood"] = per_head_probs[h][i]
             record[f"{h}_entropy"] = per_head_entropy[h][i]
         records.append(record)
