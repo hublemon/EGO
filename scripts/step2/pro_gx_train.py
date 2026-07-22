@@ -25,6 +25,7 @@ from PIL import Image
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "src"))
 from ego.step2_vlm_alignment import train_grpo_action as T  # noqa: E402
+from ego.common.run_provenance import write_run_config  # noqa: E402
 
 
 def cand_completion(v: str, n: str) -> str:
@@ -44,9 +45,16 @@ def main():
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--log_every", type=int, default=200)
     ap.add_argument("--save_every", type=int, default=2000)
+    # ── Exp-C: G1 selective-trust 앵커 ──
+    ap.add_argument("--keep_weight", type=float, default=0.0,
+                    help="G1(WM top-1==GT)에서 모델 후보분포를 WM 재정규화 분포로 당기는 KL 가중치. "
+                         "0=순수 candidate CE(Exp-A). 참조는 F0가 아니라 WM prior 자신이다 — "
+                         "F0의 G1 보존이 0.497이라 F0에 앵커하면 오히려 끌어내린다. WM은 G1에서 "
+                         "정의상 top-1=GT라 완벽한 참조이고 점수가 데이터에 이미 있다.")
     args = ap.parse_args()
 
     out = Path(args.output_dir); out.mkdir(parents=True, exist_ok=True)
+    write_run_config(out, vars(args), data_paths=[args.train_jsonl])
     T.ACTION_ONLY = True   # 프롬프트를 F0-GA/eval --action_only 와 동일하게
 
     from peft import LoraConfig, get_peft_model
@@ -87,6 +95,7 @@ def main():
     prompt_rng = random.Random(42)
     log = open(out / "gx_log.jsonl", "a", encoding="utf-8")
     running, correct, seen = 0.0, 0, 0
+    run_keep, keep_n = 0.0, 0
     opt.zero_grad(set_to_none=True)
     for i, ex in enumerate(order):
         conv = T.build_joint_conversation(ex, top_k=5, rng=prompt_rng)
@@ -113,9 +122,37 @@ def main():
         mask[:, : base_len - 1] = 0   # completion 토큰만
         tokl = logp.gather(-1, tgt.unsqueeze(-1)).squeeze(-1)
         cand_lp = (tokl * mask).sum(dim=1)                       # (5,) sum-logp
-        loss = -torch.log_softmax(cand_lp, dim=0)[gt_idx] / args.accum
-        loss.backward()
-        running += float(loss) * args.accum
+        logq = torch.log_softmax(cand_lp, dim=0)                 # 모델 후보 log-분포
+        ce = -logq[gt_idx]                                       # candidate CE (Exp-A 와 동일)
+        total = ce                                               # keep 항은 아래서 더한다
+        # ── Exp-C: G1 에서만 WM prior 로 당긴다 (selective trust) ──
+        keep_val = 0.0
+        if args.keep_weight > 0:
+            acts = (ex.get("topk_actions_with_score") or [])[:5]
+            wm1 = None
+            liks = {}
+            for a in acts:
+                v, n = str(a.get("verb", "")), str(a.get("noun", ""))
+                if a.get("rank") == 1:
+                    wm1 = (v, n)
+                if a.get("likelihood") is not None:
+                    liks[(v, n)] = float(a["likelihood"])
+            is_g1 = wm1 is not None and wm1 == (ex["gt_verb"], ex["gt_noun"])
+            if is_g1 and len(liks) == len(cands):
+                # disp(셔플됨) 순서에 맞춰 WM likelihood 재정규화 → 참조 분포 p_wm
+                pw = torch.tensor([liks.get(c, 0.0) for c in cands],
+                                  device=cand_lp.device, dtype=torch.float32)
+                s = pw.sum()
+                if s > 0:
+                    pw = pw / s
+                    # KL(p_wm ‖ p_θ) = Σ p_wm (log p_wm − log q) — 상수항 빼고 −Σ p_wm·log q.
+                    # ★ loss 와 같은 그래프(logq)를 공유하므로 backward 는 합산 후 한 번만 호출한다.
+                    keep = -(pw * logq).sum()
+                    total = ce + args.keep_weight * keep
+                    keep_val = float(keep)
+        (total / args.accum).backward()
+        running += float(ce)          # 로그의 loss 는 CE 만 — Exp-A 와 비교 가능하게
+        run_keep += keep_val; keep_n += int(keep_val != 0.0)
         correct += int(int(cand_lp.argmax()) == gt_idx)
         seen += 1
         if (i + 1) % args.accum == 0:
@@ -124,13 +161,18 @@ def main():
         if seen % args.log_every == 0:
             rec = {"seen": seen, "loss": round(running / args.log_every, 4),
                    "train_acc": round(correct / args.log_every, 4)}
+            if args.keep_weight > 0:
+                rec["keep_loss"] = round(run_keep / keep_n, 4) if keep_n else None
+                rec["keep_frac"] = round(keep_n / args.log_every, 4)
             print(f"[gx] {rec}", flush=True)
             log.write(json.dumps(rec) + "\n"); log.flush()
+            run_keep, keep_n = 0.0, 0
             running, correct = 0.0, 0
         if seen % args.save_every == 0:
             model.save_pretrained(out / f"checkpoint-{seen}")
     model.save_pretrained(out / "checkpoint-final")
     processor.save_pretrained(out / "checkpoint-final")
+    (out / "TRAINING_DONE").touch()
     print(f"[DONE] F0-GX adapter → {out}/checkpoint-final")
 
 
