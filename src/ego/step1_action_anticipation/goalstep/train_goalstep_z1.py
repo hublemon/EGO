@@ -1,10 +1,8 @@
 """Task 6 -- train a Step 1 action head on GoalStep Z=1 samples.
 
-The frozen V-JEPA2 features feed an ``AnticipationHead`` configured with one
-attentive query and one 293-way action classifier.  Action classes are the
-registry's verb/noun pairs, but optimization uses only one action focal loss:
-there are no separate verb, noun, or matching objectives.  Validation and
-likelihood/entropy artifacts are action-only as well.
+The frozen V-JEPA2 features feed an ``AnticipationHead`` configured for either
+an action-only classifier or verb/noun/action classifiers, as selected by
+``training.train_heads``.
 
 GoalStep-specific behaviour (the whole delta):
   * evaluates against ``val`` (goalstep_val.json, 134 videos) -- there is no
@@ -14,7 +12,7 @@ GoalStep-specific behaviour (the whole delta):
     the same subset is reused for all epochs and its sample_ids are written to
     ``val_subset_sample_ids.json``;
   * **every** epoch is checkpointed (``epoch_01.pt`` ... ``epoch_NN.pt``) next
-    to ``best.pt`` (best val action class-mean Recall@5) and ``latest.pt``;
+    to ``best.pt`` (best val Action Top-5 accuracy) and ``latest.pt``;
   * after the last epoch, ``best.pt`` is re-evaluated once on the **full** val
     split, and both readouts are written to ``final_metrics.json`` for the
     subset-vs-full comparison in the report.
@@ -57,10 +55,11 @@ from ego.step1_action_anticipation.models import AnticipationHead  # noqa: E402
 
 PHASE = "TrainGoalStepZ1"
 HEADS = tz1.HEADS
+BEST_METRIC_NAME = "action_top5"
 
 def _history_columns(heads: list[str]) -> list[str]:
     return ["epoch", "train_loss", *(column for h in heads for column in (
-        f"{h}_cmr@5", f"{h}_top1", f"{h}_top5",
+        f"{h}_cmr@5", f"{h}_top1", f"{h}_top5", f"{h}_top10", f"{h}_top15",
     )), "seconds"]
 
 
@@ -84,7 +83,10 @@ def _subset_loader(cache_dir: Path, sample_ids: list[str], batch_size: int, num_
 def _log_eval(prefix: str, result: dict, heads: list[str]) -> None:
     for h in heads:
         step_log(1, PHASE, f"{prefix} {h}: class-mean Recall@5={result['overall'][h]:.2f}  "
-                           f"top1={result['accuracy_top1'][h]:.2f}  top5={result['accuracy_top5'][h]:.2f}")
+                           f"top1={result['accuracy_top1'][h]:.2f}  "
+                           f"top5={result['accuracy_top5'][h]:.2f}  "
+                           f"top10={result['accuracy_top10'][h]:.2f}  "
+                           f"top15={result['accuracy_top15'][h]:.2f}")
         step_log(1, PHASE, f"{prefix} {h} band breakdown: {result['band'][h]}")
 
 
@@ -93,6 +95,8 @@ def _metrics_dict(result: dict, train_loss: float | None = None, epoch: int | No
         "overall_cmr5": result["overall"],
         "accuracy_top1": result["accuracy_top1"],
         "accuracy_top5": result["accuracy_top5"],
+        "accuracy_top10": result["accuracy_top10"],
+        "accuracy_top15": result["accuracy_top15"],
         "band": result["band"],
         "scenario": result["scenario"],
     }
@@ -231,6 +235,7 @@ def main() -> None:
         "taxonomy": num_classes, "index_dir": str(index_dir),
         "train_samples": len(train_dataset), "val_samples_full": len(full_val_dataset),
         "val_subset_size": len(subset_dataset), "val_subset_seed": subset_seed,
+        "checkpoint_selection_metric": BEST_METRIC_NAME,
     })
     write_json(run_dir / "val_subset_sample_ids.json",
                {"seed": subset_seed, "size": len(subset_dataset), "sample_ids": subset_dataset.sample_ids})
@@ -266,31 +271,38 @@ def main() -> None:
                     f"{result['overall'][h]:.4f}",
                     f"{result['accuracy_top1'][h]:.4f}",
                     f"{result['accuracy_top5'][h]:.4f}",
+                    f"{result['accuracy_top10'][h]:.4f}",
+                    f"{result['accuracy_top15'][h]:.4f}",
                 )),
                 f"{elapsed:.1f}",
             ])
         per_epoch.append(_metrics_dict(result, train_loss=train_loss, epoch=epoch))
         write_json(run_dir / "metrics_per_epoch.json", per_epoch)
 
+        selection_metric = result["accuracy_top5"]["action"]
         state = {"epoch": epoch, "model_state": head_model.state_dict(),
                  "optimizer_state": optimizer.state_dict(),
-                 "metric": result["overall"]["action"], "num_classes": num_classes}
+                 "metric": selection_metric, "metric_name": BEST_METRIC_NAME,
+                 "num_classes": num_classes}
         torch.save(state, ckpt_dir / f"epoch_{epoch:02d}.pt")
         torch.save(state, run_dir / "latest.pt")
-        if result["overall"]["action"] > best_metric:
-            best_metric, best_epoch = result["overall"]["action"], epoch
+        if selection_metric > best_metric:
+            best_metric, best_epoch = selection_metric, epoch
             torch.save(state, run_dir / "best.pt")
-            step_log(1, PHASE, f"Best updated -> epoch {epoch} (val-subset action cmr@5={best_metric:.2f})")
+            torch.save(state, run_dir / "best_action_top5.pt")
+            step_log(1, PHASE, f"Best updated -> epoch {epoch} (val-subset action top5={best_metric:.2f})")
 
         tz1.save_likelihood_entropy(
             result["_preds"], subset_scenarios,
             run_dir / f"likelihood_entropy_epoch_{epoch:02d}.jsonl", heads=train_heads,
         )
 
-    step_log(1, PHASE, f"Training done. Best epoch={best_epoch} (val-subset action cmr@5={best_metric:.2f})")
+    step_log(1, PHASE, f"Training done. Best epoch={best_epoch} (val-subset action top5={best_metric:.2f})")
 
     final = {
         "best_epoch": best_epoch,
+        "checkpoint_selection_metric": BEST_METRIC_NAME,
+        "best_metric": best_metric,
         "val_subset": {"size": len(subset_dataset), "seed": subset_seed,
                        "metrics": per_epoch[best_epoch - 1] if best_epoch else None},
         "per_epoch": per_epoch,

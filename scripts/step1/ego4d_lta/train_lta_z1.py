@@ -329,7 +329,11 @@ def evaluate(
     k: int = 5, heads=HEADS,
 ) -> dict:
     preds = compute_predictions(head_model, loader, device, heads=heads)
-    result: dict = {"overall": {}, "band": {}, "scenario": {}, "accuracy_top1": {}, "accuracy_top5": {}}
+    result: dict = {
+        "overall": {}, "band": {}, "scenario": {},
+        "accuracy_top1": {}, "accuracy_top5": {},
+        "accuracy_top10": {}, "accuracy_top15": {},
+    }
     for h in heads:
         logits, labels = preds["logits"][h], preds["labels"][h]
         result["overall"][h] = class_mean_recall(logits, labels, num_classes[h], k=k)
@@ -338,6 +342,8 @@ def evaluate(
         # distinct metric (not weighted equally per class), always logged together per user request.
         result["accuracy_top1"][h] = top_k_recall(logits, labels, k=1)
         result["accuracy_top5"][h] = top_k_recall(logits, labels, k=5)
+        result["accuracy_top10"][h] = top_k_recall(logits, labels, k=10)
+        result["accuracy_top15"][h] = top_k_recall(logits, labels, k=15)
         result["scenario"][h] = scenario_breakdown(logits, labels, num_classes[h], scenarios, k=k)
     result["_preds"] = preds
     return result

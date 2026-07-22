@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Dependency-free live dashboard for the GoalStep full training run."""
+"""Dependency-free live dashboard for a GoalStep feature/train run."""
 
 from __future__ import annotations
 
@@ -14,6 +14,8 @@ REPO = Path(__file__).resolve().parents[1]
 RUN = REPO / "outputs/goalstep/runs/z1_jihun2"
 CACHE = REPO.parent / "datasets/Ego4D/goalstep_feature_cache_jihun2"
 TOTAL = {"train": 30374, "val": 7214}
+TITLE = "GoalStep Z=1 · Full Training"
+EPOCHS = 15
 
 
 def tail(path: Path, lines: int = 30) -> list[str]:
@@ -61,6 +63,8 @@ def status() -> dict:
     else:
         phase = "starting"
     return {
+        "title": TITLE,
+        "epochs": EPOCHS,
         "phase": phase,
         "cache": {s: {"done": counts[s], "total": TOTAL[s], "percent": round(100 * counts[s] / TOTAL[s], 2)} for s in TOTAL},
         "history": hist,
@@ -77,13 +81,13 @@ def status() -> dict:
 HTML = r'''<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EGO · GoalStep Z=1 Live</title><style>
 :root{color-scheme:dark;--bg:#071018;--card:#101c27;--line:#243443;--mint:#5eead4;--blue:#60a5fa;--muted:#91a3b5}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 10% 0,#123047 0,transparent 35%),var(--bg);font:15px system-ui;color:#edf6ff}.wrap{max-width:1180px;margin:auto;padding:34px 20px}h1{font-size:28px;margin:0}.sub{color:var(--muted);margin:7px 0 28px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}.card{grid-column:span 4;background:#101c27dd;border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 12px 35px #0004}.wide{grid-column:span 8}.full{grid-column:1/-1}.label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.12em}.value{font-size:27px;font-weight:750;margin-top:5px}.bar{height:8px;background:#253440;border-radius:99px;overflow:hidden;margin-top:12px}.fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--mint));transition:width .5s}.pill{display:inline-flex;gap:7px;align-items:center;border:1px solid #2b4654;border-radius:99px;padding:7px 12px;color:var(--mint)}.dot{width:8px;height:8px;border-radius:50%;background:var(--mint);box-shadow:0 0 12px var(--mint)}canvas{width:100%;height:270px}pre{margin:10px 0 0;white-space:pre-wrap;max-height:280px;overflow:auto;color:#bad0df;font:12px ui-monospace;background:#09131c;padding:13px;border-radius:10px}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}.metric{background:#0a151e;border-radius:11px;padding:12px}.metric b{display:block;font-size:19px;margin-top:4px}@media(max-width:800px){.card,.wide{grid-column:1/-1}.metrics{grid-template-columns:1fr}}</style></head><body><div class="wrap">
-<div style="display:flex;justify-content:space-between;align-items:start;gap:20px"><div><h1>GoalStep Z=1 · Full Training</h1><div class="sub">실제 피처 캐시와 학습 로그를 5초마다 갱신합니다.</div></div><div class="pill"><span class="dot"></span><span id="phase">loading</span></div></div>
+<div style="display:flex;justify-content:space-between;align-items:start;gap:20px"><div><h1 id="title">GoalStep Z=1 · Full Training</h1><div class="sub">실제 피처 캐시와 학습 로그를 5초마다 갱신합니다.</div></div><div class="pill"><span class="dot"></span><span id="phase">loading</span></div></div>
 <div class="grid"><section class="card"><div class="label">Train features</div><div class="value" id="trv">—</div><div class="bar"><div class="fill" id="trb"></div></div></section><section class="card"><div class="label">Val features</div><div class="value" id="vav">—</div><div class="bar"><div class="fill" id="vab"></div></div></section><section class="card"><div class="label">Epoch</div><div class="value" id="epoch">0 / 15</div><div class="sub" id="loss">학습 대기 중</div></section>
 <section class="card wide"><div class="label">Validation metrics by epoch</div><canvas id="chart" width="760" height="270"></canvas></section><section class="card"><div class="label">Latest measured metrics</div><div class="metrics" id="metrics"></div></section>
 <section class="card full"><div class="label">GPU telemetry</div><div class="metrics" id="gpus"></div></section><section class="card full"><div class="label">Live process log</div><pre id="logs">Waiting for logs…</pre></section></div></div>
 <script>
-const $=id=>document.getElementById(id), num=v=>v==null?'—':Number(v).toFixed(2);function chart(rows){const c=$('chart'),x=c.getContext('2d'),W=c.width,H=c.height;x.clearRect(0,0,W,H);x.strokeStyle='#243443';x.fillStyle='#91a3b5';x.font='12px system-ui';for(let y=0;y<=100;y+=20){let py=H-28-y*(H-48)/100;x.beginPath();x.moveTo(42,py);x.lineTo(W-12,py);x.stroke();x.fillText(y,8,py+4)}const series=[['action_cmr@5','#fbbf24'],['action_top1','#5eead4'],['action_top5','#60a5fa']];series.forEach(([k,col],si)=>{x.strokeStyle=col;x.lineWidth=3;x.beginPath();rows.forEach((r,i)=>{let px=42+i*(W-65)/14,py=H-28-Number(r[k])*(H-48)/100;i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke();x.fillStyle=col;x.fillText(k.replace('action_',''),W-200+si*65,16)});}
-async function refresh(){try{const d=await fetch('/api/status',{cache:'no-store'}).then(r=>r.json());$('phase').textContent=d.phase.replaceAll('_',' ');for(const [s,p] of [['train','tr'],['val','va']]){let q=d.cache[s];$(p+'v').textContent=`${q.done.toLocaleString()} / ${q.total.toLocaleString()} (${q.percent}%)`;$(p+'b').style.width=q.percent+'%'}let l=d.latest;$('epoch').textContent=`${l?l.epoch:0} / 15`;$('loss').textContent=l?`action loss ${l.train_loss} · ${l.seconds}s`:'전체 피처 추출 중';$('metrics').innerHTML=l?`<div class="metric"><span class="label">Action CMR@5</span><b>${num(l['action_cmr@5'])}</b><small>top1 ${num(l['action_top1'])} · top5 ${num(l['action_top5'])}</small></div>`:'<span class="sub">첫 epoch 평가 후 표시됩니다.</span>';chart(d.history);$('gpus').innerHTML=d.gpus.map(g=>g.error?g.error:`<div class="metric"><span class="label">GPU ${g.index} · ${g.name}</span><b>${g.util}%</b><small>${g.memory_used} / ${g.memory_total} MiB · ${g.temperature}°C</small></div>`).join('');let logs=[...d.pipeline_log,...d.train_log,...d.extract_train_log,...d.extract_val_log];$('logs').textContent=logs.join('\n')||'Waiting for logs…'}catch(e){$('phase').textContent='reconnecting'}}refresh();setInterval(refresh,5000);
+const $=id=>document.getElementById(id), num=v=>v==null?'—':Number(v).toFixed(2);function chart(rows){const c=$('chart'),x=c.getContext('2d'),W=c.width,H=c.height;x.clearRect(0,0,W,H);x.strokeStyle='#243443';x.fillStyle='#91a3b5';x.font='12px system-ui';for(let y=0;y<=100;y+=20){let py=H-28-y*(H-48)/100;x.beginPath();x.moveTo(42,py);x.lineTo(W-12,py);x.stroke();x.fillText(y,8,py+4)}const series=[['action_cmr@5','#fbbf24'],['action_top1','#5eead4'],['action_top5','#60a5fa'],['action_top10','#c084fc'],['action_top15','#fb7185']];series.forEach(([k,col],si)=>{x.strokeStyle=col;x.lineWidth=3;x.beginPath();rows.forEach((r,i)=>{let px=42+i*(W-65)/Math.max(1,(window.EPOCHS||15)-1),py=H-28-Number(r[k])*(H-48)/100;i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke();x.fillStyle=col;x.fillText(k.replace('action_',''),W-350+si*68,16)});}
+async function refresh(){try{const d=await fetch('/api/status',{cache:'no-store'}).then(r=>r.json());window.EPOCHS=d.epochs;$('title').textContent=d.title;$('phase').textContent=d.phase.replaceAll('_',' ');for(const [s,p] of [['train','tr'],['val','va']]){let q=d.cache[s];$(p+'v').textContent=`${q.done.toLocaleString()} / ${q.total.toLocaleString()} (${q.percent}%)`;$(p+'b').style.width=q.percent+'%'}let l=d.latest;$('epoch').textContent=`${l?l.epoch:0} / ${d.epochs}`;$('loss').textContent=l?`train loss ${l.train_loss} · ${l.seconds}s`:'전체 피처 추출 중';let heads=['verb','noun','action'].filter(h=>l&&l[h+'_top5']!==undefined);$('metrics').innerHTML=heads.length?heads.map(h=>`<div class="metric"><span class="label">${h} CMR@5</span><b>${num(l[h+'_cmr@5'])}</b><small>top1 ${num(l[h+'_top1'])} · top5 ${num(l[h+'_top5'])} · top10 ${num(l[h+'_top10'])} · top15 ${num(l[h+'_top15'])}</small></div>`).join(''):'<span class="sub">첫 epoch 평가 후 표시됩니다.</span>';chart(d.history);$('gpus').innerHTML=d.gpus.map(g=>g.error?g.error:`<div class="metric"><span class="label">GPU ${g.index} · ${g.name}</span><b>${g.util}%</b><small>${g.memory_used} / ${g.memory_total} MiB · ${g.temperature}°C</small></div>`).join('');let logs=[...d.pipeline_log,...d.train_log,...d.extract_train_log,...d.extract_val_log];$('logs').textContent=logs.join('\n')||'Waiting for logs…'}catch(e){$('phase').textContent='reconnecting'}}refresh();setInterval(refresh,5000);
 </script></body></html>'''
 
 
@@ -113,5 +117,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=7860)
+    parser.add_argument("--run-dir", default=str(RUN))
+    parser.add_argument("--cache-dir", default=str(CACHE))
+    parser.add_argument("--train-total", type=int, default=TOTAL["train"])
+    parser.add_argument("--val-total", type=int, default=TOTAL["val"])
+    parser.add_argument("--epochs", type=int, default=EPOCHS)
+    parser.add_argument("--title", default=TITLE)
     args = parser.parse_args()
+    RUN = Path(args.run_dir).resolve()
+    CACHE = Path(args.cache_dir).resolve()
+    TOTAL = {"train": args.train_total, "val": args.val_total}
+    TITLE = args.title
+    EPOCHS = args.epochs
     ThreadingHTTPServer((args.host, args.port), Handler).serve_forever()
