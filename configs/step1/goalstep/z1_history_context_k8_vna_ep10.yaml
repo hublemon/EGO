@@ -1,0 +1,83 @@
+# Phase 1: frozen visual next-action logits + learned visual history context.
+# Inputs are derived from the existing action_end-1s / 8s V-JEPA cache; this
+# run does NOT decode video or extract backbone features.
+experiment:
+  name: goalstep_z1_history_context_k8_vna_ep10
+  seed: 42
+  device: cuda
+  output_dir: outputs/goalstep/runs/z1_history_context_k8_vna_ep10
+
+phase0:
+  # P0-b is retained for provenance only. Its former +2pp threshold was a
+  # hand-set compute heuristic, not a dependency of the visual-history model.
+  policy: diagnostic_only
+  gate_results_path: outputs/goalstep/runs/history_context_phase0/p0b_results.json
+  historical_gate_threshold_action_top5: 27.7
+
+champion:
+  # P0-a is the authoritative same-decision-time champion. Phase-1 epochs and
+  # the final P0-a+Phase-1 probability blend are selected out-of-fold.
+  p0a_oof_scores_path: outputs/goalstep/runs/history_context_phase0/p0a_primary_same_decision_oof_scores.pt
+  p0a_results_path: outputs/goalstep/runs/history_context_phase0/p0a_primary_same_decision_results.json
+  endpoint_logits_path: outputs/goalstep/runs/history_context_phase0/endpoint_logits.pt
+  val_predictions_dir: outputs/goalstep/runs/z1_history_context_k8_vna_ep10/val_predictions
+  fold_seed: 42
+  selection_metric: action.top5
+  blend_space: probabilities
+  blend_alpha_grid: [0.0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0]
+  bootstrap_unit: video_uid
+  bootstrap_samples: 10000
+  bootstrap_seed: 42
+  adoption_rule: delta_top5_positive_and_video_bootstrap_ci95_lower_positive
+  # This tier is reported for interpretation and never blocks adoption.
+  material_gain_pp_descriptive: 1.0
+
+dataset:
+  history_index_dir: src/ego/step1_action_anticipation/goalstep/index_end_m1_lobs8_next_action_history_k8
+  derived_store_dir: ../datasets/Ego4D/goalstep_history_context_store
+  max_history: 8
+  expected_summary_tokens: 17
+  expected_embed_dim: 1024
+  # The store is fully preloaded once. Keep zero unless forked DataLoader
+  # workers have been memory-profiled on the target host.
+  num_workers: 0
+  # Full shard hashing is useful for a provenance audit but adds startup I/O.
+  verify_shard_hashes: false
+
+model:
+  history:
+    # One shared cross-attention block pools each [17,1024] segment summary.
+    segment_pooler_heads: 16
+    # The same 2-layer encoder is used for (a) true history-only and
+    # (b) current+history contextual residual passes.
+    transformer_heads: 16
+    transformer_layers: 2
+    transformer_mlp_ratio: 4.0
+    transformer_dropout: 0.1
+    segment_dropout: 0.3
+    recency_scale_sec: 300.0
+
+training:
+  epochs: 10
+  batch_size: 32
+  eval_batch_size: 64
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  warmup_epochs: 1
+  final_lr: 0.0
+  focal_gamma: 2.0
+  focal_alpha: 0.25
+  # total = fused V/N/A focal + 0.25 * true history-only V/N/A focal
+  history_aux_weight: 0.25
+  gradient_clip_norm: 1.0
+  precision: bf16
+
+evaluation:
+  split: val
+  cadence: every_epoch_full
+  # current_only is the causal control for gains from the extra current-token
+  # branch; fused-current_only isolates the contribution of history tokens.
+  modes: [visual, history, current_only, fused]
+  metrics: [cmr@5, top1, top5, top10, top15]
+  history_length_bins: ["0", "1-2", "3-4", "5-7", "8"]
+  checkpoint_selection_metric: fused.action.top5

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="590" viewBox="0 0 1200 590" role="img" aria-labelledby="title desc">
+  <title id="title">Matched-cohort ablation for adaptive GoalStep observation</title>
+  <desc id="desc">A single matched close-transition cohort is sent to three observation protocols so that performance changes can be attributed to the window and sampling choices.</desc>
+  <defs><marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#475569"/></marker><style>.t{font-family:Inter,'Noto Sans KR',Arial,sans-serif;fill:#0f172a}.h{font-size:25px;font-weight:700}.sh{font-size:18px;font-weight:650}.body{font-size:15px}.small{font-size:13px;fill:#475569}.b{fill:#fff;stroke:#cbd5e1;stroke-width:2}.arr{stroke:#475569;stroke-width:2;fill:none;marker-end:url(#a)}</style></defs>
+  <rect width="1200" height="590" rx="22" fill="#f8fafc"/>
+  <text class="t h" x="52" y="52">빈 구간 효과를 분리하는 matched-cohort ablation</text>
+  <rect class="b" x="370" y="90" width="460" height="105" rx="16"/>
+  <text class="t sh" x="430" y="128">동일한 A1→A2 연속 pair 집합</text>
+  <text class="t body" x="409" y="160">same-level · non-overlap · adaptive gap rule</text>
+  <text class="t small" x="463" y="183">label / split / seed 완전 고정</text>
+
+  <path class="arr" d="M510 195 C510 235 245 225 245 275"/><path class="arr" d="M600 195 L600 275"/><path class="arr" d="M690 195 C690 235 955 225 955 275"/>
+  <rect class="b" x="70" y="280" width="350" height="135" rx="16"/>
+  <text class="t sh" x="104" y="320">A. Fixed baseline</text>
+  <text class="t body" x="104" y="354">A2.start−1s 이전 고정 16초</text>
+  <text class="t small" x="104" y="384">빈 구간 포함 가능</text>
+  <rect class="b" x="425" y="280" width="350" height="135" rx="16"/>
+  <text class="t sh" x="459" y="320">B. Adaptive uniform</text>
+  <text class="t body" x="459" y="354">A1 경계 정렬 + 32 uniform</text>
+  <text class="t small" x="459" y="384">window 효과 측정</text>
+  <rect class="b" x="780" y="280" width="350" height="135" rx="16"/>
+  <text class="t sh" x="814" y="320">C. Adaptive 24+8</text>
+  <text class="t body" x="814" y="354">A1 경계 정렬 + multi-rate</text>
+  <text class="t small" x="814" y="384">terminal detail 추가 효과</text>
+
+  <path class="arr" d="M245 415 C245 465 510 455 510 490"/><path class="arr" d="M600 415 L600 490"/><path class="arr" d="M955 415 C955 465 690 455 690 490"/>
+  <rect x="265" y="492" width="670" height="70" rx="16" fill="#e0f2fe" stroke="#38bdf8" stroke-width="2"/>
+  <text class="t sh" x="397" y="523">동일 metric + stratified analysis</text>
+  <text class="t small" x="328" y="548">Top-1/5/10/15 · CMR@5 · gap bin · step/substep · same/different class</text>
+</svg>

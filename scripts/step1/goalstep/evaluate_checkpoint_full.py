@@ -66,6 +66,8 @@ def main() -> None:
         num_heads=classifier.get("num_heads", 16),
         depth=classifier.get("num_probe_blocks", 4),
         repository_dir=get(config, "model.repository_dir"),
+        use_temporal_metadata=bool(classifier.get("use_temporal_metadata", False)),
+        temporal_duration_scale_sec=float(classifier.get("temporal_duration_scale_sec", 32.0)),
     ).to(device).eval()
     model.load_state_dict(checkpoint["model_state"])
 

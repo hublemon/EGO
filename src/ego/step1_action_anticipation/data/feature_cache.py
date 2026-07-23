@@ -69,17 +69,25 @@ def extract_and_cache_features(
             features = backbone(clips, ant_times)
 
         for i in pending:
-            torch.save(
-                {
-                    "features": features[i].detach().cpu().half(),
-                    "verb_id": int(batch["verb_id"][i]),
-                    "noun_id": int(batch["noun_id"][i]),
-                    "action_id": int(batch["action_id"][i]),
-                    "anticipation_time_sec": float(batch["anticipation_time_sec"][i]),
-                    "sample_id": sample_ids[i],
-                },
-                cache_dir / f"{sample_ids[i]}.pt",
-            )
+            record = {
+                "features": features[i].detach().cpu().half(),
+                "verb_id": int(batch["verb_id"][i]),
+                "noun_id": int(batch["noun_id"][i]),
+                "action_id": int(batch["action_id"][i]),
+                "anticipation_time_sec": float(batch["anticipation_time_sec"][i]),
+                "sample_id": sample_ids[i],
+            }
+            for metadata_key in (
+                "observation_duration_sec",
+                "observed_action_duration_sec",
+                "frame_time_positions",
+                "frame_terminal_mask",
+                "annotation_level_id",
+            ):
+                if metadata_key in batch:
+                    value = batch[metadata_key][i]
+                    record[metadata_key] = value.detach().cpu() if torch.is_tensor(value) else value
+            torch.save(record, cache_dir / f"{sample_ids[i]}.pt")
             saved += 1
         skipped += len(sample_ids) - len(pending)
 
@@ -98,9 +106,15 @@ class FeatureCacheDataset(Dataset):
     expected sample count and re-run :func:`extract_and_cache_features` first.
     """
 
-    def __init__(self, sample_ids: list[str], cache_dir: str | Path) -> None:
+    def __init__(
+        self,
+        sample_ids: list[str],
+        cache_dir: str | Path,
+        label_overrides: dict[str, dict[str, int]] | None = None,
+    ) -> None:
         self.cache_dir = Path(cache_dir)
         self.sample_ids = [sid for sid in sample_ids if (self.cache_dir / f"{sid}.pt").is_file()]
+        self.label_overrides = label_overrides or {}
 
     @classmethod
     def from_cache_dir(cls, cache_dir: str | Path) -> "FeatureCacheDataset":
@@ -114,7 +128,7 @@ class FeatureCacheDataset(Dataset):
 
     def __getitem__(self, index: int) -> dict[str, Any]:
         record = torch.load(self.cache_dir / f"{self.sample_ids[index]}.pt", map_location="cpu")
-        return {
+        result = {
             "video": record["features"].float(),
             "verb_id": record["verb_id"],
             "noun_id": record["noun_id"],
@@ -122,3 +136,20 @@ class FeatureCacheDataset(Dataset):
             "anticipation_time_sec": record["anticipation_time_sec"],
             "sample_id": record["sample_id"],
         }
+        for metadata_key in (
+            "observation_duration_sec",
+            "observed_action_duration_sec",
+            "frame_time_positions",
+            "frame_terminal_mask",
+            "annotation_level_id",
+        ):
+            if metadata_key in record:
+                result[metadata_key] = record[metadata_key]
+        # Some protocols reuse an identical frozen visual observation while
+        # changing only its supervised target (for example, A2.end-1s -> A3).
+        # Keep the large feature cache immutable and apply the audited label
+        # overlay at read time instead of duplicating hundreds of GB of tokens.
+        override = self.label_overrides.get(record["sample_id"])
+        if override is not None:
+            result.update(override)
+        return result

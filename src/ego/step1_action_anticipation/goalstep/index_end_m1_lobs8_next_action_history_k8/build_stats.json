@@ -1,0 +1,93 @@
+{
+  "protocol": "visual_history_of_completed_same_video_same_level_actions",
+  "source_endpoint_index_dir": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_end_m1_lobs8",
+  "target_next_action_index_dir": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_end_m1_lobs8_next_action",
+  "history_k": 8,
+  "history_order": "left_padded_then_oldest_to_newest",
+  "history_eligibility": "same video_uid and annotation level; history action end <= current A2.start",
+  "history_temporal_feature": "current obs_end - history obs_end",
+  "target_contract": "unchanged next-action A3 cohort from target index",
+  "leakage_contract": "history visual cache IDs only; no history GT labels",
+  "audit_column_contract": "audit_* boundary columns are forbidden model inputs",
+  "builder_sha256": "59fd6611dec3982375ed87ff4115d976a7a45abae254908101b46176adf885ae",
+  "train": {
+    "source_endpoint_samples": 30374,
+    "target_samples": 29293,
+    "retained_samples": 29293,
+    "history_k": 8,
+    "history_length_min": 0,
+    "history_length_mean": 6.845253132147612,
+    "history_length_median": 8.0,
+    "history_length_p90": 8.0,
+    "history_length_max": 8,
+    "history_length_histogram": {
+      "0": 1043,
+      "1": 980,
+      "2": 952,
+      "3": 901,
+      "4": 869,
+      "5": 838,
+      "6": 812,
+      "7": 791,
+      "8": 22107
+    },
+    "samples_with_no_history": 1043,
+    "samples_with_full_history": 22107,
+    "history_model_columns_contain_gt_labels": false,
+    "minimum_current_obs_to_target_margin_sec": 1.0,
+    "maximum_history_obs_end_sec": 17582.35754,
+    "source_endpoint_index": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_end_m1_lobs8/train.parquet",
+    "source_endpoint_index_sha256": "0ca65c3330bf18a3e4f71faecf0da57693902c6fcfcdacd5d851747cbffedc58",
+    "target_next_action_index": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_end_m1_lobs8_next_action/train.parquet",
+    "target_next_action_index_sha256": "4cf4fdd145fe4f088e98827ec574fb696f675037dd98aef9ee79f320f88baae1",
+    "output_index": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_end_m1_lobs8_next_action_history_k8/train.parquet",
+    "output_index_sha256": "d896c033ccac05618035f3bc07098fc56975bf58ba5f3d1b3dbf4b3a5094d7ae"
+  },
+  "val": {
+    "source_endpoint_samples": 7214,
+    "target_samples": 6960,
+    "retained_samples": 6960,
+    "history_k": 8,
+    "history_length_min": 0,
+    "history_length_mean": 6.820258620689655,
+    "history_length_median": 8.0,
+    "history_length_p90": 8.0,
+    "history_length_max": 8,
+    "history_length_histogram": {
+      "0": 249,
+      "1": 238,
+      "2": 224,
+      "3": 226,
+      "4": 213,
+      "5": 207,
+      "6": 205,
+      "7": 196,
+      "8": 5202
+    },
+    "samples_with_no_history": 249,
+    "samples_with_full_history": 5202,
+    "history_model_columns_contain_gt_labels": false,
+    "minimum_current_obs_to_target_margin_sec": 1.0,
+    "maximum_history_obs_end_sec": 5969.24427,
+    "source_endpoint_index": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_end_m1_lobs8/val.parquet",
+    "source_endpoint_index_sha256": "7cb5a06ad6e36710ded7b86d6d7f297ac3283488d1e44504c5cbbd83ef5c78ba",
+    "target_next_action_index": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_end_m1_lobs8_next_action/val.parquet",
+    "target_next_action_index_sha256": "84c9d1ceffc69b1c177932bc27acd40da54468e55d297efc06b8c7619c23e0a3",
+    "output_index": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_end_m1_lobs8_next_action_history_k8/val.parquet",
+    "output_index_sha256": "06f9a9e7ce3a788c55b44b8615caf5c3e017096129fb6094f1481db882ebff9c"
+  },
+  "copied_assets": {
+    "action_registry.json": {
+      "source": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_end_m1_lobs8_next_action/action_registry.json",
+      "source_sha256": "dc80a93fd4b034768d7f9beb76d2da99701037dd60e5cc9f24291afb0063fb64",
+      "output": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_end_m1_lobs8_next_action_history_k8/action_registry.json",
+      "output_sha256": "dc80a93fd4b034768d7f9beb76d2da99701037dd60e5cc9f24291afb0063fb64"
+    },
+    "video_uids.txt": {
+      "source": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_end_m1_lobs8_next_action/video_uids.txt",
+      "source_sha256": "30cd6bbd722fea674aeae3b3cb18ea581ea40b35c790d04a2f21b3fe69d38151",
+      "output": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_end_m1_lobs8_next_action_history_k8/video_uids.txt",
+      "output_sha256": "30cd6bbd722fea674aeae3b3cb18ea581ea40b35c790d04a2f21b3fe69d38151"
+    }
+  }
+}

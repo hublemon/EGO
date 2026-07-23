@@ -270,7 +270,7 @@ def train_one_epoch(
     for batch in loader:
         features = batch["video"].to(device)
         with torch.autocast("cuda", dtype=amp_dtype, enabled=amp_dtype is not None):
-            logits = head_model(features)
+            logits = _forward_head(head_model, features, batch, device)
             loss = sum(
                 sigmoid_focal_loss(logits[h], batch[f"{h}_id"].to(device), alpha=alpha, gamma=gamma)
                 for h in loss_heads
@@ -293,7 +293,7 @@ def compute_predictions(head_model, loader, device, heads=HEADS) -> dict:
     sample_ids: list[str] = []
     for batch in loader:
         features = batch["video"].to(device)
-        logits = head_model(features)
+        logits = _forward_head(head_model, features, batch, device)
         for h in heads:
             logits_all[h].append(logits[h].cpu())
             labels_all[h].append(batch[f"{h}_id"].cpu())
@@ -302,6 +302,30 @@ def compute_predictions(head_model, loader, device, heads=HEADS) -> dict:
         logits_all[h] = torch.cat(logits_all[h])
         labels_all[h] = torch.cat(labels_all[h])
     return {"logits": logits_all, "labels": labels_all, "sample_ids": sample_ids}
+
+
+def _forward_head(head_model, features, batch: dict, device):
+    """Forward cached features with optional adaptive-window time metadata."""
+    if not getattr(head_model, "use_temporal_metadata", False):
+        return head_model(features)
+    required = (
+        "observation_duration_sec",
+        "observed_action_duration_sec",
+        "frame_time_positions",
+        "frame_terminal_mask",
+        "annotation_level_id",
+    )
+    missing = [key for key in required if key not in batch]
+    if missing:
+        raise EgoConfigError(f"Temporal-metadata head is missing cached fields: {missing}")
+    return head_model(
+        features,
+        observation_duration_sec=batch["observation_duration_sec"].to(device),
+        observed_action_duration_sec=batch["observed_action_duration_sec"].to(device),
+        frame_time_positions=batch["frame_time_positions"].to(device),
+        frame_terminal_mask=batch["frame_terminal_mask"].to(device),
+        annotation_level_id=batch["annotation_level_id"].to(device),
+    )
 
 
 def band_breakdown(logits, labels, num_classes: int, bands: dict[int, str], k: int = 5) -> dict[str, float]:
@@ -421,6 +445,8 @@ def main() -> None:
         num_heads=classifier_cfg.get("num_heads", 16),
         depth=classifier_cfg.get("num_probe_blocks", 4),
         repository_dir=get(config, "model.repository_dir"),
+        use_temporal_metadata=bool(classifier_cfg.get("use_temporal_metadata", False)),
+        temporal_duration_scale_sec=float(classifier_cfg.get("temporal_duration_scale_sec", 32.0)),
     ).to(device)
 
     num_epochs = require(config, "training.epochs")

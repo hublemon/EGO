@@ -1,13 +1,14 @@
 """Cache frozen V-JEPA2 backbone features for an Ego4D LTA Z=1 index split.
 
-Resamples each [obs_start_sec, obs_end_sec] window to the same T/fps the
-EK100 pipeline uses, runs the frozen encoder+predictor (the predictor
-receiving the same "tau_a-seconds-ahead mask token" input it uses for
-EK100), and caches the resulting token sequence per sample_id so
+Resamples each [obs_start_sec, obs_end_sec] window to a fixed frame count
+(uniformly by default, or with a configured adaptive sampler), runs the frozen
+encoder+predictor (the predictor receiving the same
+"tau_a-seconds-ahead mask token" input it uses for EK100), and caches the
+resulting token sequence per sample_id so
 ``train_lta_z1.py`` never has to touch raw video. Reuses
-``ego.step1_action_anticipation.data.feature_cache.extract_and_cache_features``
-unchanged -- it only depends on the dataset's ``__getitem__`` schema, which
-``Ego4DLTADataset`` matches exactly.
+``ego.step1_action_anticipation.data.feature_cache.extract_and_cache_features``;
+adaptive samples add audited probe-only time metadata to the otherwise shared
+cache schema.
 
 Usage:
     python scripts/step1/ego4d_lta/extract_features.py \
@@ -85,6 +86,7 @@ def main() -> None:
     resolution = require(config, "dataset.resolution")
     video_root = expand_path(require(config, "dataset.video_root"))
     video_source = get(config, "dataset.video_source", "clips")
+    sampling_cfg = get(config, "dataset.frame_sampling", {})
     repository_dir = get(config, "model.repository_dir")
 
     transform = build_transform(training=False, crop_size=resolution, repository_dir=repository_dir)
@@ -98,6 +100,10 @@ def main() -> None:
         resolution=resolution,
         tau_a=tau_a,
         transform=transform,
+        sampling_strategy=sampling_cfg.get("strategy", "uniform"),
+        global_frames=int(sampling_cfg.get("global_frames", 24)),
+        terminal_frames=int(sampling_cfg.get("terminal_frames", 8)),
+        terminal_window_sec=float(sampling_cfg.get("terminal_window_sec", 2.0)),
     )
 
     backbone = load_vjepa2_backbone(

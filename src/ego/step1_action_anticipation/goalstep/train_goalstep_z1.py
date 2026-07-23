@@ -48,7 +48,7 @@ from ego.common.io import ensure_dir, write_json, write_yaml  # noqa: E402
 from ego.common.logging import step_log  # noqa: E402
 from ego.common.paths import expand_path  # noqa: E402
 from ego.common.seed import set_seed  # noqa: E402
-from ego.datasets.ego4d import index_scenario_lookup  # noqa: E402
+from ego.datasets.ego4d import index_scenario_lookup, z1_sample_id  # noqa: E402
 from ego.step1_action_anticipation.data.collator import anticipation_collate  # noqa: E402
 from ego.step1_action_anticipation.data.feature_cache import FeatureCacheDataset  # noqa: E402
 from ego.step1_action_anticipation.models import AnticipationHead  # noqa: E402
@@ -63,14 +63,20 @@ def _history_columns(heads: list[str]) -> list[str]:
     )), "seconds"]
 
 
-def _subset_loader(cache_dir: Path, sample_ids: list[str], batch_size: int, num_workers: int):
+def _subset_loader(
+    cache_dir: Path,
+    sample_ids: list[str],
+    batch_size: int,
+    num_workers: int,
+    label_overrides: dict[str, dict[str, int]] | None = None,
+):
     """Sequential loader over an explicit sample_id list.
 
     Sequential (``shuffle=False``, no sampler) for the same reason
     ``train_lta_z1._build_eval_loader`` is: ``compute_predictions`` pairs its
     collected logits back to the caller's ``scenarios`` list positionally.
     """
-    dataset = FeatureCacheDataset(sample_ids, cache_dir)
+    dataset = FeatureCacheDataset(sample_ids, cache_dir, label_overrides=label_overrides)
     if len(dataset) == 0:
         raise EgoConfigError(f"No cached features found under {cache_dir}. Run extract_features.py --split val first.")
     loader = DataLoader(
@@ -78,6 +84,75 @@ def _subset_loader(cache_dir: Path, sample_ids: list[str], batch_size: int, num_
         num_workers=num_workers, pin_memory=True, persistent_workers=num_workers > 0,
     )
     return dataset, loader
+
+
+def _sample_ids_from_index(index_df):
+    """Return cache identities, preserving source-row ids for relabel protocols."""
+    if "cache_sample_id" in index_df.columns:
+        ids = index_df["cache_sample_id"].astype(str).tolist()
+        if len(ids) != len(set(ids)):
+            raise EgoConfigError("dataset index contains duplicate cache_sample_id values")
+        return ids
+    frame = index_df.reset_index(drop=True)
+    return [z1_sample_id(str(row["clip_uid"]), i) for i, row in frame.iterrows()]
+
+
+def _scenario_lookup(index_df) -> dict[str, str]:
+    if "cache_sample_id" not in index_df.columns:
+        return index_scenario_lookup(index_df)
+    return {
+        str(row["cache_sample_id"]): str(row["scenario"])
+        for _, row in index_df.iterrows()
+    }
+
+
+def _label_overrides(index_df, mapping) -> dict[str, dict[str, int]]:
+    if "cache_sample_id" not in index_df.columns:
+        raise EgoConfigError("dataset.labels_from_index=true requires cache_sample_id in the index")
+    overrides = {}
+    for _, row in index_df.iterrows():
+        verb_raw, noun_raw = int(row["verb_label"]), int(row["noun_label"])
+        overrides[str(row["cache_sample_id"])] = {
+            "verb_id": mapping.encode_verb(verb_raw),
+            "noun_id": mapping.encode_noun(noun_raw),
+            "action_id": mapping.encode_action(verb_raw, noun_raw),
+        }
+    return overrides
+
+
+def _indexed_loader(
+    cache_dir: Path,
+    index_df,
+    mapping,
+    batch_size: int,
+    num_workers: int,
+    *,
+    shuffle: bool,
+    sampler_name: str | None = None,
+    seed: int = 42,
+):
+    sample_ids = _sample_ids_from_index(index_df)
+    overrides = _label_overrides(index_df, mapping)
+    dataset = FeatureCacheDataset(sample_ids, cache_dir, label_overrides=overrides)
+    if len(dataset) != len(sample_ids):
+        raise EgoConfigError(
+            f"Relabel index/cache mismatch under {cache_dir}: "
+            f"index={len(sample_ids)} cached={len(dataset)} missing={len(sample_ids) - len(dataset)}"
+        )
+    scenarios_by_id = _scenario_lookup(index_df)
+    scenarios = [scenarios_by_id[sid] for sid in dataset.sample_ids]
+    sampler = None
+    if sampler_name == "scenario_stratified":
+        sampler = tz1.ScenarioStratifiedSampler(scenarios, seed=seed)
+        shuffle = False
+    elif sampler_name not in (None, "random"):
+        raise EgoConfigError(f"Unknown sampler {sampler_name!r}")
+    loader = DataLoader(
+        dataset, batch_size=batch_size, shuffle=shuffle, sampler=sampler,
+        collate_fn=anticipation_collate, num_workers=num_workers, pin_memory=True,
+        persistent_workers=num_workers > 0,
+    )
+    return dataset, loader, scenarios, overrides
 
 
 def _log_eval(prefix: str, result: dict, heads: list[str]) -> None:
@@ -100,11 +175,107 @@ def _metrics_dict(result: dict, train_loss: float | None = None, epoch: int | No
         "band": result["band"],
         "scenario": result["scenario"],
     }
+    if "stratified" in result:
+        out["stratified"] = result["stratified"]
     if epoch is not None:
         out["epoch"] = epoch
     if train_loss is not None:
         out["train_loss"] = train_loss
     return out
+
+
+def _adaptive_group_lookup(index_df) -> dict[str, dict[str, str]] | None:
+    """Build audit-only adaptive cohort groups keyed by cache sample id.
+
+    These fields are joined to predictions only after inference.  In
+    particular, the future inter-action gap never enters the feature cache or
+    model forward path.
+    """
+    required = {
+        "annotation_level",
+        "inter_action_gap_sec",
+        "observed_action_duration_sec",
+        "observed_action_label",
+        "action_label",
+    }
+    if not required.issubset(index_df.columns):
+        return None
+
+    sample_ids = _sample_ids_from_index(index_df)
+    lookup: dict[str, dict[str, str]] = {}
+    for sample_id, (_, row) in zip(sample_ids, index_df.reset_index(drop=True).iterrows()):
+        gap = float(row["inter_action_gap_sec"])
+        if gap <= 0.5 + 1e-9:
+            gap_bin = "0-0.5s"
+        elif gap <= 1.0 + 1e-9:
+            gap_bin = "0.5-1s"
+        else:
+            gap_bin = "1-2s"
+
+        duration = float(row["observed_action_duration_sec"])
+        if duration < 8.0:
+            duration_bin = "1-8s"
+        elif duration < 16.0:
+            duration_bin = "8-16s"
+        elif duration <= 32.0:
+            duration_bin = "16-32s"
+        else:
+            duration_bin = ">32s"
+
+        lookup[sample_id] = {
+            "gap": gap_bin,
+            "level": str(row["annotation_level"]),
+            "transition": (
+                "same_class"
+                if int(row["observed_action_label"]) == int(row["action_label"])
+                else "different_class"
+            ),
+            "observed_action_duration": duration_bin,
+        }
+    return lookup
+
+
+def _attach_adaptive_stratified_metrics(
+    result: dict,
+    index_df,
+    num_classes: dict[str, int],
+    heads: list[str],
+) -> None:
+    lookup = _adaptive_group_lookup(index_df)
+    if lookup is None:
+        return
+
+    sample_ids = result["_preds"]["sample_ids"]
+    missing = [sample_id for sample_id in sample_ids if sample_id not in lookup]
+    if missing:
+        raise EgoConfigError(
+            f"Adaptive evaluation metadata is missing {len(missing)} prediction ids; "
+            f"first={missing[0]}"
+        )
+
+    stratified: dict[str, dict[str, dict]] = {}
+    for dimension in ("gap", "level", "transition", "observed_action_duration"):
+        groups: dict[str, list[int]] = {}
+        for position, sample_id in enumerate(sample_ids):
+            groups.setdefault(lookup[sample_id][dimension], []).append(position)
+        stratified[dimension] = {}
+        for group, positions in groups.items():
+            index_tensor = torch.tensor(positions, dtype=torch.long)
+            group_metrics = {"size": len(positions), "heads": {}}
+            for head in heads:
+                logits = result["_preds"]["logits"][head][index_tensor]
+                labels = result["_preds"]["labels"][head][index_tensor]
+                group_metrics["heads"][head] = {
+                    "cmr5": tz1.class_mean_recall(
+                        logits, labels, num_classes[head], k=5
+                    ),
+                    "top1": tz1.top_k_recall(logits, labels, k=1),
+                    "top5": tz1.top_k_recall(logits, labels, k=5),
+                    "top10": tz1.top_k_recall(logits, labels, k=10),
+                    "top15": tz1.top_k_recall(logits, labels, k=15),
+                }
+            stratified[dimension][group] = group_metrics
+    result["stratified"] = stratified
 
 
 def main() -> None:
@@ -127,8 +298,8 @@ def main() -> None:
 
     train_index = tz1._read_index(tz1._find_index_file(index_dir, "train"))
     val_index = tz1._read_index(tz1._find_index_file(index_dir, "val"))
-    train_scenario_lookup = index_scenario_lookup(train_index)
-    val_scenario_lookup = index_scenario_lookup(val_index)
+    train_scenario_lookup = _scenario_lookup(train_index)
+    val_scenario_lookup = _scenario_lookup(val_index)
 
     cache_dir = expand_path(require(config, "dataset.feature_cache_dir"))
     batch_size = require(config, "training.batch_size")
@@ -154,13 +325,28 @@ def main() -> None:
         step_log(1, PHASE, f"Train pool thinned: max_samples_per_video={max_per_video} "
                            f"max_train_videos={max_videos} max_train_samples={max_samples}")
 
-    train_dataset, train_loader, _ = tz1._build_train_loader(
-        cache_dir / "train", batch_size, sampler_name, train_scenario_lookup, seed, num_workers=num_workers,
-        max_per_video=max_per_video, max_videos=max_videos, max_samples=max_samples
-    )
-    full_val_dataset, full_val_loader, full_val_scenarios = tz1._build_eval_loader(
-        cache_dir / "val", batch_size, val_scenario_lookup, num_workers=num_workers
-    )
+    labels_from_index = bool(get(config, "dataset.labels_from_index", False))
+    train_label_overrides = val_label_overrides = None
+    if labels_from_index:
+        if max_per_video is not None or max_videos is not None or max_samples is not None:
+            raise EgoConfigError("Index-label overlay currently requires the complete relabel index")
+        train_dataset, train_loader, _, train_label_overrides = _indexed_loader(
+            cache_dir / "train", train_index, mapping, batch_size, num_workers,
+            shuffle=True, sampler_name=sampler_name, seed=seed,
+        )
+        full_val_dataset, full_val_loader, full_val_scenarios, val_label_overrides = _indexed_loader(
+            cache_dir / "val", val_index, mapping, batch_size, num_workers,
+            shuffle=False,
+        )
+        step_log(1, PHASE, "Labels: index overlay enabled; cached visual features reused unchanged")
+    else:
+        train_dataset, train_loader, _ = tz1._build_train_loader(
+            cache_dir / "train", batch_size, sampler_name, train_scenario_lookup, seed, num_workers=num_workers,
+            max_per_video=max_per_video, max_videos=max_videos, max_samples=max_samples
+        )
+        full_val_dataset, full_val_loader, full_val_scenarios = tz1._build_eval_loader(
+            cache_dir / "val", batch_size, val_scenario_lookup, num_workers=num_workers
+        )
     step_log(1, PHASE, f"Train samples: {len(train_dataset)}  Val samples (full): {len(full_val_dataset)}")
     step_log(1, PHASE, f"Sampler: {sampler_name}")
 
@@ -177,7 +363,9 @@ def main() -> None:
         subset_ids = all_val_ids
         step_log(1, PHASE, f"Per-epoch validation on all {len(subset_ids)} val samples "
                            f"(<= val_subset_size={subset_size})")
-    subset_dataset, subset_loader = _subset_loader(cache_dir / "val", subset_ids, batch_size, num_workers)
+    subset_dataset, subset_loader = _subset_loader(
+        cache_dir / "val", subset_ids, batch_size, num_workers, label_overrides=val_label_overrides
+    )
     subset_scenarios = [val_scenario_lookup.get(sid, "unknown") for sid in subset_dataset.sample_ids]
 
     num_epochs = require(config, "training.epochs")
@@ -210,6 +398,8 @@ def main() -> None:
         num_heads=classifier_cfg.get("num_heads", 16),
         depth=classifier_cfg.get("num_probe_blocks", 4),
         repository_dir=get(config, "model.repository_dir"),
+        use_temporal_metadata=bool(classifier_cfg.get("use_temporal_metadata", False)),
+        temporal_duration_scale_sec=float(classifier_cfg.get("temporal_duration_scale_sec", 32.0)),
     ).to(device)
     optimizer = torch.optim.AdamW(head_model.parameters(), lr=lr, weight_decay=wd)
     lr_sched = tz1._WarmupCosineLR(
@@ -231,7 +421,12 @@ def main() -> None:
         "train_heads": train_heads, "emitted_heads": train_heads, "evaluated_heads": train_heads,
         "seed": seed, "epochs": num_epochs, "batch_size": batch_size, "learning_rate": lr,
         "train_precision": precision, "eval_precision": "fp32",
+        "labels_from_index": labels_from_index,
         "tau_a": get(config, "dataset.tau_a", 1.0), "l_obs": get(config, "dataset.l_obs", 3.5),
+        "predictor_grid_fps": get(config, "dataset.frames_per_second", None),
+        "frame_sampling": get(config, "dataset.frame_sampling", {"strategy": "uniform"}),
+        "task_contract": get(config, "dataset.task_contract", None),
+        "use_temporal_metadata": bool(classifier_cfg.get("use_temporal_metadata", False)),
         "taxonomy": num_classes, "index_dir": str(index_dir),
         "train_samples": len(train_dataset), "val_samples_full": len(full_val_dataset),
         "val_subset_size": len(subset_dataset), "val_subset_seed": subset_seed,
@@ -261,6 +456,7 @@ def main() -> None:
         result = tz1.evaluate(
             head_model, subset_loader, device, num_classes, bands, subset_scenarios, heads=train_heads
         )
+        _attach_adaptive_stratified_metrics(result, val_index, num_classes, train_heads)
         _log_eval(f"Val[subset n={len(subset_dataset)}] epoch {epoch}", result, train_heads)
         elapsed = time.time() - t0
 
@@ -313,6 +509,7 @@ def main() -> None:
         full_result = tz1.evaluate(
             head_model, full_val_loader, device, num_classes, bands, full_val_scenarios, heads=train_heads
         )
+        _attach_adaptive_stratified_metrics(full_result, val_index, num_classes, train_heads)
         _log_eval(f"Val[FULL n={len(full_val_dataset)}] best epoch {best_epoch}", full_result, train_heads)
         step_log(1, PHASE, f"Val[FULL] action scenario breakdown: {full_result['scenario']['action']}")
         final["val_full"] = {"size": len(full_val_dataset), "metrics": _metrics_dict(full_result, epoch=best_epoch)}

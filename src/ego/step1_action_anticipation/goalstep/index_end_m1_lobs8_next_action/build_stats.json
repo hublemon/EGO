@@ -1,0 +1,42 @@
+{
+  "protocol": "observe_action_end_minus_tau_predict_next_strict_future_same_level",
+  "source_index_dir": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_end_m1_lobs8",
+  "tau_a": 1.0,
+  "l_obs": 8.0,
+  "target_rule": "first same-level annotation with target_start >= observed_action_end",
+  "cache_reuse": "cache_sample_id preserves source endpoint-index row identity",
+  "train": {
+    "source_samples": 30374,
+    "retained_samples": 29293,
+    "excluded_no_strict_next_same_level": 1081,
+    "target_horizon_sec_min": 1.0,
+    "target_horizon_sec_median": 1.5186800000001313,
+    "target_horizon_sec_p90": 19.995200000000022,
+    "target_horizon_sec_max": 5445.31803,
+    "inter_action_gap_sec_median": 0.5186800000001313,
+    "same_label_as_observed": 2884,
+    "different_label_from_observed": 26409,
+    "boundary_truncated": 25,
+    "source_index": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_end_m1_lobs8/train.parquet",
+    "source_index_sha256": "0ca65c3330bf18a3e4f71faecf0da57693902c6fcfcdacd5d851747cbffedc58",
+    "output_index": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_end_m1_lobs8_next_action/train.parquet",
+    "output_index_sha256": "4cf4fdd145fe4f088e98827ec574fb696f675037dd98aef9ee79f320f88baae1"
+  },
+  "val": {
+    "source_samples": 7214,
+    "retained_samples": 6960,
+    "excluded_no_strict_next_same_level": 254,
+    "target_horizon_sec_min": 1.0,
+    "target_horizon_sec_median": 1.546405000000064,
+    "target_horizon_sec_p90": 25.694031000000013,
+    "target_horizon_sec_max": 1469.9499099999998,
+    "inter_action_gap_sec_median": 0.546405000000064,
+    "same_label_as_observed": 718,
+    "different_label_from_observed": 6242,
+    "boundary_truncated": 5,
+    "source_index": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_end_m1_lobs8/val.parquet",
+    "source_index_sha256": "7cb5a06ad6e36710ded7b86d6d7f297ac3283488d1e44504c5cbbd83ef5c78ba",
+    "output_index": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_end_m1_lobs8_next_action/val.parquet",
+    "output_index_sha256": "84c9d1ceffc69b1c177932bc27acd40da54468e55d297efc06b8c7619c23e0a3"
+  }
+}

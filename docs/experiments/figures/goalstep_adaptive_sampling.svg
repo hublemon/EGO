@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600" role="img" aria-labelledby="title desc">
+  <title id="title">Adaptive two-rate frame sampling for attentive probe</title>
+  <desc id="desc">Twenty-four global frames summarize the preceding action and eight dense terminal frames preserve its ending cues before attention pooling predicts the next action.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#334155"/></marker>
+    <linearGradient id="bar" x1="0" x2="1"><stop offset="0" stop-color="#bfdbfe"/><stop offset="1" stop-color="#5eead4"/></linearGradient>
+    <style>.t{font-family:Inter,'Noto Sans KR',Arial,sans-serif;fill:#0f172a}.h{font-size:25px;font-weight:700}.sh{font-size:19px;font-weight:650}.body{font-size:16px}.small{font-size:14px;fill:#475569}.box{fill:#fff;stroke:#cbd5e1;stroke-width:2}.arrow{stroke:#334155;stroke-width:2.2;fill:none;marker-end:url(#arrow)}</style>
+  </defs>
+  <rect width="1200" height="600" rx="22" fill="#f8fafc"/>
+  <text class="t h" x="52" y="52">가변 action을 고정 token 수로 바꾸는 24+8 sampling</text>
+
+  <text class="t sh" x="65" y="120">A1 variable window: 1–32초</text>
+  <rect x="70" y="150" width="710" height="70" rx="12" fill="url(#bar)" stroke="#3b82f6" stroke-width="2"/>
+  <text class="t body" x="315" y="192">직전 action A1의 실제 시간 범위</text>
+  <rect x="650" y="150" width="130" height="70" rx="12" fill="#14b8a6" fill-opacity=".45" stroke="#0f766e" stroke-width="2"/>
+  <text class="t small" x="671" y="240">마지막 2초</text>
+
+  <text class="t sh" x="65" y="292">Global phase: 24 frames</text>
+  <line x1="90" y1="325" x2="755" y2="325" stroke="#60a5fa" stroke-width="4"/>
+  <g fill="#2563eb">
+    <circle cx="90" cy="325" r="6"/><circle cx="119" cy="325" r="6"/><circle cx="148" cy="325" r="6"/><circle cx="177" cy="325" r="6"/><circle cx="206" cy="325" r="6"/><circle cx="235" cy="325" r="6"/><circle cx="264" cy="325" r="6"/><circle cx="293" cy="325" r="6"/><circle cx="322" cy="325" r="6"/><circle cx="351" cy="325" r="6"/><circle cx="380" cy="325" r="6"/><circle cx="409" cy="325" r="6"/><circle cx="438" cy="325" r="6"/><circle cx="467" cy="325" r="6"/><circle cx="496" cy="325" r="6"/><circle cx="525" cy="325" r="6"/><circle cx="554" cy="325" r="6"/><circle cx="583" cy="325" r="6"/><circle cx="612" cy="325" r="6"/><circle cx="641" cy="325" r="6"/><circle cx="670" cy="325" r="6"/><circle cx="699" cy="325" r="6"/><circle cx="728" cy="325" r="6"/><circle cx="755" cy="325" r="6"/>
+  </g>
+  <text class="t small" x="90" y="352">A1 전체 phase를 정규화해 identity와 진행 순서를 보존</text>
+
+  <text class="t sh" x="65" y="415">Terminal detail: 8 frames</text>
+  <line x1="500" y1="448" x2="755" y2="448" stroke="#14b8a6" stroke-width="4"/>
+  <g fill="#0f766e"><circle cx="500" cy="448" r="7"/><circle cx="536" cy="448" r="7"/><circle cx="572" cy="448" r="7"/><circle cx="608" cy="448" r="7"/><circle cx="644" cy="448" r="7"/><circle cx="680" cy="448" r="7"/><circle cx="716" cy="448" r="7"/><circle cx="752" cy="448" r="7"/></g>
+  <text class="t small" x="500" y="477">종료 직전 물체·손·상태 변화에 높은 시간 해상도 부여</text>
+
+  <path class="arrow" d="M790 300 C850 300 845 252 895 252"/>
+  <path class="arrow" d="M790 448 C850 448 845 330 895 330"/>
+  <rect class="box" x="900" y="220" width="245" height="145" rx="16"/>
+  <text class="t sh" x="948" y="270">Attentive probe</text>
+  <text class="t body" x="934" y="306">global + terminal tokens</text>
+  <text class="t small" x="947" y="337">→ 다음 action A2 분류</text>
+
+  <rect class="box" x="70" y="515" width="1075" height="52" rx="12"/>
+  <text class="t body" x="92" y="547">추가 입력: A1 duration과 각 frame의 normalized timestamp. 실제 A1–A2 gap은 미래 정보이므로 입력하지 않는다.</text>
+</svg>

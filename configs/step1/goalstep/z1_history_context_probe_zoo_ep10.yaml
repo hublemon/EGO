@@ -1,0 +1,39 @@
+# Phase 2: pre-registered LR/WD zoo over the Phase-1 history architecture.
+# The completed Phase-1 (LR=3e-4, WD=1e-4) run is the twelfth arm and is
+# audited/reused rather than retrained. The remaining eleven arms share one
+# compact store and one DataLoader; no video decode or backbone extraction is
+# performed.
+experiment:
+  name: goalstep_z1_history_context_probe_zoo_ep10
+  device: cuda
+  output_dir: outputs/goalstep/runs/z1_history_context_probe_zoo_ep10
+
+source:
+  phase1_config: configs/step1/goalstep/z1_history_context_k8_vna_ep10.yaml
+  default_phase1_run_dir: outputs/goalstep/runs/z1_history_context_k8_vna_ep10
+
+dataset:
+  expected_train_rows: 29293
+  expected_val_rows: 6960
+
+zoo:
+  # This grid is validated in code and fails closed if changed.
+  learning_rates: [0.0001, 0.0003, 0.001]
+  weight_decays: [0.00001, 0.0001, 0.001, 0.01]
+  default_phase1_learning_rate: 0.0003
+  default_phase1_weight_decay: 0.0001
+  epochs: 10
+  seed: 42
+  schedule: shared_store_shared_dataloader_synchronous
+  checkpoints: model_only_every_epoch
+  resume: atomic_all_arm_optimizer_scheduler_rng_latest
+
+selection:
+  # Selection is deliberately deferred until all per-epoch logits exist.
+  # The authoritative evaluator combines these candidates with the eight raw
+  # P0-a checkpoint candidates under the same video-disjoint folds.
+  reference: p0a_same_decision_oof_action_top5_28.405
+  adoption_rule: delta_top5_positive_and_video_bootstrap_ci95_lower_positive
+  material_gain_pp_descriptive_only: 1.0
+  candidate_modes: [fused, current_only]
+  metrics: [cmr@5, top1, top5, top10, top15]

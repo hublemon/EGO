@@ -52,25 +52,38 @@ def gpu_stats() -> list[dict]:
 def status() -> dict:
     counts = {split: count_cache(split) for split in TOTAL}
     hist = history()
+    queue_lines = tail(RUN / "logs/queue.log", 20)
+    run_status_path = RUN / "run_status.json"
+    run_status = (
+        json.loads(run_status_path.read_text(encoding="utf-8"))
+        if run_status_path.is_file()
+        else None
+    )
     final_path = RUN / "final_metrics.json"
     final = json.loads(final_path.read_text()) if final_path.is_file() else None
     if final:
         phase = "completed"
+    elif run_status and run_status.get("state") == "paused":
+        phase = "paused"
     elif (RUN / "logs/train.log").is_file() and tail(RUN / "logs/train.log"):
         phase = "training"
     elif any(counts.values()):
         phase = "feature_extraction"
+    elif queue_lines and any("queued:" in line for line in queue_lines):
+        phase = "queued"
     else:
         phase = "starting"
     return {
         "title": TITLE,
         "epochs": EPOCHS,
         "phase": phase,
+        "run_status": run_status,
         "cache": {s: {"done": counts[s], "total": TOTAL[s], "percent": round(100 * counts[s] / TOTAL[s], 2)} for s in TOTAL},
         "history": hist,
         "latest": hist[-1] if hist else None,
         "final": final,
         "gpus": gpu_stats(),
+        "queue_log": queue_lines,
         "pipeline_log": tail(RUN / "logs/pipeline.log", 20),
         "train_log": tail(RUN / "logs/train.log", 24),
         "extract_train_log": tail(RUN / "logs/extract_train.log", 8),
@@ -87,7 +100,7 @@ HTML = r'''<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name
 <section class="card full"><div class="label">GPU telemetry</div><div class="metrics" id="gpus"></div></section><section class="card full"><div class="label">Live process log</div><pre id="logs">Waiting for logs…</pre></section></div></div>
 <script>
 const $=id=>document.getElementById(id), num=v=>v==null?'—':Number(v).toFixed(2);function chart(rows){const c=$('chart'),x=c.getContext('2d'),W=c.width,H=c.height;x.clearRect(0,0,W,H);x.strokeStyle='#243443';x.fillStyle='#91a3b5';x.font='12px system-ui';for(let y=0;y<=100;y+=20){let py=H-28-y*(H-48)/100;x.beginPath();x.moveTo(42,py);x.lineTo(W-12,py);x.stroke();x.fillText(y,8,py+4)}const series=[['action_cmr@5','#fbbf24'],['action_top1','#5eead4'],['action_top5','#60a5fa'],['action_top10','#c084fc'],['action_top15','#fb7185']];series.forEach(([k,col],si)=>{x.strokeStyle=col;x.lineWidth=3;x.beginPath();rows.forEach((r,i)=>{let px=42+i*(W-65)/Math.max(1,(window.EPOCHS||15)-1),py=H-28-Number(r[k])*(H-48)/100;i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke();x.fillStyle=col;x.fillText(k.replace('action_',''),W-350+si*68,16)});}
-async function refresh(){try{const d=await fetch('/api/status',{cache:'no-store'}).then(r=>r.json());window.EPOCHS=d.epochs;$('title').textContent=d.title;$('phase').textContent=d.phase.replaceAll('_',' ');for(const [s,p] of [['train','tr'],['val','va']]){let q=d.cache[s];$(p+'v').textContent=`${q.done.toLocaleString()} / ${q.total.toLocaleString()} (${q.percent}%)`;$(p+'b').style.width=q.percent+'%'}let l=d.latest;$('epoch').textContent=`${l?l.epoch:0} / ${d.epochs}`;$('loss').textContent=l?`train loss ${l.train_loss} · ${l.seconds}s`:'전체 피처 추출 중';let heads=['verb','noun','action'].filter(h=>l&&l[h+'_top5']!==undefined);$('metrics').innerHTML=heads.length?heads.map(h=>`<div class="metric"><span class="label">${h} CMR@5</span><b>${num(l[h+'_cmr@5'])}</b><small>top1 ${num(l[h+'_top1'])} · top5 ${num(l[h+'_top5'])} · top10 ${num(l[h+'_top10'])} · top15 ${num(l[h+'_top15'])}</small></div>`).join(''):'<span class="sub">첫 epoch 평가 후 표시됩니다.</span>';chart(d.history);$('gpus').innerHTML=d.gpus.map(g=>g.error?g.error:`<div class="metric"><span class="label">GPU ${g.index} · ${g.name}</span><b>${g.util}%</b><small>${g.memory_used} / ${g.memory_total} MiB · ${g.temperature}°C</small></div>`).join('');let logs=[...d.pipeline_log,...d.train_log,...d.extract_train_log,...d.extract_val_log];$('logs').textContent=logs.join('\n')||'Waiting for logs…'}catch(e){$('phase').textContent='reconnecting'}}refresh();setInterval(refresh,5000);
+async function refresh(){try{const d=await fetch('/api/status',{cache:'no-store'}).then(r=>r.json());window.EPOCHS=d.epochs;$('title').textContent=d.title;$('phase').textContent=d.phase.replaceAll('_',' ');for(const [s,p] of [['train','tr'],['val','va']]){let q=d.cache[s];$(p+'v').textContent=`${q.done.toLocaleString()} / ${q.total.toLocaleString()} (${q.percent}%)`;$(p+'b').style.width=q.percent+'%'}let l=d.latest;$('epoch').textContent=`${l?l.epoch:0} / ${d.epochs}`;$('loss').textContent=l?`train loss ${l.train_loss} · ${l.seconds}s`:d.phase==='queued'?'선행 16초 실험 완료 대기 중':'전체 피처 추출 중';let heads=['verb','noun','action'].filter(h=>l&&l[h+'_top5']!==undefined);$('metrics').innerHTML=heads.length?heads.map(h=>`<div class="metric"><span class="label">${h} CMR@5</span><b>${num(l[h+'_cmr@5'])}</b><small>top1 ${num(l[h+'_top1'])} · top5 ${num(l[h+'_top5'])} · top10 ${num(l[h+'_top10'])} · top15 ${num(l[h+'_top15'])}</small></div>`).join(''):'<span class="sub">첫 epoch 평가 후 표시됩니다.</span>';chart(d.history);$('gpus').innerHTML=d.gpus.map(g=>g.error?g.error:`<div class="metric"><span class="label">GPU ${g.index} · ${g.name}</span><b>${g.util}%</b><small>${g.memory_used} / ${g.memory_total} MiB · ${g.temperature}°C</small></div>`).join('');let logs=[...d.queue_log,...d.pipeline_log,...d.train_log,...d.extract_train_log,...d.extract_val_log];$('logs').textContent=logs.join('\n')||'Waiting for logs…'}catch(e){$('phase').textContent='reconnecting'}}refresh();setInterval(refresh,5000);
 </script></body></html>'''
 
 

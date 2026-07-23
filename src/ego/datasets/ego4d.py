@@ -30,12 +30,16 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+import torch
 
 from ego.common.exceptions import EgoDatasetError
 from ego.contracts.observation import Observation
 from ego.datasets.base import EgoActionAnticipationDataset
 from ego.datasets.label_mapping import LabelMapping, build_label_mapping
-from ego.datasets.video_sampling import sample_uniform_frame_indices
+from ego.datasets.video_sampling import (
+    sample_adaptive_multirate_frame_indices,
+    sample_uniform_frame_indices,
+)
 
 DATASET_NAME = "Ego4D-LTA-Z1"
 
@@ -380,6 +384,10 @@ class Ego4DLTADataset(EgoActionAnticipationDataset):
         resolution: int,
         tau_a: float,
         transform: Any | None = None,
+        sampling_strategy: str = "uniform",
+        global_frames: int = 24,
+        terminal_frames: int = 8,
+        terminal_window_sec: float = 2.0,
     ) -> None:
         if len(index_df) == 0:
             raise EgoDatasetError(f"Ego4DLTADataset[{split}] built from an empty index.")
@@ -392,6 +400,19 @@ class Ego4DLTADataset(EgoActionAnticipationDataset):
         self.resolution = resolution
         self.tau_a = tau_a
         self.transform = transform
+        self.sampling_strategy = sampling_strategy
+        self.global_frames = global_frames
+        self.terminal_frames = terminal_frames
+        self.terminal_window_sec = terminal_window_sec
+        if sampling_strategy not in {"uniform", "adaptive_multirate"}:
+            raise EgoDatasetError(
+                f"sampling_strategy must be 'uniform' or 'adaptive_multirate', got {sampling_strategy!r}"
+            )
+        if sampling_strategy == "adaptive_multirate" and global_frames + terminal_frames != frames_per_clip:
+            raise EgoDatasetError(
+                "adaptive_multirate requires global_frames + terminal_frames == frames_per_clip; "
+                f"got {global_frames} + {terminal_frames} != {frames_per_clip}"
+            )
         self._fps_cache: dict[str, float] = {}
 
     def __len__(self) -> int:
@@ -417,6 +438,11 @@ class Ego4DLTADataset(EgoActionAnticipationDataset):
 
     def get_sample_metadata(self, index: int) -> Observation:
         row = self._rows.iloc[index]
+        target_start = (
+            float(row["target_start_sec"])
+            if "target_start_sec" in row.index
+            else float(row["obs_end_sec"]) + self.tau_a
+        )
         return Observation(
             sample_id=self._sample_id(row, index),
             dataset=DATASET_NAME,
@@ -424,7 +450,7 @@ class Ego4DLTADataset(EgoActionAnticipationDataset):
             video_id=str(row["clip_uid"]),
             observation_start_sec=float(row["obs_start_sec"]),
             observation_end_sec=float(row["obs_end_sec"]),
-            target_start_sec=float(row["obs_end_sec"]) + self.tau_a,
+            target_start_sec=target_start,
             anticipation_time_sec=self.tau_a,
             frames_per_clip=self.frames_per_clip,
             frames_per_second=round(self.frames_per_clip / max(row["obs_end_sec"] - row["obs_start_sec"], 1e-6)),
@@ -438,12 +464,24 @@ class Ego4DLTADataset(EgoActionAnticipationDataset):
         vr = VideoReader(str(video_path), num_threads=1, ctx=cpu(0))
         vfps = self._fps_cache.setdefault(str(video_path), float(vr.get_avg_fps()))
 
-        frame_indices = sample_uniform_frame_indices(
-            start_sec=row["obs_start_sec"],
-            end_sec=row["obs_end_sec"],
-            video_fps=vfps,
-            num_frames=self.frames_per_clip,
-        )
+        if self.sampling_strategy == "adaptive_multirate":
+            frame_indices, frame_time_positions, frame_terminal_mask = (
+                sample_adaptive_multirate_frame_indices(
+                    start_sec=row["obs_start_sec"],
+                    end_sec=row["obs_end_sec"],
+                    video_fps=vfps,
+                    global_frames=self.global_frames,
+                    terminal_frames=self.terminal_frames,
+                    terminal_window_sec=self.terminal_window_sec,
+                )
+            )
+        else:
+            frame_indices = sample_uniform_frame_indices(
+                start_sec=row["obs_start_sec"],
+                end_sec=row["obs_end_sec"],
+                video_fps=vfps,
+                num_frames=self.frames_per_clip,
+            )
         frame_indices = frame_indices.clip(0, len(vr) - 1)
         buffer = vr.get_batch(frame_indices.tolist()).asnumpy()
         video = self.transform(buffer) if self.transform is not None else buffer
@@ -451,7 +489,12 @@ class Ego4DLTADataset(EgoActionAnticipationDataset):
         verb_raw = int(row["verb_label"])
         noun_raw = int(row["noun_label"])
 
-        return {
+        target_start = (
+            float(row["target_start_sec"])
+            if "target_start_sec" in row.index
+            else float(row["obs_end_sec"]) + self.tau_a
+        )
+        result = {
             "video": video,
             "verb_id": self._label_mapping.encode_verb(verb_raw),
             "noun_id": self._label_mapping.encode_noun(noun_raw),
@@ -461,8 +504,27 @@ class Ego4DLTADataset(EgoActionAnticipationDataset):
             "anticipation_time_sec": self.tau_a,
             "observation_start_sec": float(row["obs_start_sec"]),
             "observation_end_sec": float(row["obs_end_sec"]),
-            "target_start_sec": float(row["obs_end_sec"]) + self.tau_a,
+            "target_start_sec": target_start,
             "sample_id": self._sample_id(row, index),
             "video_id": str(row["clip_uid"]),
             "scenario": str(row["scenario"]),
         }
+        if self.sampling_strategy == "adaptive_multirate":
+            annotation_level = str(row.get("annotation_level", ""))
+            if annotation_level not in {"step", "substep"}:
+                raise EgoDatasetError(
+                    "adaptive_multirate samples require annotation_level='step' or 'substep'; "
+                    f"got {annotation_level!r} for {self._sample_id(row, index)}"
+                )
+            observation_duration = float(row["obs_end_sec"]) - float(row["obs_start_sec"])
+            observed_action_duration = float(
+                row.get("observed_action_duration_sec", observation_duration)
+            )
+            result.update({
+                "observation_duration_sec": observation_duration,
+                "observed_action_duration_sec": observed_action_duration,
+                "frame_time_positions": torch.from_numpy(frame_time_positions),
+                "frame_terminal_mask": torch.from_numpy(frame_terminal_mask),
+                "annotation_level_id": 0 if annotation_level == "step" else 1,
+            })
+        return result

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
+  <title id="title">GoalStep fixed target-anchored window versus predecessor-aligned adaptive window</title>
+  <desc id="desc">The fixed window may include an unlabeled gap, while the adaptive window follows the preceding action boundary and excludes the gap.</desc>
+  <defs>
+    <linearGradient id="fixedObs" x1="0" x2="1"><stop offset="0" stop-color="#60a5fa" stop-opacity=".8"/><stop offset="1" stop-color="#a78bfa" stop-opacity=".8"/></linearGradient>
+    <linearGradient id="adaptObs" x1="0" x2="1"><stop offset="0" stop-color="#2dd4bf"/><stop offset="1" stop-color="#5eead4"/></linearGradient>
+    <pattern id="gap" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="14" height="14" fill="#fff7ed"/><line x1="0" y1="0" x2="0" y2="14" stroke="#fdba74" stroke-width="5"/></pattern>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#334155"/></marker>
+    <style>
+      .t{font-family:Inter,'Noto Sans KR',Arial,sans-serif;fill:#0f172a}.h{font-size:25px;font-weight:700}.sh{font-size:19px;font-weight:650}.body{font-size:17px}.small{font-size:14px;fill:#475569}.axis{stroke:#334155;stroke-width:2}.dash{stroke:#64748b;stroke-width:2;stroke-dasharray:7 6}.call{fill:#fff;stroke:#cbd5e1;stroke-width:1.5}.action1{fill:#bfdbfe;stroke:#3b82f6;stroke-width:2}.action2{fill:#fecdd3;stroke:#f43f5e;stroke-width:2}
+    </style>
+  </defs>
+  <rect width="1200" height="650" rx="22" fill="#f8fafc"/>
+  <text class="t h" x="52" y="52">고정 target-anchor와 action-aligned adaptive window 비교</text>
+
+  <text class="t sh" x="55" y="112">A. 기존: A2.start−1s 기준 고정 16초</text>
+  <line class="axis" x1="90" y1="215" x2="1110" y2="215" marker-end="url(#arrow)"/>
+  <rect class="action1" x="145" y="155" width="355" height="60" rx="9"/>
+  <text class="t body" x="286" y="191">직전 action A1</text>
+  <rect x="500" y="155" width="260" height="60" rx="5" fill="url(#gap)" stroke="#fb923c" stroke-width="2"/>
+  <text class="t body" x="572" y="191">빈 annotation 구간</text>
+  <rect class="action2" x="820" y="155" width="245" height="60" rx="9"/>
+  <text class="t body" x="896" y="191">target A2</text>
+  <line class="dash" x1="760" y1="135" x2="760" y2="271"/>
+  <text class="t small" x="713" y="129">A2.start−1s</text>
+  <rect x="285" y="238" width="475" height="35" rx="17" fill="url(#fixedObs)"/>
+  <text class="t body" x="405" y="263" fill="#fff">고정 observation 16초</text>
+  <rect class="call" x="778" y="244" width="332" height="70" rx="12"/>
+  <text class="t body" x="797" y="270">끝부분 token이 빈 공간에 대응</text>
+  <text class="t small" x="797" y="296">A1의 종료 상태가 희석될 수 있음</text>
+
+  <text class="t sh" x="55" y="370">B. 제안: A1 경계 기준 adaptive window</text>
+  <line class="axis" x1="90" y1="485" x2="1110" y2="485" marker-end="url(#arrow)"/>
+  <rect class="action1" x="145" y="425" width="355" height="60" rx="9"/>
+  <text class="t body" x="286" y="461">직전 action A1</text>
+  <rect x="500" y="425" width="260" height="60" rx="5" fill="url(#gap)" stroke="#fb923c" stroke-width="2" opacity=".5"/>
+  <text class="t small" x="563" y="461">모델 입력에서 제외</text>
+  <rect class="action2" x="820" y="425" width="245" height="60" rx="9"/>
+  <text class="t body" x="896" y="461">target A2</text>
+  <line class="dash" x1="490" y1="405" x2="490" y2="543"/>
+  <text class="t small" x="414" y="398">A1.end−0.25s</text>
+  <rect x="145" y="508" width="345" height="35" rx="17" fill="url(#adaptObs)"/>
+  <text class="t body" x="215" y="533">A1-aligned variable observation</text>
+  <rect class="call" x="570" y="520" width="540" height="78" rx="12"/>
+  <text class="t body" x="590" y="548">A1의 진행 과정과 종료 직전 상태를 보존</text>
+  <text class="t small" x="590" y="574">A2 프레임은 보지 않으므로 anticipation 계약 유지</text>
+
+  <text class="t small" x="55" y="625">시간은 왼쪽에서 오른쪽으로 흐른다. gap은 pair 선정에만 사용하며 모델 입력으로 제공하지 않는다.</text>
+</svg>
