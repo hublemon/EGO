@@ -1,0 +1,45 @@
+# Step-2 Retrospection — GoalStep strict start−1s / 8s, Top-15 support
+# 모든 경로는 EGO_jihun3 루트 기준. EGO_jihun/EGO_jihun2 저장소 참조 금지.
+
+experiment:
+  name: retro_goalstep_start_m1_lobs8
+  seed: 42
+  output_dir: outputs/step2_retrospection/goalstep_start_m1_lobs8
+
+step1_export:  # jihun2 → jihun3 인터페이스 (읽기 전용, 불변)
+  root: outputs/goalstep/exports/RETRO-goalstep-start-m1-lobs8-best-action-top5
+  checkpoint: outputs/goalstep/exports/RETRO-goalstep-start-m1-lobs8-best-action-top5/best_action_top5.pt
+  checkpoint_sha256: b10ae8ffd125060d63cd8725c3986e26d48485452e3fcc0428f049581aad37b7
+  index_dir: outputs/goalstep/exports/RETRO-goalstep-start-m1-lobs8-best-action-top5/index
+  val_subset_ids: outputs/goalstep/exports/RETRO-goalstep-start-m1-lobs8-best-action-top5/val_subset_sample_ids.json
+
+shared_assets:  # 공용 상위 디렉터리 (복제 금지)
+  annotations_dir: ../datasets/Ego4D/v2/annotations        # goalstep_{train,val}.json
+  video_root: ../datasets/Ego4D/v2/goalstep_videos
+  feature_cache_dir: ../datasets/Ego4D/goalstep_feature_cache_start_m1_lobs8_vna
+  hf_home: /mnt/nvme/cache                                  # Qwen 가중치 공용 캐시
+
+backbone:
+  vjepa2_checkpoint: checkpoints/vjepa2/vitl.pt             # jihun3 로컬 사본 (sha 동일 검증됨)
+  repository_dir: third_party/vjepa2
+
+contract:
+  tau_a: 1.0
+  l_obs: 8.0
+  top_k: 10            # 2026-07-22 사용자 확정 (coverage@10 = 39.8% full val)
+  frames_per_clip: 32
+  frames_per_second: 4
+
+vlm:
+  model_name: Qwen/Qwen3-VL-8B-Instruct
+
+judge:  # pair 품질 게이트 전용 — 성공 판정 사용 금지
+  model: gemini-2.5-pro
+  base_url: https://gw.letsur.ai/v1
+  api_key_env: LETSUR_API_KEY
+
+splits:
+  # heldout 오염 방지: val 7,214 중 dev/heldout을 video-disjoint로 분리해
+  # build_support 단계에서 고정 (split_seed로 재현). heldout은 최종 1회 측정.
+  dev_ratio: 0.3
+  split_seed: 42
