@@ -173,7 +173,8 @@ def main() -> None:
         step_log(
             1, "EvaluateHeldout",
             f"{args.split} {h} simple accuracy: top1={result['accuracy_top1'][h]:.2f}  "
-            f"top5={result['accuracy_top5'][h]:.2f}",
+            f"top5={result['accuracy_top5'][h]:.2f}  top10={result['accuracy_top10'][h]:.2f}  "
+            f"top15={result['accuracy_top15'][h]:.2f}",
         )
 
     run_dir = ensure_dir(expand_path(require(config, "experiment.output_dir")))
@@ -181,11 +182,12 @@ def main() -> None:
         run_dir / f"{args.split}_metrics.json",
         {"overall": result["overall"], "band": result["band"], "scenario": result["scenario"],
          "accuracy_top1": result["accuracy_top1"], "accuracy_top5": result["accuracy_top5"],
+         "accuracy_top10": result["accuracy_top10"], "accuracy_top15": result["accuracy_top15"],
          "checkpoint": args.checkpoint, "checkpoint_epoch": checkpoint.get("epoch")},
     )
     tz1.save_likelihood_entropy(result["_preds"], eval_scenarios, run_dir / f"{args.split}_likelihood_entropy.jsonl")
 
-    predictions_df = build_predictions_dataframe(result["_preds"], mapping, taxonomy, bands, eval_scenarios)
+    predictions_df = build_predictions_dataframe(result["_preds"], mapping, taxonomy, bands, eval_scenarios, k=10)
     predictions_path = run_dir / f"{args.split}_predictions.csv"
     predictions_df.to_csv(predictions_path, index=False)
     step_log(1, "EvaluateHeldout", f"Wrote {predictions_path} ({len(predictions_df)} rows)")
