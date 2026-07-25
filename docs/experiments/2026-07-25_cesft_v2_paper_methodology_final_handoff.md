@@ -270,3 +270,110 @@ marker 멱등, preflight(GPU<30GB), setsid 분리 기동(`start_cesft_v2.sh`).
 | 개입 (spine) | `eval/sft_r15.harden_s3.json` (verdict "PASS — spine 확정 (U_g)") |
 | WM prior | `RETRO4-goalstep-end-m1-history-k8-phase1/best_action_top5.pt` |
 | 학습 스크립트 | `scripts/step2_retrospection/` (select_ce · sft_v2 · harden_s3) |
+
+---
+
+## 9. 구현 Q&A — 오해하기 쉬운 설계 지점 (2026-07-25 추가)
+
+§1.6의 압축 표현을 풀어 쓴 것. 논문 본문이 아니라 **리뷰어 질문·재현 대응용** 메모.
+
+### 9.1 "조각 경계 = span 경계" — 왜 completion을 조각별로 토크나이즈하나
+
+SFT 손실이 field 가중합(`belief 1.0 / reasoning 0.5 / action 0.25`)이므로 **토큰마다 소속 field가
+확정**돼야 한다. completion 전체를 한 번에 토크나이즈하고 태그 문자 오프셋으로 역추적하는 통상적
+방식은 BPE가 `</reasoning>\n\n<task_belief>` 같은 **경계를 가로지르는 토큰**을 만들 수 있어 마스크가
+밀린다 (belief 가중치가 reasoning 토큰에 샘).
+
+`common.encode_completion`은 completion을 `(field, text)` 조각으로 쪼개 조각마다 독립 토크나이즈하고
+`field_of` 라벨을 그 길이만큼 채운다. 조각 밖으로 병합이 불가능하므로 조각 경계 = span 경계가 성립하고,
+`field_logps`는 `idxs = p_len − 1 + i`로 **오프셋 역추적 없이** 바로 인덱싱한다.
+
+- `add_special_tokens=False`: 조각이 11개라 기본값이면 조각마다 특수토큰이 끼어들어 시퀀스·정렬이 깨진다.
+- 프롬프트/completion 비대칭: 프롬프트는 이미지가 있어 processor(chat template + 비전 플레이스홀더 확장)
+  필수, completion은 순수 텍스트라 tokenizer로 충분 → `cat_completion`이 이어붙이고 per-token 텐서
+  (`mm_token_type_ids`)를 0 연장.
+- **감수한 비용**: 조각별 토크나이즈는 경계 병합을 잃으므로 전체 일괄 토크나이즈와 토큰열이 미세하게
+  다를 수 있다(학습/추론 토크나이제이션 미세 불일치). 마스크 정확성과 맞바꾼 선택.
+
+### 9.2 hindsight gate가 구체적으로 무엇인가 (`hindsight/quality_gate.check_chosen`)
+
+Φ는 **미래(GT 포함)를 보고 "미래를 모르는 척" 쓰라고 지시받은** 구조라 프롬프트 규칙만으로는 누출을
+막을 수 없다. 그래서 사후 규칙 검사 = gate. LLM 판정이 아니라 **정답이 확인 가능한 항목만** 본다.
+
+| 사유 | 검사 | 근거 |
+|---|---|---|
+| `restatement` | belief에 GT verb+noun 동시 등장 | belief가 정답 복붙이면 belief→action이 인과가 아니라 지름길 |
+| `future_leak_belief` | belief에 `future[1:]`의 verb+noun | 결정 시점에 알 수 없는 정보 |
+| `future_leak_reasoning` | reasoning에 미래 행동 — **후보목록 포함 action은 면제** | reasoning의 후보 비교는 정당 업무 |
+| `temporal_bad` | GT 언급 + 진행/완료형 패턴 | "이미 하고 있다" = 예측이 아니라 관찰 |
+| `*_too_short` | reasoning<15단어 · belief<3단어 | 빈 껍데기 |
+| `teacher_parse`·`proj_parse`·`video` | 파싱/디코드 실패 | — |
+
+누출 검사는 어형 확장(`_word_forms`: add→adds/adding/added, cut→cutting)으로 본다.
+**정책 drop-not-patch** — 탈락분은 재작성하지 않고 사유만 기록(재작성하면 "게이트를 통과하도록 다듬은
+텍스트"가 되어 오염이 은닉됨). 학습은 `gate == "pass"`만 읽는다(`sft_v2.py:83`).
+
+실측 (`runs/cesft_v2/data/chosen_train.jsonl`):
+```
+pass 2945 / drop 1244  (pass rate 70.3%)
+restatement 805 · future_leak_belief 431 · temporal_bad 127 · future_leak_reasoning 121 · proj_parse 68
+```
+**드랍의 65%가 restatement** — GT를 보고 쓰는 구조의 지배적 실패 모드이며, 이 게이트가 없었으면 학습셋
+상당분이 "belief=action 복사"를 가르쳤을 것. §2의 belief 인과 PASS는 이 필터를 전제로 의미를 갖는다.
+
+**한계(명시)**: 어휘 규칙 기반이라 유의어 패러프레이즈(`wash`→"clean", `mix`→"combine")는 원리상
+통과한다. 이를 담당하려던 `hindsight/semantic_gate.py`(gemini: `belief_restates_action`,
+`chosen_grounded`)는 **DPO pair 경로 전용이며 chosen_train 경로에는 미연결**이다. 또한 게이트는 누출만
+보고 belief의 **사실 여부는 검사하지 않는다** — Ψ가 절차를 잘못 짚으면 틀린 belief가 그대로 pass 한다.
+
+### 9.3 h_t는 Ego4D 어노테이션인가, 추론인가 — 입력만 어노테이션
+
+| | 출처 |
+|---|---|
+| Ψ의 **입력** `rec["future"]` (verb-noun 시퀀스) | **Ego4D GoalStep 어노테이션** — `goalstep_step_labels.csv`(step+substep 평탄화) + taxonomy id→문자열. `target_start` 이후 24초 내 최대 5개 (`data/build_context.py`) |
+| Ψ의 **출력** `{activity, stage, completed_subgoal, next_subgoal, hypotheses, uncertainty}` | **전부 Qwen3-VL(frozen)의 자유 생성**. `uncertainty: low/med/high`도 모델 자기보고이며 통계적 근거 없음 |
+
+GoalStep 원본에는 goal category·step description 같은 상위 절차 텍스트가 있으나, 이 파이프라인이 쓰는
+CSV에는 `verb_label`/`noun_label` id와 `level`뿐이라 **미활용**. 즉 `activity`는 실측 goal label이 아니라
+verb-noun 5개로부터 재구성한 추측이다.
+
+→ h_t를 학습 타깃에서 제외한 것은 이 때문에 **필수**다: h_t는 (a) 모델 추측이고 (b) 정의상 미래로
+오염돼 있다. Φ 프롬프트도 `do NOT cite it as evidence`로 명시한다. 논문 기술 시 y⁺는 "supervision"이
+아니라 **projected pseudo-label**로 쓰는 것이 정확하다.
+
+### 9.4 "합산손실이 아니라 micro-step 인터리브"의 실제 의미
+
+대안이었던 합산손실 `L = L_sft + λ·L_ce`(backward 1회) 대비 실질 이득은 다음 셋이다.
+
+1. **메모리·연산** (가장 확실). 합산손실은 한 step에 CE forward(후보 10개 배치 + 8프레임)와 SFT
+   forward를 **둘 다** 태운다. 8B VLM + gradient checkpointing에서 step당 비용 2배 → OOM 직결.
+   인터리브는 step당 forward가 항상 1개.
+2. **λ 튜닝 불필요**. `L_sft`(3필드 가중 평균 CE)와 `L_ce`(후보 10개 softmax CE)는 스케일이 다르다.
+   ρ는 손실 가중치가 아니라 **샘플링 비율**이라 "CE를 15% 섞는다"로 해석되고 스윕 의미가 명확하다.
+3. **CE 스트림 동일성**. `select_ce.selection_ce_step(arm="wm_cand")`를 그대로 호출, 풀도 θ_CE와 동일
+   분포(covered ∩ `gt_rank≤10`) → 앵커가 Stage 1과 정확히 같은 목표를 가리킨다.
+
+**정확한 표현 주의**: `accum=8`이라 backward된 gradient는 같은 버퍼에 누적됐다가 8 micro-step마다 한 번
+`opt.step()` 한다. ρ=0.15면 한 윈도우에 CE가 평균 1.2회 → **실제 파라미터 업데이트는 여전히 두 gradient가
+섞인 방향**이며, 최적화 이론적 의미의 충돌 제거는 아니다(합산손실의 확률적 근사에 가깝다). "gradient 충돌
+회피"는 *한 backward에 두 목적이 같이 실리지 않는다*는 sample-level 의미로 읽어야 하며, 논문에서는 위
+1~3을 앞세우는 편이 방어하기 쉽다.
+
+### 9.5 ρ는 SFT 노출량을 줄이지 않는다 (arm 비교의 통제 조건)
+
+루프 종료 조건이 `while sft_queue:`이고 **CE micro-step은 큐를 pop 하지 않는다**(`ce_pool`에서 복원추출).
+따라서 SFT micro-step 수는 ρ와 무관하게 항상 `len(chosen) × epochs`이고, ρ를 올리면 그 사이에 끼는 CE가
+늘어 **전체 학습이 길어질 뿐**이다.
+
+| ρ | SFT step | CE step | 총 micro | opt.step (accum 8) |
+|---|---|---|---|---|
+| 0 (`sft_r0`) | 2945 | 0 | 2945 | ~368 |
+| 0.15 (`sft_r15`) | **2945** | ~520 | ~3465 | ~433 |
+| 0.30 (`sft_r30`) | **2945** | ~1262 | ~4207 | ~526 |
+
+고정 step 예산에서 매번 CE/SFT 풀 중 하나를 뽑는 대안 설계였다면 ρ=0.30일 때 SFT 데이터의 70%만 보게
+되어, r30의 결과가 CE 앵커 탓인지 SFT 노출 부족 탓인지 **구분 불가**했을 것이다. 지금 구조에서는 세 arm이
+동일한 SFT 데이터를 1 epoch 전량 보므로 arm 차이가 오롯이 CE 앵커량에서 온다 = **ρ 스윕이 통제된 비교**.
+
+부수: LR 스케줄 `T_max`를 `/(1−ρ)`로 보정하는 이유가 이것(`sft_v2.py:105`). CE는 복원추출이라 "CE 1 epoch"
+개념이 없고 같은 샘플을 여러 번 볼 수 있다.

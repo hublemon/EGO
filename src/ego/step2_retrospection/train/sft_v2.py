@@ -33,6 +33,7 @@ import yaml
 from ego.step2_retrospection import vlm
 from ego.step2_retrospection.runtime import (StatusWriter, append_jsonl, read_jsonl,
                                              runs_root, write_marker)
+from ego.step2_retrospection.train import ckpt
 from ego.step2_retrospection.train import common as C
 from ego.step2_retrospection.train import select_ce as SCE
 
@@ -71,6 +72,12 @@ def main() -> None:
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--probe_every", type=int, default=100)
+    ap.add_argument("--subset_file", default="train_subset.json",
+                    help="CE-replay 풀 제한 파일 (data/ 기준). 'none' = full covered 풀 전량")
+    ap.add_argument("--ckpt_every", type=int, default=100,
+                    help="opt.step 주기 중간 체크포인트 (0=끄기)")
+    ap.add_argument("--resume", default="auto", choices=["auto", "off"],
+                    help="auto: ckpt/ 가 있으면 그 지점부터 이어 학습")
     args = ap.parse_args()
 
     cfg = yaml.safe_load(open(args.config, encoding="utf-8"))
@@ -85,9 +92,12 @@ def main() -> None:
     if args.limit:
         chosen = chosen[: args.limit]
 
-    # CE-replay 풀 = covered train subset (θ_CE 와 동일 분포)
-    subset = json.loads((data_dir / "train_subset.json").read_text())
-    sub_ids = set(subset.get("sample_ids", []))
+    # CE-replay 풀 = covered train (θ_CE 와 동일 분포). --subset_file none 이면 full 풀 전량.
+    sub_ids: set[str] = set()
+    if args.subset_file and args.subset_file.lower() != "none":
+        sp = data_dir / args.subset_file
+        if sp.is_file():
+            sub_ids = set(json.loads(sp.read_text()).get("sample_ids", []))
     ce_pool = [r for r in ctx.values()
                if r.get("gt_rank", 99) <= 10 and (not sub_ids or r["sample_id"] in sub_ids)]
 
@@ -133,6 +143,18 @@ def main() -> None:
     sft_queue = vgroup(list(chosen)) * args.epochs
     period = max(2, round(1 / max(1e-6, args.ce_replay_rho))) if args.ce_replay_rho > 0 else 0
 
+    # ── resume: LoRA·optimizer·scheduler·rng·큐 위치 복원 (§ckpt.py) ──
+    # 큐는 pop() 으로 뒤에서 소비되므로, 이미 소비한 n_sft 개를 잘라내면 정확히 이어붙는다.
+    if args.resume == "auto":
+        st = ckpt.load_ckpt(out_dir, model, opt, sched)
+        if st:
+            step, n_sft, micro = st.get("step", 0), st.get("n_sft", 0), st.get("micro", 0)
+            ema.update({k: v for k, v in (st.get("ema") or {}).items() if k in ema})
+            ckpt.restore_rng(st, rng)
+            if n_sft:
+                sft_queue = sft_queue[: max(0, len(sft_queue) - n_sft)]
+            sw.update(done=n_sft, force=True)
+
     while sft_queue:
         # 이 micro-step 이 CE replay 인가?
         do_ce = False
@@ -170,6 +192,11 @@ def main() -> None:
             sched.step()
             opt.zero_grad()
             step += 1
+            if args.ckpt_every and step % args.ckpt_every == 0:
+                ckpt.save_ckpt(out_dir, model, opt, sched,
+                               {"step": step, "n_sft": n_sft, "micro": micro,
+                                "ema": dict(ema), "rng": rng.getstate(),
+                                "rho": args.ce_replay_rho, "run_name": args.run_name})
         lv = float(loss.detach())
         for k, v in [("loss", lv), *per.items()]:
             if v is not None:
@@ -195,6 +222,7 @@ def main() -> None:
                 pass
 
     model.save_pretrained(out_dir / "adapter")
+    ckpt.clear_ckpt(out_dir)   # 완료 — 다음 런이 낡은 resume 상태를 물지 않게
     sw.finish(metrics={"steps": step, "n_sft": n_sft, "micro": micro,
                        "final_loss_ema": round(ema["loss"], 4) if ema["loss"] else None})
     write_marker(f"S6_{args.run_name.upper()}_DONE",

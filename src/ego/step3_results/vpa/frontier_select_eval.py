@@ -106,6 +106,10 @@ def main():
     ap.add_argument("--limit", type=int, default=0, help="0=전량")
     ap.add_argument("--base-url", default=os.environ.get("FRONTIER_BASE_URL", "https://api.openai.com/v1"))
     ap.add_argument("--model", default=os.environ.get("FRONTIER_MODEL", "gpt-4o-mini"))
+    ap.add_argument("--sleep", type=float, default=0.0, help="요청 간 지연(초) — rate limit 완화용")
+    ap.add_argument("--max_retries", type=int, default=5)
+    ap.add_argument("--retry_errors", action="store_true",
+                    help="기존 records에서 api_error(429 등) 있던 sample_id는 done으로 치지 않고 재시도")
     args = ap.parse_args()
 
     key = os.environ.get("FRONTIER_API_KEY")
@@ -121,12 +125,23 @@ def main():
     rec_p = out_p.with_suffix(".records.jsonl")
     done_ids = set()
     if rec_p.exists():
+        kept = []
         for l in open(rec_p, encoding="utf-8"):
-            if l.strip():
-                try:
-                    done_ids.add(json.loads(l)["sample_id"])
-                except Exception:  # noqa: BLE001
-                    pass
+            if not l.strip():
+                continue
+            try:
+                r = json.loads(l)
+            except Exception:  # noqa: BLE001
+                continue
+            if args.retry_errors and r.get("api_error"):
+                continue  # 이 sample_id는 다시 시도 (kept에 넣지 않음 → done_ids 제외)
+            kept.append(r)
+            done_ids.add(r["sample_id"])
+        if args.retry_errors:
+            # api_error 레코드를 물리적으로 제거해 재작성(append 모드에서 중복 방지)
+            with rec_p.open("w", encoding="utf-8") as f:
+                for r in kept:
+                    f.write(json.dumps(r, ensure_ascii=False) + "\n")
     print(f"[frontier-select] model={args.model} total={len(rows)} resume_done={len(done_ids)}", flush=True)
 
     rec_f = rec_p.open("a", encoding="utf-8")
@@ -140,7 +155,9 @@ def main():
         gt = (str(ex["gt_verb"]), str(ex["gt_noun"]))
         gt_idx = cands.index(gt) if gt in cands else -1
         system, user = build_prompt(ex, cands, args.top_k)
-        content, err = call_api(args.base_url, key, args.model, system, user)
+        content, err = call_api(args.base_url, key, args.model, system, user, max_retries=args.max_retries)
+        if args.sleep:
+            time.sleep(args.sleep)
         v, nn, reasoning, ci = parse_choice(content, cands) if content else ("", "", "", -1)
         malformed = (ci < 0)
         correct = (not malformed) and (v, nn) == gt

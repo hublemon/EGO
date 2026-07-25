@@ -122,3 +122,29 @@ cat  $R/frontier/frontier_T3*/*.json   # Table 4 mAcc/mIoU
 | free-gen strip | `scripts/step2/v3_cf_freegen_eval.py --no_memory`(수정) + `cf_freegen_strip_analysis.py`(신규) |
 | 런처 | `EGO_jihun3/runs/overnight_20260724/run_api_tracks.sh`, `run_gpu_strip_when_idle.sh` |
 | 키(로컬만) | `EGO_jihun3/.env.local` (chmod600, git 제외) |
+
+---
+
+## 7. [정정·중요] Frontier(gemini-2.5-pro) 실행 결과 — API COST 한도 소진으로 부분 완료
+
+작성 후 확인(07-25 03:30경): 게이트웨이가 `{"type":"usage_limit_exceeded","detail":"COST limit exceeded"}`,
+`retry-after: 3600` 반환. **순간 rate limit이 아니라 이 키의 비용 예산 소진**(하드 캡). 3워커 동시 실행이
+비용을 빠르게 소진해 **세 트랙 모두 ~440~548번째에서 동시 중단**.
+
+| 트랙 | 정상 응답 | 전체 | 상태 |
+|---|---|---|---|
+| VPA T3 | 440 | 1042 | **부분(42%)** — 나머지 빈 예측 |
+| VPA T4 | 440 | 988 | **부분(45%)** |
+| Track B select | 548 | 1520 | **부분(36%)** |
+| 합계 호출 | ~1428 | — | 이 지점에서 COST 소진 |
+
+- **VPA EVAL 마커(VPA_T{3,4}_EVAL.DONE)는 제거함**: 빈 예측(>55%) 위에서 채점돼 mAcc/mIoU가 무효였음.
+  SELECT.DONE·API_TRACKS_ALL_DONE 도 제거(부분 데이터). 예산 복구 시 `run_api_tracks.sh` 재실행하면 깨끗이 resume.
+- **정직한 부분 지표(정상 응답분만, 확정 아님·부분표본 편향 주의)**:
+  Track B select covered SelAcc@5 = **0.312 (n=295)**, full acc 0.175, malformed 0.
+  → 논문 Table 3 Frontier 추정치(SelAcc 24–28)와 비교해 부분표본상 상회하나, **표본 42% 편향**이라 확정 불가.
+- **resume 조건**: 키 비용 예산 충전/리셋(retry-after 1h이나 하드 캡이면 리셋까지 대기) 후,
+  `--sleep`으로 throttle + **단일 워커**로 재실행 권장(동시 3워커가 비용 급소진의 직접 원인).
+  select는 `--retry_errors` 로 429 실패분만, VPA는 run_frontier_baseline.py 가 preds.json에 이어쓰기(부분 재개).
+- **비용 절감 대안(다음 세션 판단)**: gemini-2.5-pro(reasoning, 고가) 대신 gemini-2.5-flash 로 전량 → 저비용,
+  단 논문 'frontier flagship' 주장은 약화. 또는 대표 서브셋(n=200~300)만 pro로.

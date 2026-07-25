@@ -40,6 +40,7 @@ import yaml
 from ego.step2_retrospection import vlm
 from ego.step2_retrospection.runtime import (StatusWriter, append_jsonl, read_jsonl,
                                              runs_root, write_marker)
+from ego.step2_retrospection.train import ckpt
 from ego.step2_retrospection.train import common as C
 
 # arm 프리셋 → (candidate_source, use_video, use_history, loss_type)
@@ -185,6 +186,14 @@ def main() -> None:
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--probe_every", type=int, default=100)
+    ap.add_argument("--subset_file", default="train_subset.json",
+                    help="학습 풀 제한 파일 (data/ 기준). 'none' = full covered 풀 전량")
+    ap.add_argument("--ckpt_every", type=int, default=100,
+                    help="opt.step 주기 중간 체크포인트 (0=끄기)")
+    ap.add_argument("--resume", default="auto", choices=["auto", "off"],
+                    help="auto: ckpt/ 가 있으면 그 지점부터 이어 학습")
+    ap.add_argument("--no_grad_ckpt", action="store_true",
+                    help="gradient checkpointing 끄기 — VRAM ↔ 속도 트레이드(수치 동일)")
     args = ap.parse_args()
 
     cfg = yaml.safe_load(open(args.config, encoding="utf-8"))
@@ -192,9 +201,14 @@ def main() -> None:
     device = "cuda"
     data_dir = runs_root() / "data"
 
-    # covered 학습 샘플 = train subset ∩ gt_rank<=10 (video-disjoint 통제된 6k 풀)
-    subset = json.loads((data_dir / "train_subset.json").read_text()) if (data_dir / "train_subset.json").is_file() else None
-    sub_ids = set(subset["sample_ids"]) if isinstance(subset, dict) and "sample_ids" in subset else None
+    # covered 학습 샘플 = (subset ∩) gt_rank<=10. --subset_file none 이면 full 풀 전량.
+    sub_ids = None
+    if args.subset_file and args.subset_file.lower() != "none":
+        sp = data_dir / args.subset_file
+        if sp.is_file():
+            subset = json.loads(sp.read_text())
+            if isinstance(subset, dict) and "sample_ids" in subset:
+                sub_ids = set(subset["sample_ids"])
     rows = [r for r in read_jsonl(data_dir / "context_train.jsonl")
             if r.get("gt_rank", 99) <= 10 and (sub_ids is None or r["sample_id"] in sub_ids)]
     random.Random(args.seed).shuffle(rows)
@@ -211,7 +225,8 @@ def main() -> None:
         sd = load_file(str(Path(args.init_adapter) / "adapter_model.safetensors"))
         set_peft_model_state_dict(model, sd)
         print(f"[select_ce] warm-start from {args.init_adapter}")
-    model.gradient_checkpointing_enable()
+    if not args.no_grad_ckpt:
+        model.gradient_checkpointing_enable()
     model.train()
     opt = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], lr=args.lr)
     total = math.ceil(len(rows) * args.epochs / args.accum)
@@ -244,8 +259,9 @@ def main() -> None:
         random.Random(seed).shuffle(vids)
         return [r for v in vids for r in by_v[v]]
 
-    def sample_stream(epoch: int):
-        ordered = grouped(args.seed + epoch)
+    def sample_stream(epoch: int, start_pos: int = 0):
+        # start_pos 는 프레임 로딩 **전에** 잘라낸다 — resume 시 이미 본 구간을 다시 디코드하지 않게.
+        ordered = grouped(args.seed + epoch)[start_pos:]
         if use_video:  # prefetch: 다음 chunk 디코드(CPU)가 현재 chunk 연산(GPU)과 겹침
             for chunk, frames in vlm.prefetch_chunks(_VIDEO_ROOT, ordered, 8):
                 for rec, (imgs, err) in zip(chunk, frames):
@@ -258,12 +274,23 @@ def main() -> None:
     last_probe = -1
     rng = random.Random(args.seed)
     ema = None
+    # ── resume: LoRA·optimizer·scheduler·rng·스트림 위치 복원 (§ckpt.py) ──
+    start_epoch, start_pos = 0, 0
+    if args.resume == "auto":
+        st = ckpt.load_ckpt(out_dir, model, opt, sched)
+        if st:
+            start_epoch, start_pos = st.get("epoch", 0), st.get("stream_pos", 0)
+            step, n_seen, ema = st.get("step", 0), st.get("n_seen", 0), st.get("ema")
+            ckpt.restore_rng(st, rng)
+            sw.update(done=n_seen, force=True)
     opt.zero_grad()
     stop = False
-    for epoch in range(args.epochs):
+    for epoch in range(start_epoch, args.epochs):
         if stop:
             break
-        for rec, imgs in sample_stream(epoch):
+        pos = (start_pos if epoch == start_epoch else 0) - 1
+        for rec, imgs in sample_stream(epoch, pos + 1):
+            pos += 1
             if imgs is None:  # decode 실패
                 append_jsonl(log_path, {"skip_decode": rec["sample_id"]})
                 continue
@@ -292,6 +319,11 @@ def main() -> None:
                 sched.step()
                 opt.zero_grad()
                 step += 1
+                if args.ckpt_every and step % args.ckpt_every == 0:
+                    ckpt.save_ckpt(out_dir, model, opt, sched,
+                                   {"epoch": epoch, "stream_pos": pos + 1, "n_seen": n_seen,
+                                    "step": step, "ema": ema, "rng": rng.getstate(),
+                                    "arm": args.arm, "run_name": args.run_name})
             lv = float(loss.detach())
             ema = lv if ema is None else 0.98 * ema + 0.02 * lv
             if n_seen % 10 == 0:
@@ -314,6 +346,7 @@ def main() -> None:
                 break
 
     model.save_pretrained(out_dir / "adapter")
+    ckpt.clear_ckpt(out_dir)   # 완료 — 다음 런이 낡은 resume 상태를 물지 않게
     sw.finish(metrics={"steps": step, "final_loss_ema": round(ema, 4) if ema else None})
     write_marker(f"S_CE_{args.run_name.upper()}_DONE", {"steps": step, "arm": args.arm})
     print(f"[select_ce:{args.run_name}] arm={args.arm} steps={step} loss_ema={ema}")
