@@ -69,3 +69,7 @@ Thumbs.db
 
 # 머신 종속 데이터 심볼릭 링크 (948GB 실데이터로 향함 — 절대 커밋 금지)
 data/Ego4D
+
+# Local model archives
+EGO_models.zip
+EGO_models_unzipped/
