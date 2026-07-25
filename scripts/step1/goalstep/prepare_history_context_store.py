@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """Materialize a compact, reusable store for GoalStep history-context training.
 
-This is *not* another video decode or V-JEPA extraction pass.  It reads the
-already frozen ``action_end-1s / 8s`` feature cache and, for each annotated
-segment, stores:
+This is *not* another video decode or V-JEPA extraction pass.  It reads an
+already frozen GoalStep feature cache (uniform endpoint or adaptive window)
+and, for each cached observation, stores:
 
 * 17 temporal tokens obtained by spatially averaging each 16x16 token grid
   from the existing ``[4352, 1024] == [17, 256, 1024]`` feature tensor;
 * frozen visual logits from the best direct next-action probe; and
-* frozen current-action recognition logits used by the Phase-0 transition
-  gate and for audit.
+* optional frozen current-action recognition logits used by the original
+  endpoint Phase-0 transition gate and for audit.
 
 Output is sharded and resumable.  No cached labels are copied into the
 derived store, so history supervision cannot accidentally leak through it.
@@ -72,7 +72,7 @@ def source_sample_ids(frame: pd.DataFrame) -> list[str]:
 def build_head(config_path: Path, checkpoint_path: Path, embed_dim: int, device: torch.device):
     config = load_config(config_path)
     classifier = get(config, "model.classifier", {})
-    checkpoint = torch.load(checkpoint_path, map_location="cpu")
+    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
     classes = checkpoint.get("num_classes") or {"verb": 81, "noun": 140, "action": 293}
     model = AnticipationHead(
         num_verb_classes=int(classes["verb"]),
@@ -85,14 +85,44 @@ def build_head(config_path: Path, checkpoint_path: Path, embed_dim: int, device:
         use_temporal_metadata=bool(classifier.get("use_temporal_metadata", False)),
         temporal_duration_scale_sec=float(classifier.get("temporal_duration_scale_sec", 32.0)),
     )
-    if getattr(model, "use_temporal_metadata", False):
-        raise ValueError(f"History source head must use the legacy uniform schema: {config_path}")
     model.load_state_dict(checkpoint["model_state"], strict=True)
     del checkpoint
     model.to(device).eval()
     for parameter in model.parameters():
         parameter.requires_grad_(False)
     return model, classes
+
+
+def forward_head(
+    model: torch.nn.Module,
+    features: torch.Tensor,
+    batch: dict,
+    device: torch.device,
+) -> dict[str, torch.Tensor]:
+    """Forward uniform or adaptive cached features through a frozen head."""
+    if not getattr(model, "use_temporal_metadata", False):
+        return model(features)
+    required = (
+        "observation_duration_sec",
+        "observed_action_duration_sec",
+        "frame_time_positions",
+        "frame_terminal_mask",
+        "annotation_level_id",
+    )
+    missing = [key for key in required if key not in batch]
+    if missing:
+        raise ValueError(
+            "Adaptive visual head requires cached temporal metadata; "
+            f"missing={missing}"
+        )
+    return model(
+        features,
+        observation_duration_sec=batch["observation_duration_sec"].to(device),
+        observed_action_duration_sec=batch["observed_action_duration_sec"].to(device),
+        frame_time_positions=batch["frame_time_positions"].to(device),
+        frame_terminal_mask=batch["frame_terminal_mask"].to(device),
+        annotation_level_id=batch["annotation_level_id"].to(device),
+    )
 
 
 def validate_existing_shard(
@@ -102,11 +132,12 @@ def validate_existing_shard(
     expected_provenance_fingerprint: str,
     embed_dim: int,
     num_classes: dict[str, int],
+    recognition_logits_required: bool,
 ) -> bool:
     if not path.is_file():
         return False
     try:
-        record = torch.load(path, map_location="cpu")
+        record = torch.load(path, map_location="cpu", weights_only=True)
         if record.get("sample_ids") != expected_ids:
             return False
         if record.get("provenance_fingerprint") != expected_provenance_fingerprint:
@@ -119,7 +150,12 @@ def validate_existing_shard(
             and torch.isfinite(summaries).all()
         ):
             return False
-        for dictionary_name in ("visual_logits", "recognition_logits"):
+        dictionaries = ["visual_logits"]
+        if recognition_logits_required:
+            dictionaries.append("recognition_logits")
+        elif "recognition_logits" in record:
+            return False
+        for dictionary_name in dictionaries:
             values = record.get(dictionary_name, {})
             if set(values) != set(HEADS):
                 return False
@@ -149,7 +185,7 @@ def process_split(
     cache_dir: Path,
     output_dir: Path,
     visual_model: torch.nn.Module,
-    recognition_model: torch.nn.Module,
+    recognition_model: torch.nn.Module | None,
     device: torch.device,
     batch_size: int,
     num_workers: int,
@@ -193,6 +229,7 @@ def process_split(
             expected_provenance_fingerprint=provenance_fingerprint,
             embed_dim=int(provenance_base["embed_dim"]),
             num_classes=num_classes,
+            recognition_logits_required=recognition_model is not None,
         ):
             print(f"[{split}] reuse {shard_path.name} rows={len(shard_ids)}", flush=True)
             shard_records.append({
@@ -223,7 +260,9 @@ def process_split(
         stored_ids: list[str] = []
         summaries: list[torch.Tensor] = []
         visual_logits = {head: [] for head in HEADS}
-        recognition_logits = {head: [] for head in HEADS}
+        recognition_logits = (
+            {head: [] for head in HEADS} if recognition_model is not None else None
+        )
         with torch.inference_mode():
             for batch in loader:
                 features = batch["video"].to(device, non_blocking=True)
@@ -235,18 +274,23 @@ def process_split(
                 summary = features.reshape(
                     features.shape[0], 17, SPATIAL_TOKENS, features.shape[-1]
                 ).mean(dim=2)
-                visual = visual_model(features)
-                recognition = recognition_model(features)
+                visual = forward_head(visual_model, features, batch, device)
+                recognition = (
+                    forward_head(recognition_model, features, batch, device)
+                    if recognition_model is not None
+                    else None
+                )
 
                 stored_ids.extend(batch["sample_id"])
                 summaries.append(summary.cpu().half())
                 for head in HEADS:
                     visual_logits[head].append(visual[head].float().cpu())
-                    recognition_logits[head].append(recognition[head].float().cpu())
+                    if recognition_logits is not None and recognition is not None:
+                        recognition_logits[head].append(recognition[head].float().cpu())
 
         if stored_ids != shard_ids:
             raise RuntimeError(f"Sample-order drift while writing {shard_path}")
-        record = {
+        record: dict[str, object] = {
             "schema_version": 1,
             "provenance_fingerprint": provenance_fingerprint,
             "compression": "reshape [4352,D] -> [17,256,D], spatial mean over 256",
@@ -254,10 +298,11 @@ def process_split(
             "source_positions": [start, stop],
             "summaries": torch.cat(summaries),
             "visual_logits": {head: torch.cat(parts) for head, parts in visual_logits.items()},
-            "recognition_logits": {
-                head: torch.cat(parts) for head, parts in recognition_logits.items()
-            },
         }
+        if recognition_logits is not None:
+            record["recognition_logits"] = {
+                head: torch.cat(parts) for head, parts in recognition_logits.items()
+            }
         atomic_torch_save(record, shard_path)
         shard_records.append({
             "path": str(shard_path.relative_to(output_dir)),
@@ -305,6 +350,14 @@ def main() -> None:
         "--recognition-checkpoint",
         default="outputs/goalstep/runs/z1_end_m1_lobs8_vna/best.pt",
     )
+    parser.add_argument(
+        "--omit-recognition-logits",
+        action="store_true",
+        help=(
+            "Skip the unused Phase-0 recognition head/logits. Use this for Phase-1-only "
+            "stores such as adaptive-transition history."
+        ),
+    )
     parser.add_argument("--split", choices=("train", "val", "all"), default="all")
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--num-workers", type=int, default=8)
@@ -321,26 +374,30 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     first_cache = next((cache_dir / "val").glob("*.pt"))
-    first_record = torch.load(first_cache, map_location="cpu")
+    first_record = torch.load(first_cache, map_location="cpu", weights_only=True)
     feature_shape = tuple(first_record["features"].shape)
     if len(feature_shape) != 2 or feature_shape[0] != EXPECTED_INPUT_TOKENS:
-        raise ValueError(f"Unsupported endpoint cache feature shape: {feature_shape}")
+        raise ValueError(f"Unsupported GoalStep feature-cache shape: {feature_shape}")
     embed_dim = int(feature_shape[1])
 
     visual_config = expand_path(args.visual_config)
     visual_checkpoint = expand_path(args.visual_checkpoint)
-    recognition_config = expand_path(args.recognition_config)
-    recognition_checkpoint = expand_path(args.recognition_checkpoint)
     visual_model, visual_classes = build_head(
         visual_config, visual_checkpoint, embed_dim, device
     )
-    recognition_model, recognition_classes = build_head(
-        recognition_config, recognition_checkpoint, embed_dim, device
-    )
-    if visual_classes != recognition_classes:
-        raise ValueError(
-            f"Visual/recognition taxonomy mismatch: {visual_classes} != {recognition_classes}"
+    recognition_config = None
+    recognition_checkpoint = None
+    recognition_model = None
+    if not args.omit_recognition_logits:
+        recognition_config = expand_path(args.recognition_config)
+        recognition_checkpoint = expand_path(args.recognition_checkpoint)
+        recognition_model, recognition_classes = build_head(
+            recognition_config, recognition_checkpoint, embed_dim, device
         )
+        if visual_classes != recognition_classes:
+            raise ValueError(
+                f"Visual/recognition taxonomy mismatch: {visual_classes} != {recognition_classes}"
+            )
 
     provenance_base = {
         "schema_version": 1,
@@ -352,10 +409,19 @@ def main() -> None:
         "visual_config_sha256": sha256(visual_config),
         "visual_checkpoint": str(visual_checkpoint),
         "visual_checkpoint_sha256": sha256(visual_checkpoint),
-        "recognition_config": str(recognition_config),
-        "recognition_config_sha256": sha256(recognition_config),
-        "recognition_checkpoint": str(recognition_checkpoint),
-        "recognition_checkpoint_sha256": sha256(recognition_checkpoint),
+        "recognition_logits_included": recognition_model is not None,
+        "recognition_config": (
+            str(recognition_config) if recognition_config is not None else None
+        ),
+        "recognition_config_sha256": (
+            sha256(recognition_config) if recognition_config is not None else None
+        ),
+        "recognition_checkpoint": (
+            str(recognition_checkpoint) if recognition_checkpoint is not None else None
+        ),
+        "recognition_checkpoint_sha256": (
+            sha256(recognition_checkpoint) if recognition_checkpoint is not None else None
+        ),
         "num_classes": visual_classes,
     }
 
@@ -385,9 +451,14 @@ def main() -> None:
         "visual_config_sha256": provenance_base["visual_config_sha256"],
         "visual_checkpoint": str(visual_checkpoint),
         "visual_checkpoint_sha256": provenance_base["visual_checkpoint_sha256"],
-        "recognition_config": str(recognition_config),
+        "recognition_logits_included": recognition_model is not None,
+        "recognition_config": (
+            str(recognition_config) if recognition_config is not None else None
+        ),
         "recognition_config_sha256": provenance_base["recognition_config_sha256"],
-        "recognition_checkpoint": str(recognition_checkpoint),
+        "recognition_checkpoint": (
+            str(recognition_checkpoint) if recognition_checkpoint is not None else None
+        ),
         "recognition_checkpoint_sha256": provenance_base["recognition_checkpoint_sha256"],
         "provenance_base_fingerprint": provenance_base_fingerprint,
         "num_classes": visual_classes,

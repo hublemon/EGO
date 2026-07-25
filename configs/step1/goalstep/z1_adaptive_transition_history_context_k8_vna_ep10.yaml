@@ -1,0 +1,96 @@
+# Phase 1 history head on the completed adaptive-transition MR24+8 cache.
+# No video decode or V-JEPA backbone extraction is performed for this run.
+experiment:
+  name: goalstep_z1_adaptive_transition_history_context_k8_vna_ep10
+  seed: 42
+  device: cuda
+  output_dir: outputs/goalstep/runs/z1_adaptive_transition_history_context_k8_vna_ep10
+
+phase0:
+  policy: not_applicable
+  reason: >-
+    The endpoint P0-a/P0-b artifacts use a different cohort and decision
+    contract. This adaptive A1-to-A2 Phase-1 ablation therefore compares
+    descriptively against its own frozen adaptive visual epoch-0 fallback.
+
+task:
+  name: goalstep_adaptive_transition_history_next_action_A2
+  prediction_contract: >-
+    adaptive A1 observation through A1.end-0.25s plus up to 8 completed
+    same-video same-level adaptive visual histories -> close immediate
+    same-level successor A2
+  history_index_contract: >-
+    left-padded completed same-video same-level adaptive cached A1 segments,
+    oldest-to-newest; history observed_action_end <= current A1.start; no
+    history GT labels; current obs_end < target A2.start
+  authoritative_reference: >-
+    frozen adaptive MR24+8 epoch 4 selected on the fixed n=2,000 validation
+    subset, then read out on the same 4,458-row full validation cohort
+    (Action Top-1 9.3988, Top-5 26.7384, Top-10 39.5917)
+  full_val_checkpoint_selection_semantics: >-
+    exploratory matched-cohort full-validation ablation; no cross-fitted
+    promotion or confirmatory claim is made in this requested run
+  phase1_decision_status: exploratory_full_validation_ablation_complete
+  phase1_decision_metric: full-validation Action Top-5 accuracy with Top-1/10 reporting
+  adoption_rule: >-
+    descriptive fused Action Top-5 delta versus the bit-exact epoch-0 frozen
+    adaptive visual fallback; no OOF promotion claim
+  deployability_limitations:
+    - >-
+      History membership and the adaptive A1 boundary use oracle GoalStep
+      action boundaries and annotation_level; online use needs an upstream
+      boundary/level estimator.
+    - >-
+      The close-pair cohort is conditional on
+      gap<=min(2s,0.20*A1.duration), so it is not an all-timeline estimate.
+    - >-
+      Frozen adaptive visual logits consume duration/timestamp/terminal-mask
+      metadata, but the unchanged Phase-1 history residual receives only
+      17-token spatial-mean summaries plus history delta/level/slot metadata.
+    - >-
+      The history pool contains only actions represented in the adaptive
+      close-pair cache, not every annotated action in each video.
+
+champion:
+  material_gain_pp_descriptive: 1.0
+
+dataset:
+  history_index_dir: src/ego/step1_action_anticipation/goalstep/index_adaptive_transition_mr24x8_history_k8
+  derived_store_dir: ../datasets/Ego4D/goalstep_history_context_store_adaptive_transition_mr24x8
+  max_history: 8
+  expected_summary_tokens: 17
+  expected_embed_dim: 1024
+  num_workers: 0
+  verify_shard_hashes: false
+
+model:
+  history:
+    segment_pooler_heads: 16
+    transformer_heads: 16
+    transformer_layers: 2
+    transformer_mlp_ratio: 4.0
+    transformer_dropout: 0.1
+    segment_dropout: 0.3
+    recency_scale_sec: 300.0
+
+training:
+  epochs: 10
+  batch_size: 32
+  eval_batch_size: 64
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  warmup_epochs: 1
+  final_lr: 0.0
+  focal_gamma: 2.0
+  focal_alpha: 0.25
+  history_aux_weight: 0.25
+  gradient_clip_norm: 1.0
+  precision: bf16
+
+evaluation:
+  split: val
+  cadence: every_epoch_full
+  modes: [visual, history, current_only, fused]
+  metrics: [cmr@5, top1, top5, top10, top15]
+  history_length_bins: ["0", "1-2", "3-4", "5-7", "8"]
+  checkpoint_selection_metric: fused.action.top5

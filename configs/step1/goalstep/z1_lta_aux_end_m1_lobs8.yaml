@@ -1,0 +1,54 @@
+# LTA auxiliary feature extraction for the fixed GoalStep endpoint contract.
+# This is deliberately NOT the adaptive-transition MR24+8 protocol.
+experiment:
+  name: goalstep_z1_lta_aux_end_m1_lobs8
+  seed: 42
+
+dataset:
+  index_dir: src/ego/step1_action_anticipation/goalstep/index_lta_aux_end_m1_lobs8
+  feature_cache_dir: ../datasets/Ego4D/lta_aux_feature_cache_end_m1_lobs8
+  video_root: ../datasets/Ego4D/v2/clip_256ss
+  video_source: clips
+  tau_a: 1.0
+  l_obs: 8.0
+  frames_per_clip: 32
+  frames_per_second: 4
+  resolution: 256
+  num_workers: 8
+  frame_sampling:
+    strategy: uniform
+
+model:
+  backbone: vjepa2
+  checkpoint: ../EGO_jihun/checkpoints/vjepa2/vitl.pt
+  repository_dir: third_party/vjepa2
+  model_kwargs:
+    use_v2_1: false
+    encoder:
+      model_name: vit_large
+      checkpoint_key: target_encoder
+      tubelet_size: 2
+      patch_size: 16
+      uniform_power: true
+      use_rope: true
+    predictor:
+      model_name: vit_predictor
+      checkpoint_key: predictor
+      num_frames: 64
+      depth: 12
+      num_heads: 12
+      predictor_embed_dim: 384
+      num_mask_tokens: 10
+      uniform_power: true
+      use_mask_tokens: true
+      use_sdpa: true
+      use_silu: false
+      wide_silu: false
+      use_rope: true
+  wrapper_kwargs:
+    no_predictor: false
+    num_output_frames: 2
+    num_steps: 1
+
+extraction:
+  batch_size: 8
