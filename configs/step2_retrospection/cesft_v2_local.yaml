@@ -1,0 +1,43 @@
+# Step-2 Retrospection retro4 — Phase-1 history-K8 prior · A2.end−1s · strict-next A3 · Top-10
+# retro3(goalstep_start_m1_lobs8.yaml)와의 차이:
+#   - WM prior: jihun2 Phase-1 HistoryContextResidualHead(fused), Top-10 43.9% (full val 기준)
+#   - 시간 계약: 관측 [max(A2.start, A2.end−9s), A2.end−1s] (가변 ≤8s), target = strict-next A3
+#     → horizon 가변(≥1s): contract.tau_a는 '최소 gap', tau_exact=false 검증
+#   - sample_id·target_start는 index parquet 컬럼 사용 (재계산 금지 — 2026-07-23 브리지 조사)
+
+experiment:
+  name: cesft_v2_goalstep_end_m1_hist_k8
+  seed: 42
+  output_dir: outputs/step2_retrospection/cesft_v2/goalstep_end_m1_hist_k8
+
+step1_export:  # jihun2 → jihun3 export (읽기 전용 사본, sha 검증)
+  root: outputs/goalstep/exports/RETRO4-goalstep-end-m1-history-k8-phase1
+  checkpoint: outputs/goalstep/exports/RETRO4-goalstep-end-m1-history-k8-phase1/best_action_top5.pt
+  checkpoint_sha256: 1d20c942e7ec71ef76326679c44d20dead88e084dc8ac4367b7e3ebebdaa61cd
+  index_dir: outputs/goalstep/exports/RETRO4-goalstep-end-m1-history-k8-phase1/index
+  # Phase 1은 val_subset 파일이 없음 (선정은 OOF 기반 — handoff §5). 소비 코드도 없음.
+
+shared_assets:
+  annotations_dir: data/Ego4D/v2/annotations
+  video_root: data/Ego4D/v2/goalstep_videos
+  derived_store_dir: ../datasets/Ego4D/goalstep_history_context_store   # [17,1024] summaries + frozen V/N/A
+  hf_home: /home/hogun/.cache/huggingface
+
+vlm:
+  model_name: Qwen/Qwen3-VL-8B-Instruct
+
+contract:
+  tau_a: 1.0           # 최소 anticipation gap (horizon은 가변, 평균 12.8s)
+  tau_exact: false
+  l_obs: 8.0           # 최대 관측창 (짧은 A2는 더 짧음)
+  top_k: 10
+  next_gap_text: "after the current action ends"   # vlm 프롬프트의 '1초 후' 문구 대체
+
+judge:
+  model: gemini-2.5-pro
+  base_url: https://gw.letsur.ai/v1
+  api_key_env: LETSUR_API_KEY
+
+splits:
+  dev_ratio: 0.3
+  split_seed: 42
