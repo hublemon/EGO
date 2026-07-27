@@ -113,31 +113,50 @@ def score(samples: list[dict], preds: dict[str, list[str]], vocab: list[str], T:
 
 
 # ── baseline 예측 생성 ──────────────────────────────────────────────────────
-def make_baselines(samples: list[dict], vocab: list[str], T: int, seed: int) -> dict[str, dict]:
+BASELINE_NAMES = ("random", "most_probable", "most_probable_goal",
+                  "wm_top1_repeat", "wm_topk_rank")
+
+
+def make_baselines(samples: list[dict], vocab: list[str], T: int, seed: int,
+                   names: list[str] | None = None) -> dict[str, dict]:
     """정답을 보지 않는 예측기들. 빈도 통계는 **평가셋 자체**에서 뽑지 않고
-    관측된 history(=과거)에서만 뽑아 정보 누출을 피한다."""
+    관측된 history(=과거)에서만 뽑아 정보 누출을 피한다.
+
+    names 를 주면 요청한 baseline 자체만 생성한다. 특히 WM-only ablation 실행에서
+    history 기반 baseline 을 부수적으로 계산하지 않도록 하는 엄격한 실행 범위 가드다.
+    """
+    selected = tuple(names or BASELINE_NAMES)
+    unknown = set(selected) - set(BASELINE_NAMES)
+    if unknown:
+        raise ValueError(f"unknown baselines: {sorted(unknown)}")
+
     glob = Counter()
     per_goal: dict[str, Counter] = defaultdict(Counter)
-    for s in samples:
-        for a in s["observed_actions"]:
-            glob[a] += 1
-            per_goal[s.get("scenario", "")][a] += 1
+    if {"most_probable", "most_probable_goal"} & set(selected):
+        for s in samples:
+            for a in s["observed_actions"]:
+                glob[a] += 1
+                per_goal[s.get("scenario", "")][a] += 1
 
     rng = random.Random(seed)
-    out: dict[str, dict] = {"random": {}, "most_probable": {}, "most_probable_goal": {},
-                            "wm_top1_repeat": {}, "wm_topk_rank": {}}
+    out: dict[str, dict] = {name: {} for name in selected}
     gtop = [a for a, _ in glob.most_common(T)] or vocab[:T]
     for s in samples:
         sid = s["sample_id"]
-        out["random"][sid] = [rng.choice(vocab) for _ in range(T)]
-        out["most_probable"][sid] = list(gtop)
-        gt_top = [a for a, _ in per_goal[s.get("scenario", "")].most_common(T)] or gtop
-        out["most_probable_goal"][sid] = (gt_top + gtop)[:T]
-
-        cands, scores = s["wm_candidates"], s["wm_scores"]
-        order = sorted(range(len(cands)), key=lambda i: -scores[i])
-        out["wm_top1_repeat"][sid] = [cands[order[0]]] * T
-        out["wm_topk_rank"][sid] = [cands[i] for i in order[:T]]
+        if "random" in out:
+            out["random"][sid] = [rng.choice(vocab) for _ in range(T)]
+        if "most_probable" in out:
+            out["most_probable"][sid] = list(gtop)
+        if "most_probable_goal" in out:
+            gt_top = [a for a, _ in per_goal[s.get("scenario", "")].most_common(T)] or gtop
+            out["most_probable_goal"][sid] = (gt_top + gtop)[:T]
+        if "wm_top1_repeat" in out or "wm_topk_rank" in out:
+            cands, scores = s["wm_candidates"], s["wm_scores"]
+            order = sorted(range(len(cands)), key=lambda i: -scores[i])
+            if "wm_top1_repeat" in out:
+                out["wm_top1_repeat"][sid] = [cands[order[0]]] * T
+            if "wm_topk_rank" in out:
+                out["wm_topk_rank"][sid] = [cands[i] for i in order[:T]]
     return out
 
 
@@ -154,6 +173,11 @@ def main() -> None:
     p.add_argument("--pred", default=None, help="preds json {sample_id: [labels]}")
     p.add_argument("--run-name", default=None)
     p.add_argument("--baselines", action="store_true")
+    p.add_argument("--baseline-names", nargs="+",
+                   choices=["random", "most_probable", "most_probable_goal",
+                            "wm_top1_repeat", "wm_topk_rank"],
+                   default=None,
+                   help="--baselines 중 저장·채점할 arm만 선택. 미지정 시 전부.")
     p.add_argument("--subset", default=None, help="sample_id 화이트리스트 json (예: frontier_subset_T3.json)")
     p.add_argument("--out-dir", default="runs/vpa_v2/metrics")
     p.add_argument("--n-boot", type=int, default=1000)
@@ -173,7 +197,8 @@ def main() -> None:
 
     results = {}
     if args.baselines:
-        for name, preds in make_baselines(samples, vocab, T, args.seed).items():
+        baseline_preds = make_baselines(samples, vocab, T, args.seed, args.baseline_names)
+        for name, preds in baseline_preds.items():
             m, _ = score(samples, preds, vocab, T, args.n_boot, args.seed)
             results[name] = m
     if args.pred:

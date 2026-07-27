@@ -72,13 +72,24 @@ def candidates_for(sample: dict, vocab: list[str], mode: str) -> list[str]:
 
 
 def build_prompt(sample: dict, vocab: list[str], horizon: int, *, with_frames: bool,
-                 candidate_mode: str = "vocab") -> tuple[str, str]:
+                 candidate_mode: str = "vocab", history: str = "full") -> tuple[str, str]:
     """(system, user) — 전 arm 공통. with_frames=False 는 blind control 전용으로
     프레임 관련 문장만 제거하고 나머지 텍스트는 **완전히 동일**하게 유지한다
-    (프레임 기여분만 분리하기 위해 다른 변인을 두지 않는다)."""
+    (프레임 기여분만 분리하기 위해 다른 변인을 두지 않는다).
+
+    history="none" 은 완료 행동 텍스트만 제거하는 ablation 이다. 프레임·goal·후보·
+    WM 1-step 제약은 그대로 유지한다. history="full" 은 기존 프롬프트와 byte-identical
+    이어야 기존 결과를 그대로 비교·재사용할 수 있다.
+    """
+    if history not in {"full", "none"}:
+        raise ValueError(f"history must be 'full' or 'none', got {history!r}")
+
     goal = sample.get("goal_text") or "(not specified)"
     observed = sample.get("observed_actions") or []
-    obs_txt = "\n".join(f"  {i + 1}. {a}" for i, a in enumerate(observed[-15:])) or "  (none recorded)"
+    if history == "none":
+        obs_txt = "  (not provided)"
+    else:
+        obs_txt = "\n".join(f"  {i + 1}. {a}" for i, a in enumerate(observed[-15:])) or "  (none recorded)"
     cands = candidates_for(sample, vocab, candidate_mode)
     vocab_txt = "\n".join(f"- {v}" for v in cands)
 
@@ -91,14 +102,24 @@ def build_prompt(sample: dict, vocab: list[str], horizon: int, *, with_frames: b
     else:
         source = "no video (text context only)"
 
-    system = (
-        "You are a procedural planning assistant for egocentric cooking videos. "
-        f"You are given: {source}; the goal; and the actions the camera-wearer has already "
-        f"COMPLETED. Predict the next {horizon} actions, in temporal order, starting with the "
-        "action that begins immediately after the observation ends. Each action is "
-        "'<verb> <noun>'. You MUST copy labels verbatim from the candidate list and output "
-        f"EXACTLY {horizon} of them as a JSON array of strings, and nothing else."
-    )
+    if history == "full":
+        # 이 분기는 ablation 도입 전 프롬프트와 byte-identical 이어야 한다.
+        system = (
+            "You are a procedural planning assistant for egocentric cooking videos. "
+            f"You are given: {source}; the goal; and the actions the camera-wearer has already "
+            f"COMPLETED. Predict the next {horizon} actions, in temporal order, starting with the "
+            "action that begins immediately after the observation ends. Each action is "
+            "'<verb> <noun>'. You MUST copy labels verbatim from the candidate list and output "
+            f"EXACTLY {horizon} of them as a JSON array of strings, and nothing else."
+        )
+    else:
+        system = (
+            "You are a procedural planning assistant for egocentric cooking videos. "
+            f"You are given: {source}; the goal. Predict the next {horizon} actions, in temporal "
+            "order, starting with the action that begins immediately after the observation ends. "
+            "Each action is '<verb> <noun>'. You MUST copy labels verbatim from the candidate list "
+            f"and output EXACTLY {horizon} of them as a JSON array of strings, and nothing else."
+        )
     wm_block = ""
     if candidate_mode == "wm10_first":
         # EGO 배포 형태: world model 이 '바로 다음' action 후보 10개를 제시하고 LM 이 그중 하나를

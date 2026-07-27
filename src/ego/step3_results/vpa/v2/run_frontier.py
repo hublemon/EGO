@@ -89,6 +89,9 @@ def main() -> None:
     p.add_argument("--timeout", type=int, default=120)
     p.add_argument("--sleep", type=float, default=0.5, help="호출 간 간격(rate limit 완화)")
     p.add_argument("--probe", action="store_true", help="1샘플만 호출해 vision 지원 여부만 확인")
+    p.add_argument("--history", choices=["full", "none"], default="full",
+                   help="full=완료 action history 포함(기존 프롬프트) · "
+                        "none=완료 action 텍스트만 제거(video frames/goal/candidates는 유지)")
     args = p.parse_args()
 
     api_key = os.environ.get("FRONTIER_API_KEY")
@@ -117,7 +120,7 @@ def main() -> None:
             todo.append(s)
     n_no_frames = len(samples) - len(done_ok) - len(todo)
 
-    print(f"[info] model={args.model} endpoint={args.base_url}")
+    print(f"[info] model={args.model} endpoint={args.base_url} history={args.history}")
     print(f"[info] subset={len(samples)} · done={len(done_ok)} · todo={len(todo)} "
           f"· no_frames={n_no_frames} · max_calls={args.max_calls}")
     if args.probe:
@@ -131,18 +134,23 @@ def main() -> None:
             if n_call >= args.max_calls:
                 print(f"[stop] 호출 상한 {args.max_calls} 도달 — 재실행하면 이어서 진행합니다.")
                 break
-            system, user = C.build_prompt(s, vocab, T, with_frames=True)
+            system, user = C.build_prompt(s, vocab, T, with_frames=True,
+                                          history=args.history)
             uris = encode_frames(F.frame_paths(cache_root, s))
             payload = build_payload(args.model, system, user, uris)
             content, err, status = call_api(args.base_url, api_key, payload, args.max_retries, args.timeout)
             n_call += 1
             pred = C.parse_prediction(content, T) if content else []
-            ok = bool(pred)
+            ok = len(pred) == T
+            if content and not ok and not err:
+                err = f"expected_{T}_labels_got_{len(pred)}"
             n_ok += ok
             n_fail += (not ok)
             fh.write(json.dumps({"sample_id": s["sample_id"], "video_uid": s["video_uid"],
                                  "ok": ok, "pred": pred, "error": err, "status": status,
-                                 "n_images": len(uris)}, ensure_ascii=False) + "\n")
+                                 "n_images": len(uris), "history": args.history,
+                                 "with_frames": True, "model": args.model,
+                                 "horizon": T}, ensure_ascii=False) + "\n")
             fh.flush()
             print(f"  [{n_call}/{min(len(todo), args.max_calls)}] {s['sample_id']}: "
                   f"{pred if ok else 'FAIL ' + str(err)[:120]}")
@@ -157,6 +165,7 @@ def main() -> None:
     C.dump_json(out_prefix.with_suffix(".json"), preds)
     C.dump_json(out_prefix.parent / (out_prefix.stem + ".status.json"), {
         "model": args.model, "endpoint": args.base_url, "horizon": T,
+        "history": args.history, "with_frames": True,
         "subset_n": len(samples), "predicted": len(preds),
         "remaining": len(samples) - len(preds), "calls_this_run": n_call,
         "ok_this_run": n_ok, "fail_this_run": n_fail,

@@ -100,12 +100,18 @@ CI 는 **영상 클러스터 부트스트랩**(영상당 10~40 스텝이 상관)
 
 ## 7. 정성 평가 (`build_review_site.py` → `merge_ratings.py`)
 
-에피소드 하나를 위에서 아래로 훑으며 스텝 카드(관측 8프레임 스트립 · 모델이 고른 행동 ·
+에피소드 하나를 위에서 아래로 훑으며 스텝 카드(입력 관측 8프레임 스트립 · 모델이 고른 행동 ·
 그 시점 belief · reasoning · WM 후보 10)를 보고 3인이 독립 판정한다.
 
 - 스텝별 **타당 / 애매 / 부적절**, 에피소드별 **1~5점**(goal 수행 여부) + 메모.
 - **GT 는 기본으로 가려 둔다.** 정답을 먼저 보면 판단이 정답에 정박된다. 토글로 열 수 있고
-  연 사실을 `gt_revealed` 로 기록해 사후 분리 집계가 가능하다.
+  연 사실을 `gt_revealed` 로 기록해 사후 분리 집계가 가능하다. 토글을 열면 GT action과 함께
+  실제 영상의 GT onset 이후 `[t,t+2s)`를 2fps로 뽑은 4프레임(`t,+0.5,+1.0,+1.5s`)이
+  표시된다. 이 이미지는 사이트 빌드 시 원본 mp4에서 미리 추출되며 추론·정량 평가는 다시
+  실행하지 않는다.
+- 관측/GT 스트립의 프레임을 클릭하면 336px 높이의 확대 뷰어가 열리며, 화면의 좌우 화살표
+  또는 키보드 `←`/`→`로 같은 스트립의 바로 이전·다음 프레임을 탐색한다. GT 프레임은
+  기존처럼 정답 토글을 연 뒤에만 UI에서 접근한다.
 - 저장은 localStorage 자동, 제출은 `ratings_<이름>.json` 다운로드.
 - 집계는 다수결 + **Fleiss κ**(일치도) + **다수결 × 정량 정오 교차표**.
   교차표의 "타당 × GT불일치" 칸이 핵심 — GT 라벨과 다르지만 goal 을 향해 합리적인 경로.
@@ -116,7 +122,8 @@ CI 는 **영상 클러스터 부트스트랩**(영상당 10~40 스텝이 상관)
 PYTHONPATH=src python -m ego.step3_results.dynamic.build_episodes --out-dir runs/dynamic_v1
 PYTHONPATH=src python -m ego.step3_results.dynamic.extract_frames          # vpa_v2 캐시 공유
 bash src/ego/step3_results/dynamic/run_all.sh                              # 3 arm + 채점 (≈7h)
-PYTHONPATH=src python -m ego.step3_results.dynamic.build_review_site --arm ego_closed
+PYTHONPATH=src python -m ego.step3_results.dynamic.build_review_site --arm ego_closed \
+  --video-root data/Ego4D/v2/goalstep_videos
 python -m http.server 8899 --directory runs/dynamic_v1/site
 PYTHONPATH=src python -m ego.step3_results.dynamic.merge_ratings runs/dynamic_v1/ratings/*.json
 ```

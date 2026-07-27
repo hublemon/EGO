@@ -1,5 +1,9 @@
 # VPA v2 실행 결과 Handoff — 프레임 조건 · 무오염 · EGO/frontier/백본 교차 비교
 
+> **후속 종합 결과:** T3/T4 × full/no-history 네 조건의 최종 표와 해석은
+> [`2026-07-27_vpa_v2_action_history_ablation_final_report.md`](./2026-07-27_vpa_v2_action_history_ablation_final_report.md)에
+> 정리했다.
+
 > 작성 2026-07-26 KST · **상태: 전 arm 완주 (T=3). frontier 915/915 · 실패 0 · `complete: true`.
 > T=4 는 baseline 만 실행됨.**
 > 코드 `src/ego/step3_results/vpa/v2/` · 방법론 `METHODS.md` · 프롬프트 원문 `PROMPTS.md` · 산출물 `runs/vpa_v2/`

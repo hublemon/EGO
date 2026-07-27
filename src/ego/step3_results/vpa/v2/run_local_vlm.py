@@ -75,6 +75,9 @@ def main() -> None:
     p.add_argument("--candidates", choices=["vocab", "wm10_first"], default="vocab",
                    help="vocab=전체 어휘 293(전 arm 공통·비교 가능) · "
                         "wm10_first=1번째만 WM top-10 제약, 2번째 이후 자유(EGO 배포 형태)")
+    p.add_argument("--history", choices=["full", "none"], default="full",
+                   help="full=완료 action history 포함(기존 프롬프트) · "
+                        "none=완료 action 텍스트만 제거(video frames/goal/candidates는 유지)")
     p.add_argument("--frames-dir", default="runs/vpa_v2")
     p.add_argument("--limit", type=int, default=None)
     p.add_argument("--require-frames", action="store_true", default=True,
@@ -97,7 +100,8 @@ def main() -> None:
     done = {r["sample_id"] for r in C.read_jsonl(rec_path) if r.get("ok")}
     todo = [s for s in todo if s["sample_id"] not in done]
 
-    print(f"[info] mode={args.mode} model={args.model_path} adapter={args.adapter}")
+    print(f"[info] mode={args.mode} history={args.history} "
+          f"model={args.model_path} adapter={args.adapter}")
     print(f"[info] eligible={len(todo) + len(done)} · done={len(done)} · todo={len(todo)}")
     if not todo:
         print("[info] 남은 샘플 없음.")
@@ -107,19 +111,26 @@ def main() -> None:
         with open(rec_path, "a") as fh:
             for i, s in enumerate(todo, 1):
                 system, user = C.build_prompt(s, vocab, T, with_frames=(args.mode == "frames"),
-                                              candidate_mode=args.candidates)
+                                              candidate_mode=args.candidates,
+                                              history=args.history)
                 images = []
                 if args.mode == "frames":
                     images = [Image.open(p).convert("RGB") for p in F.frame_paths(cache_root, s)]
                 try:
                     raw = generate(model, processor, system, user, images)
                     pred = C.parse_prediction(raw, T)
-                    err = None
+                    err = None if len(pred) == T else f"expected_{T}_labels_got_{len(pred)}"
                 except Exception as e:  # noqa: BLE001
                     raw, pred, err = "", [], str(e)[:200]
                 fh.write(json.dumps({"sample_id": s["sample_id"], "video_uid": s["video_uid"],
-                                     "ok": bool(pred), "pred": pred, "raw": raw[:400],
-                                     "error": err}, ensure_ascii=False) + "\n")
+                                     "ok": len(pred) == T, "pred": pred, "raw": raw[:400],
+                                     "error": err, "history": args.history,
+                                     "with_frames": args.mode == "frames",
+                                     "model": args.model_path,
+                                     "adapter": args.adapter,
+                                     "candidate_mode": args.candidates,
+                                     "horizon": T},
+                                    ensure_ascii=False) + "\n")
                 fh.flush()
                 if i % 10 == 0 or i == len(todo):
                     print(f"  [{i}/{len(todo)}] last={pred}")

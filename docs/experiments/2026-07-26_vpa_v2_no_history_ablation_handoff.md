@@ -1,5 +1,9 @@
 # [계획] VPA v2 — action history 제거 ablation Handoff
 
+> **2026-07-27 업데이트:** 이 계획의 T3/T4 실행은 완료됐다. 네 조건의 최종 수치와 해석은
+> [`2026-07-27_vpa_v2_action_history_ablation_final_report.md`](./2026-07-27_vpa_v2_action_history_ablation_final_report.md)를
+> 기준으로 한다. 아래 내용은 실행 전 가설·설계 기록으로 보존한다.
+
 > 작성 2026-07-26 KST · **상태: 미실행. 다음 세션/장비에서 수행할 것.**
 > 배경 문서: `2026-07-26_vpa_v2_results_handoff.md` (현행 결과) ·
 > `src/ego/step3_results/vpa/v2/{METHODS,PROMPTS}.md` (프롬프트·코드 구조)
