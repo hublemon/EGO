@@ -16,7 +16,9 @@ import torch
 from ego.step2_retrospection import vlm
 from ego.step2_retrospection.runtime import append_jsonl, read_jsonl, runs_root
 
-PROBE_N = {"G1": 2, "G2": 4, "other": 2}
+# 2026-07-25 (cesft_v2_fp): 8→32 확대 — 스텝별 1인칭율·침식 곡선을 관측 가능한 n으로.
+# 비율 유지(G1:G2:other = 1:2:1). run dir 별 probe_set.json이라 기존 run과 충돌 없음.
+PROBE_N = {"G1": 8, "G2": 16, "other": 8}
 
 
 def build_probe_set(seed: int = 42) -> list[dict]:
@@ -54,9 +56,17 @@ def run_probe(model, processor, video_root: Path, run_name: str, step: int,
         msgs = []
         for rec in probe_recs:
             imgs = vlm.extract_frames(video_root, rec["video_uid"],
-                                      rec["obs_start_sec"], rec["obs_end_sec"])
+                                      rec["obs_start_sec"], rec["obs_end_sec"], rec=rec)
             msgs.append(vlm.build_messages(rec, imgs))
-        texts = vlm.generate_batch(model, processor, msgs, max_new_tokens=320)
+        # 2026-07-26 OOM 수정: probe 는 짧게 디코드하고 학습으로 돌아가 오래 논다.
+        # 여기서 리더를 해제하지 않으면 상주 VideoReader 가 학습 내내 ~1 GB/s 로 호스트 RAM 을
+        # 먹어 4분 만에 cgroup 한도(240G)에 도달한다. 프레임(PIL)은 이미 복사본이라 안전.
+        vlm.close_readers()
+        # 학습 중 호출 — optimizer state가 GPU를 점유하므로 8개씩 청크 생성 (32 일괄 금지).
+        texts = []
+        for i in range(0, len(msgs), 8):
+            texts.extend(vlm.generate_batch(model, processor, msgs[i:i + 8],
+                                            max_new_tokens=320))
     finally:
         if was_training:
             model.train()
@@ -73,7 +83,8 @@ def run_probe(model, processor, video_root: Path, run_name: str, step: int,
             "sample_id": rec["sample_id"], "bucket": rec.get("_bucket", "?"), "gt": gt,
             "action": matched, "correct": matched == gt,
             "task_belief": (parsed["task_belief"] if parsed else None),
-            "reasoning_head": (parsed["reasoning"][:260] if parsed else None),
+            # 2026-07-25: 260자 절단 해제 — 텍스트 지표(1인칭·scene 등) 사후 재계산용 전문 저장.
+            "reasoning_head": (parsed["reasoning"] if parsed else None),
             "malformed": parsed is None or matched is None,
         })
     entry = {"run": run_name, "step": step, "ts": time.time(),

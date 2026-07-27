@@ -48,15 +48,18 @@ def _load_cached(rec: dict, n_frames: int):
 import os as _os
 NEXT_GAP_TEXT = _os.environ.get("RETRO_NEXT_GAP_TEXT", "starting 1 second after the last frame")
 
+# 2026-07-25 1인칭 일원화 (cesft_v2_fp 코호트): 페르소나 프레임만 행위자(1인칭)로 교체.
+# 구조(태그·형식·규칙·NEXT_GAP_TEXT)는 불변 — 파일럿(train_grpo_action.py:157) 실측상
+# 페르소나만으로 1인칭 화법이 형성되며 판별 성능은 페르소나와 직교.
 SYSTEM_PROMPT = (
-    "You are an egocentric activity assistant. You see frames from the last 8 seconds of a "
-    "first-person video, a list of actions the person already COMPLETED, and a shuffled list "
-    "of candidate next actions. Each action is 'verb noun'. Exactly ONE candidate is what the "
-    f"person does next ({NEXT_GAP_TEXT}).\n"
+    "You are an embodied agent reasoning about your own ongoing activity from a first-person "
+    "view. You see frames from the last 8 seconds of your first-person video, a list of actions "
+    "you already COMPLETED, and a shuffled list of candidate next actions. Each action is "
+    f"'verb noun'. Exactly ONE candidate is what you do next ({NEXT_GAP_TEXT}).\n"
     "Respond in EXACTLY this format:\n"
-    "<reasoning>\nCompare the candidates against the visual scene and the completed-action "
+    "<reasoning>\nCompare the candidates against what you see and your completed-action "
     "history. 3-6 sentences.\n</reasoning>\n"
-    "<task_belief>\nOne sentence: the local procedure or subgoal the person is currently in. "
+    "<task_belief>\nOne sentence: the local procedure or subgoal you are currently in. "
     "Do NOT name the chosen next action verbatim.\n</task_belief>\n"
     "<action>\nverb noun\n</action>\n"
     "The <action> line must copy one candidate EXACTLY as written."
@@ -66,6 +69,19 @@ TAG_RE = {
     "reasoning": re.compile(r"<reasoning>\s*(.*?)\s*</reasoning>", re.S),
     "task_belief": re.compile(r"<task_belief>\s*(.*?)\s*</task_belief>", re.S),
     "action": re.compile(r"<action>\s*(.*?)\s*</action>", re.S),
+}
+
+# 2026-07-27 진단: cand-free 레짐에서 sft_r15_c malformed 17.8%(theta_ce 2.4%)의 원인은
+# **닫는 태그 누락**이다. 실패 16건 전수 확인 결과 <reasoning>·<task_belief> 는 열림/닫힘
+# 16/16 정상이고 <action> 만 열림 16 / 닫힘 5 — 모델이 "<action>\nmove away from stove" 까지
+# 쓰고 </action> 없이 EOS 를 낸다. 잘림이 아니다: 예산을 320→512 로 올려도 실패 표본 집합이
+# 80건 그대로 일치했고(교집합 80/80), 정상 생성분 reasoning 최대 길이도 95단어다.
+# 복원된 action 11건은 모두 정상 문자열이었고 GT 적중 36%·경계 내 18%로 무작위가 아니다.
+# → 마지막 태그가 EOS 로 끝난 경우를 받아들이는 관대 규칙. **전 조건에 동일 적용**해야 유효하다.
+TAG_RE_LENIENT = {
+    "reasoning": re.compile(r"<reasoning>\s*(.*?)\s*(?:</reasoning>|(?=<task_belief>)|\Z)", re.S),
+    "task_belief": re.compile(r"<task_belief>\s*(.*?)\s*(?:</task_belief>|(?=<action>)|\Z)", re.S),
+    "action": re.compile(r"<action>\s*(.*?)\s*(?:</action>|\Z)", re.S),
 }
 
 
@@ -106,8 +122,19 @@ def close_readers() -> None:
 
 
 def extract_frames(video_root: Path, video_uid: str, start_sec: float, end_sec: float,
-                   n_frames: int = N_FRAMES):
-    """관측창 [start,end]에서 n_frames 균등 샘플 → PIL 이미지 리스트 (짧은 변 리사이즈)."""
+                   n_frames: int = N_FRAMES, rec: dict | None = None):
+    """관측창 [start,end]에서 n_frames 균등 샘플 → PIL 이미지 리스트 (짧은 변 리사이즈).
+
+    2026-07-26 OOM 수정: rec 을 주면 프레임 캐시를 **먼저** 조회한다 (히트 시 decord 미사용).
+    상주 VideoReader 의 네이티브 디코더 스레드가 요청이 없어도 read-ahead 버퍼를 무한 할당해
+    (idle 상태 실측 +1.1 GB/s) cgroup 240G 를 4분에 소진하므로, decord 진입 자체를 줄이는 것이
+    1차 방어다. 2차 방어는 사용 후 close_readers() — probe 처럼 "짧게 디코드하고 오래 노는"
+    구간에서는 리더 상주가 곧 사망이다 (07-25 theta_ce / 07-24 sft_r0 OOM 원인).
+    """
+    if rec is not None:
+        cached = _load_cached(rec, n_frames)
+        if cached is not None:
+            return cached
     import decord
     from PIL import Image
     decord.bridge.set_bridge("torch")  # thread-local — 워커 스레드에서도 매번 보장
@@ -189,7 +216,7 @@ def fmt_candidates(cands: list[str]) -> str:
 
 def user_prompt(rec: dict) -> str:
     return (
-        f"Completed actions so far (oldest to newest):\n{fmt_history(rec)}\n\n"
+        f"Your completed actions so far (oldest to newest):\n{fmt_history(rec)}\n\n"
         f"Candidate next actions (shuffled):\n{fmt_candidates(rec['candidates'])}\n\n"
         "Which candidate is the next action? Follow the required format."
     )
@@ -204,10 +231,25 @@ def build_messages(rec: dict, images) -> list[dict]:
     ]
 
 
-def parse_trace(text: str) -> dict | None:
+def parse_trace(text: str, lenient: bool = False) -> dict | None:
+    """세 태그를 뽑는다. lenient=True 면 닫는 태그 없이 EOS 로 끝난 마지막 태그를 받아들인다.
+
+    기본값은 strict — 이미 산출된 모든 평가가 strict 로 채점됐고, 진행 중인 곡선 셀과
+    섞이면 안 되기 때문이다. 관대 규칙은 호출부에서 명시적으로 켜고, 켠 실행은 **전 조건을
+    같은 규칙으로** 다시 돌린 것이어야 한다.
+    """
     out = {}
     for tag, rx in TAG_RE.items():
         m = rx.search(text)
+        if m is None and lenient:
+            m = TAG_RE_LENIENT[tag].search(text)
+            if m and tag == "action":
+                # </action> 없이 흘러온 경우 첫 줄만 취한다 (뒤에 잡설이 붙어도 무해).
+                first = m.group(1).strip().split("\n")[0].strip()
+                if not first:
+                    return None
+                out[tag] = first
+                continue
         if not m:
             return None
         out[tag] = m.group(1).strip()

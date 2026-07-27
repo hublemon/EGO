@@ -52,11 +52,12 @@ ARMS = {
     "no_history":  ("wm",     True,  False, "sel"),
 }
 
+# 2026-07-25 1인칭 일원화 — SYSTEM_PROMPT(vlm.py)와 동일 규칙으로 페르소나만 교체.
 SYS_NOCAND = (
-    "You are an egocentric activity assistant. You see frames from the last 8 seconds of a "
-    "first-person video and a list of actions the person already COMPLETED. Each action is "
-    "'verb noun'. Name the single next action the person does next "
-    f"({vlm.NEXT_GAP_TEXT}).\n<action>\nverb noun\n</action>"
+    "You are an embodied agent reasoning about your own ongoing activity from a first-person "
+    "view. You see frames from the last 8 seconds of your first-person video and a list of "
+    "actions you already COMPLETED. Each action is 'verb noun'. Name the single next action "
+    f"you do next ({vlm.NEXT_GAP_TEXT}).\n<action>\nverb noun\n</action>"
 )
 
 

@@ -20,6 +20,7 @@ accum 버퍼는 이어받지 않는다 (최대 accum−1 샘플의 gradient 손�
 from __future__ import annotations
 
 import json
+import os
 import random
 import shutil
 import time
@@ -53,6 +54,13 @@ def save_ckpt(out_dir: Path, model, opt, sched, meta: dict) -> None:
             ck.rename(old)
         tmp.rename(ck)
         _rm(old)
+        # 2026-07-25 (cesft_v2_fp): step-태그 어댑터 사본 보존 — 사후 스텝별 재평가용.
+        # 환경변수 게이트: 기존 롤링-저장 동작(clear_ckpt 포함)은 기본값에서 불변.
+        # 어댑터만 복사(~40MB) — optimizer state(176MB)는 태그 보존하지 않는다.
+        if os.environ.get("CKPT_KEEP_STEP_ADAPTERS") and meta.get("step") is not None:
+            tag = out_dir / f"adapter_step{meta['step']}"
+            if not tag.exists():
+                shutil.copytree(ck / "adapter", tag)
     except Exception as e:  # 디스크/권한 문제로 학습이 죽으면 안 된다
         print(f"[ckpt] save 실패 (계속 진행): {e}", flush=True)
 
