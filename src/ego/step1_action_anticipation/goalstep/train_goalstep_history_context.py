@@ -97,9 +97,23 @@ def _load_phase0_diagnostic(config: dict[str, Any]) -> dict[str, Any]:
     a provenance problem rather than a performance decision.
     """
     policy = str(get(config, "phase0.policy", "diagnostic_only"))
+    if policy == "not_applicable":
+        return {
+            "policy": policy,
+            "blocks_phase1": False,
+            "reason": str(
+                get(
+                    config,
+                    "phase0.reason",
+                    "No task-matched Phase-0 diagnostic is defined for this cohort.",
+                )
+            ),
+            "artifact": None,
+        }
     if policy != "diagnostic_only":
         raise EgoConfigError(
-            "phase0.policy must be 'diagnostic_only'; P0-b is no longer a Phase-1 gate"
+            "phase0.policy must be 'diagnostic_only' or 'not_applicable'; "
+            "P0-b is no longer a Phase-1 gate"
         )
     historical_threshold = float(
         get(config, "phase0.historical_gate_threshold_action_top5", 27.7)
@@ -166,9 +180,11 @@ class PreloadedHistoryStore:
         splits.<split>.shards[*].path: <root-relative shard path>
 
     Every shard is a ``torch.save`` dictionary containing ``sample_ids``,
-    fp16 ``summaries [N,17,1024]``, and fp32 dictionaries
-    ``visual_logits`` / ``recognition_logits`` keyed by V/N/A.  Recognition
-    logits are schema-validated but deliberately not exposed to Phase 1.
+    fp16 ``summaries [N,17,1024]``, and an fp32 ``visual_logits`` dictionary
+    keyed by V/N/A.  Original endpoint stores also contain
+    ``recognition_logits``; Phase-1-only stores may set
+    ``recognition_logits_included=false`` and omit them.  Recognition logits
+    are never exposed to the history model.
     """
 
     def __init__(
@@ -205,6 +221,9 @@ class PreloadedHistoryStore:
         if set(raw_classes) != set(HEADS):
             raise EgoConfigError(f"Store num_classes must contain exactly {HEADS}")
         self.num_classes = {head: int(raw_classes[head]) for head in HEADS}
+        self.recognition_logits_included = bool(
+            self.manifest.get("recognition_logits_included", True)
+        )
 
         split_manifest = self.manifest["splits"][split]
         top_provenance_fingerprint = self.manifest.get("provenance_base_fingerprint")
@@ -268,7 +287,14 @@ class PreloadedHistoryStore:
             if cursor + count > expected_rows:
                 raise EgoConfigError(f"{shard_path}: shard rows exceed manifest row count")
 
-            for dictionary_name in ("visual_logits", "recognition_logits"):
+            dictionary_names = ["visual_logits"]
+            if self.recognition_logits_included:
+                dictionary_names.append("recognition_logits")
+            elif "recognition_logits" in record:
+                raise EgoConfigError(
+                    f"{shard_path}: manifest omits recognition logits but shard contains them"
+                )
+            for dictionary_name in dictionary_names:
                 dictionary = record.get(dictionary_name, {})
                 if set(dictionary) != set(HEADS):
                     raise EgoConfigError(
@@ -722,6 +748,7 @@ def _save_val_predictions(
     predictions: dict[str, Any],
     num_classes: dict[str, int],
     gate_values: dict[str, Any],
+    contract: str = "A2.end-1s -> strict same-level A3",
 ) -> None:
     """Write the per-epoch full-val logits needed for leakage-safe OOF selection."""
     sample_ids = predictions["sample_ids"]
@@ -758,7 +785,7 @@ def _save_val_predictions(
             "format_version": SCHEMA_VERSION,
             "kind": "goalstep_history_context_val_predictions",
             "epoch": int(epoch),
-            "contract": "A2.end-1s -> strict same-level A3",
+            "contract": contract,
             "sample_ids": sample_ids,
             "video_uids": video_uids,
             "history_lengths": history_lengths,
@@ -829,6 +856,68 @@ def run_training(config: dict[str, Any]) -> dict[str, Any]:
     seed = int(get(config, "experiment.seed", 42))
     set_seed(seed)
     phase0_diagnostic = _load_phase0_diagnostic(config)
+    task_name = str(get(config, "task.name", "goalstep_same_level_next_action_A3"))
+    prediction_contract = str(
+        get(config, "task.prediction_contract", "A2.end-1s -> strict same-level A3")
+    )
+    history_index_contract = str(
+        get(
+            config,
+            "task.history_index_contract",
+            (
+                "left-padded completed same-video same-level visual segments, "
+                "oldest-to-newest; no history GT labels; current obs_end < target start"
+            ),
+        )
+    )
+    authoritative_reference = str(
+        get(config, "task.authoritative_reference", "P0-a same-decision OOF ensemble")
+    )
+    selection_semantics = str(
+        get(
+            config,
+            "task.full_val_checkpoint_selection_semantics",
+            (
+                "exploratory only; authoritative model comparison uses video-disjoint "
+                "cross-fitted per-epoch logits"
+            ),
+        )
+    )
+    decision_status = str(
+        get(
+            config,
+            "task.phase1_decision_status",
+            "deferred_to_cross_fitted_champion_evaluator",
+        )
+    )
+    decision_metric = str(
+        get(
+            config,
+            "task.phase1_decision_metric",
+            "paired Action instance Top-5 accuracy",
+        )
+    )
+    adoption_rule = str(
+        get(
+            config,
+            "task.adoption_rule",
+            "delta_top5_pp > 0 and video_bootstrap_95ci_lower_pp > 0",
+        )
+    )
+    default_limitations = [
+        (
+            "History membership and same-level chains are built with oracle GoalStep action "
+            "boundaries and annotation_level. No history class labels enter the model, but "
+            "online deployment needs an upstream boundary/level estimator."
+        ),
+        (
+            "The current observation uses the audited A2.end-1s anchor; the prediction target "
+            "is the strict same-level next action A3."
+        ),
+    ]
+    deployability_limitations = list(
+        get(config, "task.deployability_limitations", default_limitations)
+    )
     device_name = str(get(config, "experiment.device", "cuda"))
     if device_name.startswith("cuda") and not torch.cuda.is_available():
         device_name = "cpu"
@@ -963,34 +1052,19 @@ def run_training(config: dict[str, Any]) -> dict[str, Any]:
         "recognition_checkpoint_sha256": train_store.manifest.get("recognition_checkpoint_sha256"),
     }
     checkpoint_metadata = {
-        "task": "goalstep_same_level_next_action_A3",
+        "task": task_name,
+        "prediction_contract": prediction_contract,
         "feature_reextraction": False,
         "derived_store_schema_version": SCHEMA_VERSION,
-        "history_index_contract": (
-            "left-padded completed same-video same-level visual segments, oldest-to-newest; "
-            "no history GT labels; current obs_end < target start"
-        ),
+        "history_index_contract": history_index_contract,
         "summary_shape": [train_store.summary_tokens, train_store.embed_dim],
         "train_samples": len(train_dataset),
         "val_samples": len(val_dataset),
         "architecture": model.architecture_metadata(),
         "provenance": provenance,
         "phase0_diagnostic": phase0_diagnostic,
-        "checkpoint_selection_semantics": (
-            "best.pt and best_action_top5.pt are legacy aliases for the exploratory "
-            "full-validation maximum; they are not the authoritative OOF champion"
-        ),
-        "deployability_limitations": [
-            (
-                "History membership and same-level chains are built with oracle GoalStep action "
-                "boundaries and annotation_level. No history class labels enter the model, but "
-                "online deployment needs an upstream boundary/level estimator."
-            ),
-            (
-                "The current observation uses the audited A2.end-1s anchor; the prediction target "
-                "is the strict same-level next action A3."
-            ),
-        ],
+        "checkpoint_selection_semantics": selection_semantics,
+        "deployability_limitations": deployability_limitations,
     }
     run_metadata = {
         **checkpoint_metadata,
@@ -1006,11 +1080,8 @@ def run_training(config: dict[str, Any]) -> dict[str, Any]:
         "focal_gamma": focal_gamma,
         "history_aux_weight": history_aux_weight,
         "full_val_checkpoint_selection_metric": "fused.action.top5",
-        "full_val_checkpoint_selection_semantics": (
-            "exploratory only; authoritative model comparison uses video-disjoint "
-            "cross-fitted per-epoch logits"
-        ),
-        "authoritative_champion_reference": "P0-a same-decision OOF ensemble",
+        "full_val_checkpoint_selection_semantics": selection_semantics,
+        "authoritative_champion_reference": authoritative_reference,
         "epoch_0_contract": "bit-exact fused == frozen visual because every field gate is zero",
         "resume_supported": False,
         "existing_output_policy": "fail_closed",
@@ -1038,6 +1109,7 @@ def run_training(config: dict[str, Any]) -> dict[str, Any]:
         predictions=epoch_zero_predictions,
         num_classes=train_store.num_classes,
         gate_values=epoch_zero["gate_values"],
+        contract=prediction_contract,
     )
     _log_metrics("Val[FULL] epoch 0 visual fallback", epoch_zero)
     initial_state = _checkpoint_state(
@@ -1124,6 +1196,7 @@ def run_training(config: dict[str, Any]) -> dict[str, Any]:
             predictions=val_predictions,
             num_classes=train_store.num_classes,
             gate_values=val_metrics["gate_values"],
+            contract=prediction_contract,
         )
         elapsed = time.time() - started
         _log_metrics(f"Val[FULL] epoch {epoch}", val_metrics)
@@ -1187,7 +1260,7 @@ def run_training(config: dict[str, Any]) -> dict[str, Any]:
         "best_epoch": best_epoch,
         "best_fused_action_top5": best_metric,
         "checkpoint_selection_metric": "fused.action.top5",
-        "checkpoint_selection_semantics": "exploratory_full_validation",
+        "checkpoint_selection_semantics": selection_semantics,
         "epoch_0_visual_fallback": epoch_zero,
         "best_val": records[best_epoch]["val"],
         "per_epoch": records,
@@ -1195,12 +1268,12 @@ def run_training(config: dict[str, Any]) -> dict[str, Any]:
             epoch_zero["overall"]["visual"]["action"]["top5"]
         ),
         "phase1_decision": {
-            "status": "deferred_to_cross_fitted_champion_evaluator",
-            "authoritative_metric": "paired Action instance Top-5 accuracy",
-            "reference": "P0-a same-decision OOF ensemble",
+            "status": decision_status,
+            "authoritative_metric": decision_metric,
+            "reference": authoritative_reference,
             "visual_reference_percent": visual_reference,
             "p0b_is_gate": False,
-            "adoption_rule": "delta_top5_pp > 0 and video_bootstrap_95ci_lower_pp > 0",
+            "adoption_rule": adoption_rule,
             "material_gain_pp_is_descriptive_only": float(
                 get(config, "champion.material_gain_pp_descriptive", 1.0)
             ),

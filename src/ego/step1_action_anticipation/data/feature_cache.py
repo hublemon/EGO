@@ -83,6 +83,10 @@ def extract_and_cache_features(
                 "frame_time_positions",
                 "frame_terminal_mask",
                 "annotation_level_id",
+                "verb_mask",
+                "noun_mask",
+                "action_mask",
+                "supervision_source",
             ):
                 if metadata_key in batch:
                     value = batch[metadata_key][i]
@@ -142,6 +146,10 @@ class FeatureCacheDataset(Dataset):
             "frame_time_positions",
             "frame_terminal_mask",
             "annotation_level_id",
+            "verb_mask",
+            "noun_mask",
+            "action_mask",
+            "supervision_source",
         ):
             if metadata_key in record:
                 result[metadata_key] = record[metadata_key]

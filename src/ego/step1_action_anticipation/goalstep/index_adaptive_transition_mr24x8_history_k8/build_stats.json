@@ -1,0 +1,88 @@
+{
+  "protocol": "adaptive_transition_visual_history_of_completed_cached_actions",
+  "adaptive_index_dir": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_adaptive_transition_mr24x8",
+  "history_k": 8,
+  "current_contract": "A1 through A1.end-0.25s from adaptive MR24+8 cache",
+  "target_contract": "close immediate same-level successor A2",
+  "history_order": "left_padded_then_oldest_to_newest",
+  "history_eligibility": "same video_uid and annotation level; cached history observed action end <= current A1 start",
+  "history_temporal_feature": "current adaptive obs_end - history adaptive obs_end",
+  "leakage_contract": "history visual cache IDs only; no history GT labels",
+  "source_builder_sha256": "4da0001ba897c4e40cbd921d422a471f991589f6186bfd42185bcc5eb89accd0",
+  "train": {
+    "source_endpoint_samples": 18962,
+    "target_samples": 18962,
+    "retained_samples": 18962,
+    "history_k": 8,
+    "history_length_min": 0,
+    "history_length_mean": 6.393840312203354,
+    "history_length_median": 8.0,
+    "history_length_p90": 8.0,
+    "history_length_max": 8,
+    "history_length_histogram": {
+      "0": 1001,
+      "1": 921,
+      "2": 852,
+      "3": 788,
+      "4": 738,
+      "5": 689,
+      "6": 657,
+      "7": 616,
+      "8": 12700
+    },
+    "samples_with_no_history": 1001,
+    "samples_with_full_history": 12700,
+    "history_model_columns_contain_gt_labels": false,
+    "minimum_current_obs_to_target_margin_sec": 0.25,
+    "maximum_history_obs_end_sec": 17566.95658,
+    "adaptive_index": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_adaptive_transition_mr24x8/train.parquet",
+    "adaptive_index_sha256": "cdaf6ca3b4265edbbcda40a017d9a344eae3072c395f5a33d475ea5ccc1f1806",
+    "output_index": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_adaptive_transition_mr24x8_history_k8/train.parquet",
+    "output_index_sha256": "71db078e9a5335d061869ffc07fd8f304169f069808612eca16de9866c957db1"
+  },
+  "val": {
+    "source_endpoint_samples": 4458,
+    "target_samples": 4458,
+    "retained_samples": 4458,
+    "history_k": 8,
+    "history_length_min": 0,
+    "history_length_mean": 6.3811126065500225,
+    "history_length_median": 8.0,
+    "history_length_p90": 8.0,
+    "history_length_max": 8,
+    "history_length_histogram": {
+      "0": 234,
+      "1": 217,
+      "2": 201,
+      "3": 187,
+      "4": 178,
+      "5": 167,
+      "6": 158,
+      "7": 156,
+      "8": 2960
+    },
+    "samples_with_no_history": 234,
+    "samples_with_full_history": 2960,
+    "history_model_columns_contain_gt_labels": false,
+    "minimum_current_obs_to_target_margin_sec": 0.25,
+    "maximum_history_obs_end_sec": 5913.98796,
+    "adaptive_index": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_adaptive_transition_mr24x8/val.parquet",
+    "adaptive_index_sha256": "f9d933f20e110f3e31f66aba3b6610149d03b23fda2fe111b348134060732eec",
+    "output_index": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_adaptive_transition_mr24x8_history_k8/val.parquet",
+    "output_index_sha256": "24468ad0f9091ae3345ab360c49692a083ae32887768858231c8620c6a7dcc12"
+  },
+  "copied_assets": {
+    "action_registry.json": {
+      "source": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_adaptive_transition_mr24x8/action_registry.json",
+      "source_sha256": "dc80a93fd4b034768d7f9beb76d2da99701037dd60e5cc9f24291afb0063fb64",
+      "output": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_adaptive_transition_mr24x8_history_k8/action_registry.json",
+      "output_sha256": "dc80a93fd4b034768d7f9beb76d2da99701037dd60e5cc9f24291afb0063fb64"
+    },
+    "video_uids.txt": {
+      "source": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_adaptive_transition_mr24x8/video_uids.txt",
+      "source_sha256": "7653c8bb605123204997dff0a4e23708ff53c919af5b8d5aa6bd9064d2240bb4",
+      "output": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_adaptive_transition_mr24x8_history_k8/video_uids.txt",
+      "output_sha256": "7653c8bb605123204997dff0a4e23708ff53c919af5b8d5aa6bd9064d2240bb4"
+    }
+  }
+}

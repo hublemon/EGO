@@ -1,0 +1,110 @@
+{
+  "protocol": "lta_first_strict_later_a3_fixed_end_minus_tau_next_action_aux",
+  "coordinate_contract": "operational *_sec fields are clip-relative for clip_256ss decoding; audit *_video_sec fields equal clip_parent_start_sec+clip_time",
+  "observation_contract": {
+    "anchor": "A2.action_clip_end_sec - tau_a",
+    "tau_a_sec": 1.0,
+    "max_observation_sec": 8.0,
+    "sampling": "32_uniform_frames (performed by Stage 1, not this builder)",
+    "target_rule": "first later action_idx in the same clip with A3.start >= A2.end",
+    "strict_future": "A3.target_start_sec >= A2.observed_action_end_sec and obs_end_sec < A3.target_start_sec",
+    "adaptive_transition_window": false
+  },
+  "label_contract": {
+    "goalstep_registry": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_end_m1_lobs8/action_registry.json",
+    "goalstep_registry_sha256": "dc80a93fd4b034768d7f9beb76d2da99701037dd60e5cc9f24291afb0063fb64",
+    "output_registry": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_lta_aux_end_m1_lobs8/action_registry.json",
+    "output_registry_sha256": "dc80a93fd4b034768d7f9beb76d2da99701037dd60e5cc9f24291afb0063fb64",
+    "output_registry_byte_identical": true,
+    "num_verbs": 81,
+    "num_nouns": 140,
+    "num_actions": 293,
+    "match_policy": "both",
+    "taxonomy_synonym_policy": "literal handoff section 3.1: class_key plus members split on comma/pipe only; semicolon is not expanded",
+    "unmatched_id": -1,
+    "partial_labels_are_masked": true
+  },
+  "leakage_contract": {
+    "goalstep_val_index": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_end_m1_lobs8/val.parquet",
+    "goalstep_val_index_sha256": "7cb5a06ad6e36710ded7b86d6d7f297ac3283488d1e44504c5cbbd83ef5c78ba",
+    "goalstep_val_videos_excluded": true
+  },
+  "media_contract": {
+    "clip_video_dir": "/mnt/nvme/migration/jihun/datasets/Ego4D/v2/clip_256ss",
+    "available_mp4_clips": 2430,
+    "missing_selected_rows_excluded": true
+  },
+  "sources": [
+    {
+      "path": "/mnt/nvme/migration/jihun/datasets/Ego4D/v2/annotations/fho_lta_train.json",
+      "sha256": "86b062dbb54be628fdf4101d36a0355814c1f85d3a45635c8af56ebce2463ca8",
+      "split": "train",
+      "actions": 63956,
+      "clips": 1603,
+      "videos": 984
+    },
+    {
+      "path": "/mnt/nvme/migration/jihun/datasets/Ego4D/v2/annotations/fho_lta_val.json",
+      "sha256": "0b74acb44a4fea1e38ac57c78ab337a86b3c1014b876976d0d0412b82cb2cd2b",
+      "split": "val",
+      "actions": 33149,
+      "clips": 828,
+      "videos": 550
+    }
+  ],
+  "taxonomy": {
+    "verb_csv": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/taxonomy/verb_classes.csv",
+    "verb_csv_sha256": "be9d41d49891eb4b3740ca55d14b713bb9c59eece8c50d459a5ced852243d319",
+    "noun_csv": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/taxonomy/noun_classes.csv",
+    "noun_csv_sha256": "47add10cc3477433d57ebf85a979dc3b4f03f6efe9d47a94046d27bb2a86c129",
+    "verb_lookup_surfaces": 85,
+    "noun_lookup_surfaces": 142
+  },
+  "source_actions": 97105,
+  "source_clips": 2431,
+  "source_videos": 1315,
+  "source_a2_candidates": 94674,
+  "source_action_idx_gaps": 0,
+  "excluded_invalid_coordinates": 0,
+  "excluded_nonpositive_observation": 0,
+  "excluded_no_strict_later_target": 3742,
+  "rows_skipping_overlapping_annotations": 75123,
+  "skipped_overlapping_annotations_total": 225311,
+  "mapped_verb_candidates": 48061,
+  "mapped_noun_candidates": 26743,
+  "mapped_any_candidates": 59102,
+  "mapped_both_candidates": 15702,
+  "mapped_action_candidates": 3275,
+  "excluded_match_policy": 75230,
+  "excluded_goalstep_val_rows": 771,
+  "excluded_goalstep_val_any_rows": 771,
+  "excluded_goalstep_val_both_rows": 771,
+  "excluded_missing_clip_video_rows": 5,
+  "match_policy": "both",
+  "output_rows": 14926,
+  "output_clips": 1287,
+  "output_videos": 793,
+  "output_verb_mask_rows": 14926,
+  "output_noun_mask_rows": 14926,
+  "output_action_mask_rows": 3029,
+  "output_covered_actions": 65,
+  "output_boundary_truncated_rows": 82,
+  "output_target_horizon_sec_min": 1.0,
+  "output_target_horizon_sec_median": 3.233333333333306,
+  "output_target_horizon_sec_max": 227.16666666666674,
+  "strict_target_skipped_overlaps_min": 0,
+  "strict_target_skipped_overlaps_median": 2.0,
+  "strict_target_skipped_overlaps_p90": 5.0,
+  "strict_target_skipped_overlaps_max": 28,
+  "strict_target_inter_action_gap_sec_min": 0.0,
+  "strict_target_inter_action_gap_sec_median": 2.566666666666663,
+  "strict_target_inter_action_gap_sec_p90": 15.333333333333343,
+  "strict_target_inter_action_gap_sec_max": 275.53333333333336,
+  "goalstep_val_video_count": 130,
+  "output_source_split_rows": {
+    "train": 10544,
+    "val": 4382
+  },
+  "output_index": "/mnt/nvme/migration/jihun/EGO_jihun2/src/ego/step1_action_anticipation/goalstep/index_lta_aux_end_m1_lobs8/train.parquet",
+  "output_index_sha256": "bc8a77527c6c1f76cb863033ec081ddfc8f46c86544fd27ac6688ffd15de81ec"
+}

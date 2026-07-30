@@ -16,6 +16,7 @@ import pandas as pd
 import torch
 
 from ego.step1_action_anticipation.goalstep.train_goalstep_history_context import (
+    PreloadedHistoryStore,
     _load_phase0_diagnostic,
     run_training,
 )
@@ -30,7 +31,14 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _write_split(root: Path, index_root: Path, split: str, seed: int) -> dict:
+def _write_split(
+    root: Path,
+    index_root: Path,
+    split: str,
+    seed: int,
+    *,
+    include_recognition_logits: bool = True,
+) -> dict:
     generator = torch.Generator().manual_seed(seed)
     store_count = 9 if split == "train" else 7
     target_count = 6 if split == "train" else 4
@@ -47,17 +55,16 @@ def _write_split(root: Path, index_root: Path, split: str, seed: int) -> dict:
     split_dir = root / split
     split_dir.mkdir(parents=True)
     shard_path = split_dir / "shard_00000.pt"
-    torch.save(
-        {
-            "schema_version": 1,
-            "provenance_fingerprint": f"synthetic-{split}-shard",
-            "sample_ids": ids,
-            "summaries": summaries,
-            "visual_logits": visual_logits,
-            "recognition_logits": recognition_logits,
-        },
-        shard_path,
-    )
+    shard = {
+        "schema_version": 1,
+        "provenance_fingerprint": f"synthetic-{split}-shard",
+        "sample_ids": ids,
+        "summaries": summaries,
+        "visual_logits": visual_logits,
+    }
+    if include_recognition_logits:
+        shard["recognition_logits"] = recognition_logits
+    torch.save(shard, shard_path)
 
     rows = []
     for target_index in range(target_count):
@@ -311,7 +318,68 @@ def test_phase0_failure_is_diagnostic_only() -> None:
         assert diagnostic["observed_oof_action_top5"] == 27.6
 
 
+def test_phase0_not_applicable_needs_no_artifact() -> None:
+    diagnostic = _load_phase0_diagnostic(
+        {
+            "phase0": {
+                "policy": "not_applicable",
+                "reason": "synthetic task-mismatch check",
+            }
+        }
+    )
+    assert diagnostic == {
+        "policy": "not_applicable",
+        "blocks_phase1": False,
+        "reason": "synthetic task-mismatch check",
+        "artifact": None,
+    }
+
+
+def test_store_can_omit_unused_recognition_logits() -> None:
+    with tempfile.TemporaryDirectory(prefix="goalstep_history_visual_only_") as temporary:
+        root = Path(temporary)
+        store_root = root / "store"
+        index_root = root / "index"
+        store_root.mkdir()
+        index_root.mkdir()
+        train_manifest = _write_split(
+            store_root,
+            index_root,
+            "train",
+            seed=3,
+            include_recognition_logits=False,
+        )
+        (store_root / "manifest.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "kind": "goalstep_history_context_derived_store",
+                    "backbone_reextraction": False,
+                    "recognition_logits_included": False,
+                    "source_cache_dir": "/synthetic/existing_cache",
+                    "summary_shape": [5, 32],
+                    "num_classes": NUM_CLASSES,
+                    "visual_checkpoint": "/synthetic/visual.pt",
+                    "visual_checkpoint_sha256": "synthetic-visual-hash",
+                    "recognition_checkpoint": None,
+                    "recognition_checkpoint_sha256": None,
+                    "provenance_base_fingerprint": "synthetic-store-base",
+                    "splits": {"train": train_manifest},
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        store = PreloadedHistoryStore(store_root, "train", verify_shard_hashes=True)
+        assert store.recognition_logits_included is False
+        assert tuple(store.summaries.shape) == (9, 5, 32)
+        assert set(store.frozen_logits("train_segment_0")) == set(HEADS)
+
+
 if __name__ == "__main__":
+    test_store_can_omit_unused_recognition_logits()
+    test_phase0_not_applicable_needs_no_artifact()
     test_phase0_failure_is_diagnostic_only()
     test_history_only_does_not_see_current_summary()
     test_goalstep_history_context_cpu_smoke()

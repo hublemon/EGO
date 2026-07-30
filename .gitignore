@@ -73,3 +73,9 @@ data/Ego4D
 # Local model archives
 EGO_models.zip
 EGO_models_unzipped/
+
+# 별도 clone(.git 포함)으로 유지되는 공식 V-JEPA2 레퍼런스 — 커밋 제외
+third_party/vjepa2_official/
+
+# 로컬 검증 산출물 아카이브 (2.5GB) — 저장소에 넣지 않는다
+step2_local_validation_tier1_*.zip

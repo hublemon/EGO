@@ -1,0 +1,89 @@
+# Phase 1 rebuilt on the LTA-aux direct visual foundation.
+# History remains GoalStep-only and uses fixed A2.end-1s / 8s observations.
+experiment:
+  name: goalstep_z1_history_context_k8_vna_ep10_ltaaux
+  seed: 42
+  device: cuda
+  output_dir: outputs/goalstep/runs/z1_history_context_k8_vna_ep10_ltaaux
+
+phase0:
+  policy: diagnostic_only
+  gate_results_path: outputs/goalstep/runs/history_context_phase0_ltaaux/p0b_results.json
+  historical_gate_threshold_action_top5: 27.7
+
+task:
+  name: goalstep_fixed_endpoint_ltaaux_history_next_action_A3
+  # Keep this exact canonical string: the paired evaluator fails closed on it.
+  prediction_contract: A2.end-1s -> strict same-level A3
+  history_index_contract: >-
+    GoalStep-only left-padded completed same-video same-level visual segments,
+    oldest-to-newest; no LTA segments and no history GT labels
+  authoritative_reference: >-
+    LTA-aux direct checkpoints 1-8 combined by video-disjoint P0-a
+  full_val_checkpoint_selection_semantics: >-
+    exploratory full-validation checkpoint only; authoritative comparison is
+    the video-disjoint P0-a-aware cross-fitted evaluator
+  phase1_decision_status: deferred_to_cross_fitted_champion_evaluator
+  phase1_decision_metric: paired Action instance Top-5 accuracy
+  adoption_rule: delta_top5_pp_positive_and_video_bootstrap_ci95_lower_positive
+  deployability_limitations:
+    - Validation adaptivity and untouched-test limitations are inherited.
+    - History membership uses oracle GoalStep boundaries and annotation level.
+    - LTA auxiliary data affects only the frozen direct visual foundation.
+    - Adaptive-transition windows and MR24+8 metadata are not used.
+
+champion:
+  p0a_oof_scores_path: outputs/goalstep/runs/history_context_phase0_ltaaux/p0a_primary_same_decision_oof_scores.pt
+  p0a_results_path: outputs/goalstep/runs/history_context_phase0_ltaaux/p0a_primary_same_decision_results.json
+  endpoint_logits_path: outputs/goalstep/runs/history_context_phase0_ltaaux/endpoint_logits.pt
+  val_predictions_dir: outputs/goalstep/runs/z1_history_context_k8_vna_ep10_ltaaux/val_predictions
+  fold_seed: 42
+  selection_metric: action.top5
+  blend_space: probabilities
+  blend_alpha_grid: [0.0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.0]
+  bootstrap_unit: video_uid
+  bootstrap_samples: 10000
+  bootstrap_seed: 42
+  adoption_rule: delta_top5_positive_and_video_bootstrap_ci95_lower_positive
+  material_gain_pp_descriptive: 1.0
+
+dataset:
+  history_index_dir: src/ego/step1_action_anticipation/goalstep/index_end_m1_lobs8_next_action_history_k8
+  derived_store_dir: ../datasets/Ego4D/goalstep_history_context_store_ltaaux
+  max_history: 8
+  expected_summary_tokens: 17
+  expected_embed_dim: 1024
+  num_workers: 0
+  verify_shard_hashes: false
+
+model:
+  history:
+    segment_pooler_heads: 16
+    transformer_heads: 16
+    transformer_layers: 2
+    transformer_mlp_ratio: 4.0
+    transformer_dropout: 0.1
+    segment_dropout: 0.3
+    recency_scale_sec: 300.0
+
+training:
+  epochs: 10
+  batch_size: 32
+  eval_batch_size: 64
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  warmup_epochs: 1
+  final_lr: 0.0
+  focal_gamma: 2.0
+  focal_alpha: 0.25
+  history_aux_weight: 0.25
+  gradient_clip_norm: 1.0
+  precision: bf16
+
+evaluation:
+  split: val
+  cadence: every_epoch_full
+  modes: [visual, history, current_only, fused]
+  metrics: [cmr@5, top1, top5, top10, top15]
+  history_length_bins: ["0", "1-2", "3-4", "5-7", "8"]
+  checkpoint_selection_metric: fused.action.top5

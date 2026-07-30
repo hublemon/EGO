@@ -18,6 +18,33 @@ DATA = REPO.parent / "datasets" / "Ego4D"
 
 EXPERIMENTS = [
     {
+        "id": "lta-aux-phase1",
+        "kind": "lta_aux_pipeline",
+        "title": "fixed action_end−1s · 8s · uniform 32f + LTA aux",
+        "subtitle": "GoalStep strict-future A3 + LTA partial V/N supervision → P0-a → Phase 1 visual history K=8",
+        "run": "z1_end_m1_lobs8_next_action_vna_ep10_ltaaux",
+        "phase0_run": "history_context_phase0_ltaaux",
+        "phase1_run": "z1_history_context_k8_vna_ep10_ltaaux",
+        "cache": "goalstep_feature_cache_end_m1_lobs8_vna",
+        "aux_cache": "lta_aux_feature_cache_end_m1_lobs8",
+        "store": "goalstep_history_context_store_ltaaux",
+        "aux_index": "src/ego/step1_action_anticipation/goalstep/index_lta_aux_end_m1_lobs8",
+        "config": "z1_end_m1_lobs8_next_action_vna_ep10_ltaaux.yaml",
+        "phase1_config": "z1_history_context_k8_vna_ep10_ltaaux.yaml",
+        "train_total": 30374,
+        "val_total": 7214,
+        "eligible_train": 29293,
+        "eligible_val": 6960,
+        "aux_expected": 14926,
+        "epochs": 10,
+        "metric_priority": "action_accuracy",
+        "idle_state": "queued",
+        "queue_note": (
+            "LTA both-match partial labels · GoalStep val 비디오 누수 제외 · "
+            "λ=0.3 · Phase 2는 이번 실행 범위 밖"
+        ),
+    },
+    {
         "id": "history-context-k8",
         "kind": "history_context",
         "p0b_policy": "diagnostic_only",
@@ -25,7 +52,13 @@ EXPERIMENTS = [
         "subtitle": "현재 A2 시각 증거 + same-level 과거 8개 시각 요약 → strict-future A3",
         "run": "z1_history_context_k8_vna_ep10",
         "cache": "goalstep_feature_cache_end_m1_lobs8_vna",
+        "store": "goalstep_history_context_store",
         "config": "z1_history_context_k8_vna_ep10.yaml",
+        "phase0_run": "history_context_phase0",
+        "phase0_process_marker": "run_history_phase0.py",
+        "crossfit_result": "history_context_vs_p0a_results.json",
+        "crossfit_process_marker": "evaluate_history_context_vs_p0a.py",
+        "requires_crossfit": True,
         "train_total": 30374,
         "val_total": 7214,
         "eligible_train": 29293,
@@ -33,6 +66,25 @@ EXPERIMENTS = [
         "epochs": 10,
         "idle_state": "queued",
         "queue_note": "개정: P0-b는 진단용, P0-a 28.41을 champion으로 두고 K=8 Phase-1/2 실행",
+    },
+    {
+        "id": "adaptive-history-context-k8",
+        "kind": "history_context",
+        "title": "adaptive A1 boundary · MR24+8 · visual history K=8",
+        "subtitle": "adaptive A1 시각 증거 + same-level 과거 8개 시각 요약 → 가까운 다음 A2",
+        "run": "z1_adaptive_transition_history_context_k8_vna_ep10",
+        "cache": "goalstep_feature_cache_adaptive_transition_mr24x8_vna",
+        "store": "goalstep_history_context_store_adaptive_transition_mr24x8",
+        "store_process_marker": "goalstep_history_context_store_adaptive_transition_mr24x8",
+        "config": "z1_adaptive_transition_history_context_k8_vna_ep10.yaml",
+        "requires_crossfit": False,
+        "train_total": 18962,
+        "val_total": 4458,
+        "eligible_train": 18962,
+        "eligible_val": 4458,
+        "epochs": 10,
+        "idle_state": "queued",
+        "queue_note": "기존 adaptive MR24+8 cache 재사용 · Phase 1 K=8 history fusion 10 epochs",
     },
     {
         "id": "history-probe-zoo",
@@ -196,6 +248,64 @@ def cache_counts(cache_name: str, memo: dict[str, dict[str, int]]) -> dict[str, 
     return memo[cache_name]
 
 
+def _pt_count(root: Path) -> int:
+    """Count a sample-per-file cache without assuming a train/val layout."""
+    train_root = root / "train"
+    if train_root.is_dir():
+        return sum(1 for _ in train_root.glob("*.pt"))
+    if root.is_dir():
+        return sum(1 for _ in root.glob("*.pt"))
+    return 0
+
+
+def _nested_int_for_key(value, key: str) -> int | None:
+    if isinstance(value, dict):
+        candidate = value.get(key)
+        if isinstance(candidate, (int, float)) and not isinstance(candidate, bool):
+            return int(candidate)
+        for child in value.values():
+            found = _nested_int_for_key(child, key)
+            if found is not None:
+                return found
+    elif isinstance(value, list):
+        for child in value:
+            found = _nested_int_for_key(child, key)
+            if found is not None:
+                return found
+    return None
+
+
+def _aux_index_count(index_root: Path, fallback: int) -> int:
+    stats = read_json(index_root / "build_stats.json") or {}
+    for key in (
+        "output_rows",
+        "rows_written",
+        "retained_rows",
+        "kept_rows",
+        "train_rows",
+        "matched_rows",
+    ):
+        count = _nested_int_for_key(stats, key)
+        if count is not None:
+            return count
+    return fallback
+
+
+def _ensemble_action_metrics(result: dict | None) -> dict | None:
+    action = (result or {}).get("oof_fieldwise_ensemble", {}).get("action")
+    if not action:
+        return None
+    return {
+        "cmr5": action.get("cmr5", action.get("cmr@5")),
+        "top1": action.get("top1"),
+        "top5": action.get("top5"),
+        "top10": action.get("top10"),
+        "top15": action.get("top15"),
+        "scope": "video-disjoint OOF · P0-a",
+        "best_epoch": "P0-a",
+    }
+
+
 def final_action_metrics(final: dict | None) -> dict | None:
     if not final:
         return None
@@ -259,8 +369,14 @@ def _derived_store_count(root: Path, split: str, total: int, shard_size: int = 1
 
 def history_context_status(exp: dict, processes: str, cache_memo: dict) -> dict:
     run_dir = REPO / "outputs" / "goalstep" / "runs" / exp["run"]
-    phase0_dir = REPO / "outputs" / "goalstep" / "runs" / "history_context_phase0"
-    store_root = DATA / "goalstep_history_context_store"
+    phase0_run = exp.get("phase0_run")
+    phase0_dir = (
+        REPO / "outputs" / "goalstep" / "runs" / phase0_run
+        if phase0_run
+        else None
+    )
+    store_root = DATA / exp.get("store", "goalstep_history_context_store")
+    requires_crossfit = bool(exp.get("requires_crossfit", True))
     raw_history = read_history(run_dir)
     history = []
     for row in raw_history:
@@ -271,19 +387,44 @@ def history_context_status(exp: dict, processes: str, cache_memo: dict) -> dict:
         history.append(adapted)
 
     final = read_json(run_dir / "final_metrics.json")
-    crossfit = read_json(run_dir / "history_context_vs_p0a_results.json")
-    gate_result = read_json(phase0_dir / "p0b_results.json")
-    ensemble_result = read_json(phase0_dir / "p0a_primary_same_decision_results.json")
+    crossfit_result = exp.get("crossfit_result")
+    crossfit = read_json(run_dir / crossfit_result) if crossfit_result else None
+    gate_result = read_json(phase0_dir / "p0b_results.json") if phase0_dir else None
+    ensemble_result = (
+        read_json(phase0_dir / "p0a_primary_same_decision_results.json")
+        if phase0_dir
+        else None
+    )
     gate = (gate_result or {}).get("gate", {})
     process_lines = processes.splitlines()
-    phase0_running = any("run_history_phase0.py" in line for line in process_lines)
-    store_running = any("prepare_history_context_store.py" in line for line in process_lines)
-    training = any("train_goalstep_history_context.py" in line for line in process_lines)
-    evaluating = any("evaluate_history_context_vs_p0a.py" in line for line in process_lines)
+    phase0_marker = exp.get("phase0_process_marker")
+    store_marker = exp.get("store_process_marker", exp.get("store"))
+    crossfit_marker = exp.get("crossfit_process_marker")
+    phase0_running = bool(phase0_marker) and any(
+        phase0_marker in line for line in process_lines
+    )
+    store_running = any(
+        "prepare_history_context_store.py" in line
+        and (
+            not store_marker
+            or re.search(
+                rf"(?<![A-Za-z0-9_]){re.escape(store_marker)}(?![A-Za-z0-9_])",
+                line,
+            )
+        )
+        for line in process_lines
+    )
+    training = any(
+        "train_goalstep_history_context.py" in line and exp["config"] in line
+        for line in process_lines
+    )
+    evaluating = bool(crossfit_marker) and any(
+        crossfit_marker in line for line in process_lines
+    )
 
-    if crossfit:
+    if (requires_crossfit and crossfit) or (not requires_crossfit and final):
         phase = "completed"
-    elif evaluating or final:
+    elif evaluating or (requires_crossfit and final):
         phase = "crossfit_eval"
     elif training:
         phase = "training"
@@ -294,7 +435,7 @@ def history_context_status(exp: dict, processes: str, cache_memo: dict) -> dict:
     elif gate and not gate.get("passed", False) and exp.get("p0b_policy") != "diagnostic_only":
         phase = "gate_failed"
     else:
-        phase = "queued"
+        phase = exp.get("idle_state", "queued")
 
     latest = history[-1] if history else None
     valid = [row for row in history if row.get("action_top5") not in (None, "")]
@@ -311,8 +452,10 @@ def history_context_status(exp: dict, processes: str, cache_memo: dict) -> dict:
             "action_top10": ensemble_action.get("top10"),
             "action_top15": ensemble_action.get("top15"),
         }
-    final_metrics = crossfit_action_metrics(
-        crossfit, ("final_blend", "phase1", "p0a")
+    final_metrics = (
+        crossfit_action_metrics(crossfit, ("final_blend", "phase1", "p0a"))
+        if requires_crossfit
+        else None
     ) or history_final_action_metrics(final)
     raw_counts = cache_counts(exp["cache"], cache_memo)
     store_train = _derived_store_count(store_root, "train", exp["train_total"])
@@ -334,7 +477,11 @@ def history_context_status(exp: dict, processes: str, cache_memo: dict) -> dict:
     elif gate:
         progress = 15.0
     else:
-        gate_log_text = "\n".join(tail(phase0_dir / "logs/gate.log", 80))
+        gate_log_text = (
+            "\n".join(tail(phase0_dir / "logs/gate.log", 80))
+            if phase0_dir
+            else ""
+        )
         matches = re.findall(r"cache pass (\d+)/(\d+)", gate_log_text)
         gate_fraction = (int(matches[-1][0]) / int(matches[-1][1])) if matches else 0.0
         progress = 1.0 + 13.0 * gate_fraction if phase == "phase0" else 0.0
@@ -362,13 +509,16 @@ def history_context_status(exp: dict, processes: str, cache_memo: dict) -> dict:
             if interval[0] is not None:
                 gate_note += f", CI low {float(interval[0]):+.2f}"
             gate_note += ")"
-    logs = []
-    for path, lines in (
-        (phase0_dir / "logs/gate.log", 12),
+    log_specs = [
+        (run_dir / "logs/pipeline.log", 8),
         (run_dir / "logs/store.log", 8),
         (run_dir / "logs/train.log", 18),
         (run_dir / "logs/champion_eval.log", 12),
-    ):
+    ]
+    if phase0_dir:
+        log_specs.insert(0, (phase0_dir / "logs/gate.log", 12))
+    logs = []
+    for path, lines in log_specs:
         logs.extend(tail(path, lines))
 
     return {
@@ -513,6 +663,326 @@ def history_zoo_status(exp: dict, processes: str, cache_memo: dict) -> dict:
     }
 
 
+def lta_aux_pipeline_status(exp: dict, processes: str, cache_memo: dict) -> dict:
+    direct_dir = REPO / "outputs" / "goalstep" / "runs" / exp["run"]
+    phase0_dir = REPO / "outputs" / "goalstep" / "runs" / exp["phase0_run"]
+    phase1_dir = REPO / "outputs" / "goalstep" / "runs" / exp["phase1_run"]
+    index_root = REPO / exp["aux_index"]
+    aux_cache_root = DATA / exp["aux_cache"]
+    store_root = DATA / exp["store"]
+
+    process_lines = processes.splitlines()
+    pipeline_running = any(
+        ("ltaaux" in line.lower() or "lta_aux" in line.lower())
+        and ("run_" in line or "pipeline" in line.lower())
+        for line in process_lines
+    )
+    index_running = any(
+        "build_lta_aux_index.py" in line for line in process_lines
+    )
+    feature_running = any(
+        "extract" in line.lower()
+        and ("lta_aux" in line.lower() or exp["aux_cache"] in line)
+        for line in process_lines
+    )
+    direct_running = any(
+        "train_goalstep_z1.py" in line
+        and (exp["config"] in line or exp["run"] in line)
+        for line in process_lines
+    )
+    phase0_running = any(
+        "run_history_phase0.py" in line and exp["phase0_run"] in line
+        for line in process_lines
+    )
+    store_running = any(
+        "prepare_history_context_store.py" in line and exp["store"] in line
+        for line in process_lines
+    )
+    phase1_running = any(
+        "train_goalstep_history_context.py" in line
+        and (exp["phase1_config"] in line or exp["phase1_run"] in line)
+        for line in process_lines
+    )
+    evaluation_running = any(
+        "evaluate_history_context_vs_p0a.py" in line
+        and ("ltaaux" in line.lower() or exp["phase1_run"] in line)
+        for line in process_lines
+    )
+
+    index_ready = (index_root / "train.parquet").is_file()
+    aux_total = _aux_index_count(index_root, exp["aux_expected"])
+    aux_features = _pt_count(aux_cache_root)
+    aux_feature_fraction = (
+        min(1.0, aux_features / aux_total) if aux_total > 0 else 0.0
+    )
+    aux_features_ready = index_ready and aux_total > 0 and aux_features >= aux_total
+
+    direct_history = read_history(direct_dir)
+    direct_final = read_json(direct_dir / "final_metrics.json")
+    direct_latest = direct_history[-1] if direct_history else None
+    direct_epoch_fraction = (
+        min(1.0, float(direct_latest["epoch"]) / exp["epochs"])
+        if direct_latest and direct_latest.get("epoch") not in (None, "")
+        else 0.0
+    )
+    direct_ready = direct_final is not None
+
+    p0a_result = read_json(phase0_dir / "p0a_primary_same_decision_results.json")
+    phase0_ready = p0a_result is not None
+
+    store_train = _derived_store_count(store_root, "train", exp["train_total"])
+    store_val = _derived_store_count(store_root, "val", exp["val_total"])
+    store_fraction = (store_train + store_val) / (
+        exp["train_total"] + exp["val_total"]
+    )
+    store_ready = (
+        store_train >= exp["train_total"] and store_val >= exp["val_total"]
+    )
+
+    raw_phase1_history = read_history(phase1_dir)
+    phase1_history = []
+    for row in raw_phase1_history:
+        adapted = dict(row)
+        for key in ("top1", "top5", "top10", "top15"):
+            adapted[f"action_{key}"] = row.get(f"fused_action_{key}", "")
+        adapted["action_cmr@5"] = row.get("fused_action_cmr@5", "")
+        phase1_history.append(adapted)
+    phase1_final = read_json(phase1_dir / "final_metrics.json")
+    phase1_latest = phase1_history[-1] if phase1_history else None
+    phase1_epoch_fraction = (
+        min(1.0, float(phase1_latest["epoch"]) / exp["epochs"])
+        if phase1_latest and phase1_latest.get("epoch") not in (None, "")
+        else 0.0
+    )
+    phase1_ready = phase1_final is not None
+    paired_result = read_json(
+        phase1_dir / "history_context_vs_p0a_results.json"
+    )
+    evaluation_ready = paired_result is not None
+
+    log_names = (
+        "pipeline",
+        "index",
+        "extract",
+        "train",
+        "phase0",
+        "store",
+        "phase1",
+        "evaluate",
+    )
+    log_chunks = {
+        name: tail(direct_dir / f"logs/{name}.log", 16)
+        for name in log_names
+    }
+    log_text = "\n".join(line for chunk in log_chunks.values() for line in chunk)
+    queue_failed = (
+        ("ERROR:" in log_text or "Traceback (most recent call last)" in log_text)
+        and not any(
+            (
+                index_running,
+                feature_running,
+                direct_running,
+                phase0_running,
+                store_running,
+                phase1_running,
+                evaluation_running,
+            )
+        )
+    )
+
+    if evaluation_ready:
+        phase = "completed"
+    elif evaluation_running:
+        phase = "crossfit_eval"
+    elif phase1_running:
+        phase = "phase1_training"
+    elif store_running:
+        phase = "derived_store"
+    elif phase0_running:
+        phase = "phase0"
+    elif direct_running:
+        phase = "direct_training"
+    elif feature_running:
+        phase = "aux_feature"
+    elif index_running:
+        phase = "aux_index"
+    elif queue_failed:
+        phase = "interrupted"
+    elif pipeline_running:
+        if not index_ready:
+            phase = "aux_index"
+        elif not aux_features_ready:
+            phase = "aux_feature"
+        elif not direct_ready:
+            phase = "direct_training"
+        elif not phase0_ready:
+            phase = "phase0"
+        elif not store_ready:
+            phase = "derived_store"
+        elif not phase1_ready:
+            phase = "phase1_training"
+        else:
+            phase = "crossfit_eval"
+    else:
+        phase = exp["idle_state"]
+
+    progress = (
+        5.0 * float(index_ready)
+        + 30.0 * aux_feature_fraction
+        + 25.0 * (1.0 if direct_ready else direct_epoch_fraction)
+        + 10.0 * float(phase0_ready)
+        + 10.0 * min(1.0, store_fraction)
+        + 15.0 * (1.0 if phase1_ready else phase1_epoch_fraction)
+        + 5.0 * float(evaluation_ready)
+    )
+
+    def stage_state(done: bool, active: bool) -> str:
+        if done:
+            return "done"
+        if active:
+            return "active"
+        return "pending"
+
+    stages = [
+        {
+            "label": "LTA aux index",
+            "state": stage_state(index_ready, phase == "aux_index"),
+            "detail": (
+                f"{aux_total:,} rows" if index_ready else "GoalStep val 누수 제외"
+            ),
+        },
+        {
+            "label": "LTA feature",
+            "state": stage_state(aux_features_ready, phase == "aux_feature"),
+            "detail": f"{aux_features:,} / {aux_total:,}",
+        },
+        {
+            "label": "Direct 10ep",
+            "state": stage_state(direct_ready, phase == "direct_training"),
+            "detail": f"epoch {direct_latest.get('epoch', 0) if direct_latest else 0} / {exp['epochs']}",
+        },
+        {
+            "label": "P0-a",
+            "state": stage_state(phase0_ready, phase == "phase0"),
+            "detail": "video-disjoint 2-fold",
+        },
+        {
+            "label": "Derived store",
+            "state": stage_state(store_ready, phase == "derived_store"),
+            "detail": f"{store_train + store_val:,} / {exp['train_total'] + exp['val_total']:,}",
+        },
+        {
+            "label": "Phase 1 10ep",
+            "state": stage_state(phase1_ready, phase == "phase1_training"),
+            "detail": f"epoch {phase1_latest.get('epoch', 0) if phase1_latest else 0} / {exp['epochs']}",
+        },
+        {
+            "label": "Paired OOF",
+            "state": stage_state(evaluation_ready, phase == "crossfit_eval"),
+            "detail": "Phase 1 vs P0-a",
+        },
+    ]
+
+    history = phase1_history if phase1_history else direct_history
+    history_label = (
+        "Phase 1 fused Action accuracy"
+        if phase1_history
+        else "Direct probe Action accuracy"
+    )
+    latest = history[-1] if history else None
+    valid = [row for row in history if row.get("action_top5") not in (None, "")]
+    best = max(valid, key=lambda row: float(row["action_top5"])) if valid else None
+
+    final_metrics = (
+        crossfit_action_metrics(paired_result, ("final_blend", "phase1", "p0a"))
+        or history_final_action_metrics(phase1_final)
+        or _ensemble_action_metrics(p0a_result)
+        or final_action_metrics(direct_final)
+    )
+
+    active_label = next(
+        (stage["label"] for stage in stages if stage["state"] == "active"),
+        "pipeline",
+    )
+    note = (
+        f"{active_label} · fixed action_end−1s / 8s / uniform 32f · "
+        f"LTA aux {aux_features:,}/{aux_total:,} · λ=0.3"
+    )
+    if evaluation_ready:
+        action = (
+            paired_result.get("metrics_percent", {})
+            .get("final_blend", {})
+            .get("action", {})
+        )
+        paired = (
+            paired_result.get("paired_action_top5", {})
+            .get("final_blend_vs_p0a", {})
+        )
+        note = "Phase 1 paired OOF 평가 완료"
+        if action.get("top5") is not None:
+            note += f" · Action Top-5 {float(action['top5']):.2f}"
+        if paired.get("delta_top5_pp") is not None:
+            note += f" · Δ {float(paired['delta_top5_pp']):+.2f}pp vs P0-a"
+
+    goalstep_counts = cache_counts(exp["cache"], cache_memo)
+    assets = [
+        {
+            "label": "LTA aux index",
+            "done": aux_total if index_ready else 0,
+            "total": aux_total,
+        },
+        {
+            "label": "LTA aux features",
+            "done": min(aux_features, aux_total),
+            "total": aux_total,
+        },
+        {
+            "label": "GoalStep train cache · reused",
+            "done": goalstep_counts["train"],
+            "total": exp["train_total"],
+        },
+        {
+            "label": "GoalStep val cache · reused",
+            "done": goalstep_counts["val"],
+            "total": exp["val_total"],
+        },
+    ]
+    logs = []
+    for name in log_names:
+        if log_chunks[name]:
+            logs.append(f"[{name}.log]")
+            logs.extend(log_chunks[name][-6:])
+
+    return {
+        **exp,
+        "phase": phase,
+        "progress": round(min(progress, 100.0), 2),
+        "cache": {
+            "train": {
+                "done": goalstep_counts["train"],
+                "total": exp["train_total"],
+            },
+            "val": {
+                "done": goalstep_counts["val"],
+                "total": exp["val_total"],
+            },
+        },
+        "assets": assets,
+        "derived_store": {
+            "train": {"done": store_train, "total": exp["train_total"]},
+            "val": {"done": store_val, "total": exp["val_total"]},
+        },
+        "stages": stages,
+        "latest": latest,
+        "best": best,
+        "final_action": final_metrics,
+        "history": history,
+        "history_label": history_label,
+        "queue_note": note,
+        "logs": logs[-42:],
+    }
+
+
 def experiment_status(exp: dict, processes: str, cache_memo: dict) -> dict:
     run_dir = REPO / "outputs" / "goalstep" / "runs" / exp["run"]
     history = read_history(run_dir)
@@ -587,7 +1057,9 @@ def status() -> dict:
     processes = process_snapshot()
     memo: dict[str, dict[str, int]] = {}
     experiments = [
-        history_context_status(exp, processes, memo)
+        lta_aux_pipeline_status(exp, processes, memo)
+        if exp.get("kind") == "lta_aux_pipeline"
+        else history_context_status(exp, processes, memo)
         if exp.get("kind") == "history_context"
         else history_zoo_status(exp, processes, memo)
         if exp.get("kind") == "history_zoo"
@@ -595,8 +1067,9 @@ def status() -> dict:
         for exp in EXPERIMENTS
     ]
     order = [
-        "training", "probe_zoo", "crossfit_eval", "derived_store", "phase0", "paused", "queued", "stopped",
-        "interrupted", "gate_failed", "completed",
+        "aux_index", "aux_feature", "direct_training", "training", "phase0",
+        "derived_store", "phase1_training", "probe_zoo", "crossfit_eval",
+        "paused", "queued", "stopped", "interrupted", "gate_failed", "completed",
     ]
     counts = {state: sum(exp["phase"] == state for exp in experiments) for state in order}
     return {
@@ -609,14 +1082,16 @@ def status() -> dict:
 
 HTML = r'''<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>GoalStep Experiment Board</title><style>
-:root{color-scheme:dark;--bg:#071018;--card:#101c27;--card2:#0a151e;--line:#243443;--text:#edf6ff;--muted:#91a3b5;--blue:#60a5fa;--mint:#5eead4;--amber:#fbbf24;--rose:#fb7185;--violet:#c084fc}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 12% -5%,#123047 0,transparent 32%),var(--bg);font:15px system-ui;color:var(--text)}.wrap{max-width:1180px;margin:auto;padding:30px 18px 70px}.top{position:sticky;top:0;z-index:5;background:#071018e8;backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding:16px 0;margin-bottom:22px}h1{margin:0;font-size:28px}.sub{color:var(--muted);margin-top:6px}.summary,.gpu,.metrics{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.chip,.metric{background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:9px 12px}.chip b{margin-left:7px}.run{background:#101c27e8;border:1px solid var(--line);border-radius:18px;margin:0 0 18px;padding:20px;box-shadow:0 16px 42px #0003}.runhead{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.run h2{font-size:21px;margin:0}.badge{white-space:nowrap;border-radius:99px;padding:7px 11px;font-size:12px;font-weight:750;text-transform:uppercase;letter-spacing:.08em}.completed{color:var(--mint);border:1px solid #2d6a62}.training,.probe_zoo{color:var(--blue);border:1px solid #335f87}.feature_extraction,.derived_store,.phase0,.crossfit_eval{color:var(--violet);border:1px solid #654a78}.paused{color:var(--amber);border:1px solid #725d2d}.queued{color:#c7d2fe;border:1px solid #495473}.stopped,.interrupted,.gate_failed{color:var(--rose);border:1px solid #713947}.bar{height:8px;background:#253440;border-radius:99px;overflow:hidden;margin:17px 0 8px}.fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--mint));transition:width .5s}.row{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;margin-top:14px}.panel{background:var(--card2);border-radius:13px;padding:14px}.label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.11em}.metrics{display:grid;grid-template-columns:repeat(5,1fr)}.metric b{display:block;font-size:18px;margin-top:4px}.note{color:#c9d7e2;margin-top:9px}canvas{width:100%;height:190px;margin-top:8px}details{margin-top:13px}summary{cursor:pointer;color:var(--muted)}pre{white-space:pre-wrap;max-height:260px;overflow:auto;background:#061019;border:1px solid #1b2b38;border-radius:10px;padding:12px;color:#b9cedd;font:12px ui-monospace}.empty{color:var(--muted);padding:12px 0}@media(max-width:760px){.runhead{display:block}.badge{display:inline-block;margin-top:10px}.row{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}}
+:root{color-scheme:dark;--bg:#071018;--card:#101c27;--card2:#0a151e;--line:#243443;--text:#edf6ff;--muted:#91a3b5;--blue:#60a5fa;--mint:#5eead4;--amber:#fbbf24;--rose:#fb7185;--violet:#c084fc}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 12% -5%,#123047 0,transparent 32%),var(--bg);font:15px system-ui;color:var(--text)}.wrap{max-width:1180px;margin:auto;padding:30px 18px 70px}.top{position:sticky;top:0;z-index:5;background:#071018e8;backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding:16px 0;margin-bottom:22px}h1{margin:0;font-size:28px}.sub{color:var(--muted);margin-top:6px}.summary,.gpu,.metrics{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.chip,.metric{background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:9px 12px}.chip b{margin-left:7px}.run{background:#101c27e8;border:1px solid var(--line);border-radius:18px;margin:0 0 18px;padding:20px;box-shadow:0 16px 42px #0003}.runhead{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.run h2{font-size:21px;margin:0}.badge{white-space:nowrap;border-radius:99px;padding:7px 11px;font-size:12px;font-weight:750;text-transform:uppercase;letter-spacing:.08em}.completed{color:var(--mint);border:1px solid #2d6a62}.training,.direct_training,.phase1_training,.probe_zoo{color:var(--blue);border:1px solid #335f87}.feature_extraction,.aux_index,.aux_feature,.derived_store,.phase0,.crossfit_eval{color:var(--violet);border:1px solid #654a78}.paused{color:var(--amber);border:1px solid #725d2d}.queued{color:#c7d2fe;border:1px solid #495473}.stopped,.interrupted,.gate_failed{color:var(--rose);border:1px solid #713947}.bar{height:8px;background:#253440;border-radius:99px;overflow:hidden;margin:17px 0 8px}.fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--mint));transition:width .5s}.row{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;margin-top:14px}.panel{background:var(--card2);border-radius:13px;padding:14px}.label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.11em}.metrics{display:grid;grid-template-columns:repeat(5,1fr)}.metric b{display:block;font-size:18px;margin-top:4px}.note{color:#c9d7e2;margin-top:9px}.stages{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;margin-top:14px}.stage{background:#08131c;border:1px solid var(--line);border-radius:10px;padding:9px;min-height:64px}.stage.done{border-color:#2d6a62}.stage.active{border-color:#5a77a0;box-shadow:inset 0 0 0 1px #60a5fa55}.stage b{display:block;font-size:12px}.stage span{display:block;color:var(--muted);font-size:10px;margin-top:5px;line-height:1.3}canvas{width:100%;height:190px;margin-top:8px}details{margin-top:13px}summary{cursor:pointer;color:var(--muted)}pre{white-space:pre-wrap;max-height:260px;overflow:auto;background:#061019;border:1px solid #1b2b38;border-radius:10px;padding:12px;color:#b9cedd;font:12px ui-monospace}.empty{color:var(--muted);padding:12px 0}@media(max-width:900px){.stages{grid-template-columns:repeat(4,1fr)}}@media(max-width:760px){.runhead{display:block}.badge{display:inline-block;margin-top:10px}.row{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}.stages{grid-template-columns:repeat(2,1fr)}}
 </style></head><body><div class="wrap"><header class="top"><h1>GoalStep Experiment Board</h1><div class="sub">완료 · 진행 · 일시중단 · 예정 실험을 5초마다 갱신합니다. 아래로 스크롤해 전체 큐를 확인하세요.</div><div id="summary" class="summary"></div><div id="gpu" class="gpu"></div></header><main id="runs"><div class="empty">loading…</div></main></div>
 <script>
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const num=v=>v==null||v===''?'—':Number(v).toFixed(2);const names={completed:'완료',training:'학습 중',probe_zoo:'Phase 2 zoo 학습 중',crossfit_eval:'OOF 평가 중',feature_extraction:'피처 추출 중',derived_store:'기존 피처 요약 중',phase0:'Phase-0 진단',paused:'일시중단',queued:'예정',stopped:'중단',interrupted:'오류 중단',gate_failed:'게이트 미달'};
+const num=v=>v==null||v===''?'—':Number(v).toFixed(2);const names={completed:'완료',aux_index:'LTA index 구축 중',aux_feature:'LTA 피처 추출 중',direct_training:'Direct 10ep 학습 중',phase1_training:'Phase 1 학습 중',training:'학습 중',probe_zoo:'Phase 2 zoo 학습 중',crossfit_eval:'OOF 평가 중',feature_extraction:'피처 추출 중',derived_store:'기존 피처 요약 중',phase0:'P0-a 생성 중',paused:'일시중단',queued:'예정',stopped:'중단',interrupted:'오류 중단',gate_failed:'게이트 미달'};
 function chart(canvas,rows,epochs){const x=canvas.getContext('2d'),W=canvas.width,H=canvas.height;x.clearRect(0,0,W,H);x.strokeStyle='#243443';x.fillStyle='#91a3b5';x.font='11px system-ui';for(let y=0;y<=100;y+=25){let py=H-22-y*(H-35)/100;x.beginPath();x.moveTo(32,py);x.lineTo(W-8,py);x.stroke();x.fillText(y,3,py+3)}[['action_top5','#60a5fa'],['action_top10','#c084fc'],['action_top15','#fb7185'],['action_top1','#5eead4']].forEach(([k,col],si)=>{x.strokeStyle=col;x.lineWidth=2.5;x.beginPath();rows.forEach((r,i)=>{let px=32+(Number(r.epoch)-1)*(W-45)/Math.max(1,epochs-1),py=H-22-Number(r[k])*(H-35)/100;i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke();x.fillStyle=col;x.fillText(k.replace('action_',''),W-230+si*57,12)})}
-function metricBlock(m,title){if(!m)return '<div class="empty">측정값 없음</div>';return `<div class="label">${esc(title)}</div><div class="metrics"><div class="metric"><span class="label">CMR@5</span><b>${num(m.cmr5??m['action_cmr@5'])}</b></div><div class="metric"><span class="label">Top-1</span><b>${num(m.top1??m.action_top1)}</b></div><div class="metric"><span class="label">Top-5</span><b>${num(m.top5??m.action_top5)}</b></div><div class="metric"><span class="label">Top-10</span><b>${num(m.top10??m.action_top10)}</b></div><div class="metric"><span class="label">Top-15</span><b>${num(m.top15??m.action_top15)}</b></div></div>`}
-function runHTML(r){let shown=r.final_action||r.best||r.latest;let title=r.final_action?`best epoch ${r.final_action.best_epoch} · full validation`:r.best?`현재 best epoch ${r.best.epoch} · full validation`:'아직 평가 없음';let epoch=r.latest?`${r.latest.epoch} / ${r.epochs}`:`0 / ${r.epochs}`;let store=r.derived_store?`<div class="label" style="margin-top:12px">Derived history store</div><div class="metrics" style="grid-template-columns:1fr 1fr"><div class="metric"><span class="label">Train</span><b>${r.derived_store.train.done.toLocaleString()} / ${r.derived_store.train.total.toLocaleString()}</b></div><div class="metric"><span class="label">Val</span><b>${r.derived_store.val.done.toLocaleString()} / ${r.derived_store.val.total.toLocaleString()}</b></div></div>`:'';return `<article class="run"><div class="runhead"><div><h2>${esc(r.title)}</h2><div class="sub">${esc(r.subtitle)}</div></div><span class="badge ${r.phase}">${esc(names[r.phase]||r.phase)}</span></div><div class="bar"><div class="fill" style="width:${r.progress}%"></div></div><div class="sub">진행률 ${num(r.progress)}% · epoch ${epoch} · eligible train ${r.eligible_train.toLocaleString()} / val ${r.eligible_val.toLocaleString()}</div><div class="note">${esc(r.queue_note)}</div><div class="row"><section class="panel">${metricBlock(shown,title)}</section><section class="panel"><div class="label">Existing endpoint feature cache</div><div class="metrics" style="grid-template-columns:1fr 1fr"><div class="metric"><span class="label">Train</span><b>${r.cache.train.done.toLocaleString()} / ${r.cache.train.total.toLocaleString()}</b></div><div class="metric"><span class="label">Val</span><b>${r.cache.val.done.toLocaleString()} / ${r.cache.val.total.toLocaleString()}</b></div></div>${store}</section></div><section class="panel" style="margin-top:14px"><div class="label">Action accuracy curve</div>${r.history.length?`<canvas id="c-${r.id}" width="1080" height="190"></canvas>`:'<div class="empty">epoch 결과가 생기면 그래프가 표시됩니다.</div>'}</section><details><summary>최근 로그 보기</summary><pre>${esc(r.logs.join('\n')||'로그 없음')}</pre></details></article>`}
+function metricBlock(m,title,accuracyFirst=false){if(!m)return '<div class="empty">측정값 없음</div>';let values={cmr5:m.cmr5??m['action_cmr@5'],top1:m.top1??m.action_top1,top5:m.top5??m.action_top5,top10:m.top10??m.action_top10,top15:m.top15??m.action_top15};let order=accuracyFirst?[['Top-1','top1'],['Top-5','top5'],['Top-10','top10'],['CMR@5','cmr5'],['Top-15','top15']]:[['CMR@5','cmr5'],['Top-1','top1'],['Top-5','top5'],['Top-10','top10'],['Top-15','top15']];return `<div class="label">${esc(title)}</div><div class="metrics">${order.map(([label,key])=>`<div class="metric"><span class="label">${label}</span><b>${num(values[key])}</b></div>`).join('')}</div>`}
+function assetsBlock(r){let items=r.assets||[{label:'Train',done:r.cache.train.done,total:r.cache.train.total},{label:'Val',done:r.cache.val.done,total:r.cache.val.total}];return `<div class="label">${r.assets?'Pipeline data assets':'Existing endpoint feature cache'}</div><div class="metrics" style="grid-template-columns:repeat(${Math.min(4,items.length)},1fr)">${items.map(a=>`<div class="metric"><span class="label">${esc(a.label)}</span><b>${Number(a.done).toLocaleString()} / ${Number(a.total).toLocaleString()}</b></div>`).join('')}</div>`}
+function stagesBlock(r){if(!r.stages)return '';return `<div class="stages">${r.stages.map(s=>`<div class="stage ${esc(s.state)}"><b>${s.state==='done'?'✓ ':s.state==='active'?'● ':''}${esc(s.label)}</b><span>${esc(s.detail)}</span></div>`).join('')}</div>`}
+function runHTML(r){let shown=r.final_action||r.best||r.latest;let title=r.final_action?`${r.final_action.scope||'full validation'} · best ${r.final_action.best_epoch}`:r.best?`현재 best epoch ${r.best.epoch} · full validation`:'아직 평가 없음';let epoch=r.latest?`${r.latest.epoch} / ${r.epochs}`:`0 / ${r.epochs}`;let store=r.derived_store?`<div class="label" style="margin-top:12px">Derived history store</div><div class="metrics" style="grid-template-columns:1fr 1fr"><div class="metric"><span class="label">Train</span><b>${r.derived_store.train.done.toLocaleString()} / ${r.derived_store.train.total.toLocaleString()}</b></div><div class="metric"><span class="label">Val</span><b>${r.derived_store.val.done.toLocaleString()} / ${r.derived_store.val.total.toLocaleString()}</b></div></div>`:'';return `<article class="run"><div class="runhead"><div><h2>${esc(r.title)}</h2><div class="sub">${esc(r.subtitle)}</div></div><span class="badge ${r.phase}">${esc(names[r.phase]||r.phase)}</span></div><div class="bar"><div class="fill" style="width:${r.progress}%"></div></div><div class="sub">진행률 ${num(r.progress)}% · epoch ${epoch} · eligible train ${r.eligible_train.toLocaleString()} / val ${r.eligible_val.toLocaleString()}</div><div class="note">${esc(r.queue_note)}</div>${stagesBlock(r)}<div class="row"><section class="panel">${metricBlock(shown,title,r.metric_priority==='action_accuracy')}</section><section class="panel">${assetsBlock(r)}${store}</section></div><section class="panel" style="margin-top:14px"><div class="label">${esc(r.history_label||'Action accuracy curve')}</div>${r.history.length?`<canvas id="c-${r.id}" width="1080" height="190"></canvas>`:'<div class="empty">epoch 결과가 생기면 그래프가 표시됩니다.</div>'}</section><details><summary>최근 로그 보기</summary><pre>${esc(r.logs.join('\n')||'로그 없음')}</pre></details></article>`}
 async function refresh(){try{const d=await fetch('/api/status',{cache:'no-store'}).then(r=>r.json());document.getElementById('summary').innerHTML=Object.entries(d.summary).filter(([,n])=>n).map(([s,n])=>`<span class="chip ${s}">${esc(names[s]||s)} <b>${n}</b></span>`).join('')+`<span class="chip">UTC ${esc(d.updated_at.slice(11,19))}</span>`;document.getElementById('gpu').innerHTML=d.gpus.map(g=>g.error?`<span class="chip">${esc(g.error)}</span>`:`<span class="chip">GPU ${esc(g.index)} · ${esc(g.util)}% · ${Number(g.memory_used).toLocaleString()} / ${Number(g.memory_total).toLocaleString()} MiB · ${esc(g.temperature)}°C</span>`).join('');document.getElementById('runs').innerHTML=d.experiments.map(runHTML).join('');d.experiments.forEach(r=>{let c=document.getElementById('c-'+r.id);if(c)chart(c,r.history,r.epochs)})}catch(e){document.getElementById('summary').innerHTML='<span class="chip interrupted">reconnecting</span>'}}refresh();setInterval(refresh,5000);
 </script></body></html>'''
 

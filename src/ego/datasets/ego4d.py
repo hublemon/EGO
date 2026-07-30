@@ -422,6 +422,10 @@ class Ego4DLTADataset(EgoActionAnticipationDataset):
         return self._label_mapping
 
     def _sample_id(self, row: pd.Series, index: int) -> str:
+        if "cache_sample_id" in row.index:
+            cache_sample_id = str(row["cache_sample_id"]).strip()
+            if cache_sample_id:
+                return cache_sample_id
         return z1_sample_id(row["clip_uid"], index)
 
     def _video_path(self, row: pd.Series) -> Path:
@@ -486,8 +490,46 @@ class Ego4DLTADataset(EgoActionAnticipationDataset):
         buffer = vr.get_batch(frame_indices.tolist()).asnumpy()
         video = self.transform(buffer) if self.transform is not None else buffer
 
-        verb_raw = int(row["verb_label"])
-        noun_raw = int(row["noun_label"])
+        partial_label_columns = {
+            "verb_mask",
+            "noun_mask",
+            "action_mask",
+            "verb_id",
+            "noun_id",
+            "action_id",
+        }
+        has_partial_labels = partial_label_columns.issubset(row.index)
+        if has_partial_labels:
+            masks = {
+                head: bool(row[f"{head}_mask"])
+                for head in ("verb", "noun", "action")
+            }
+            dense_labels = {
+                head: int(row[f"{head}_id"])
+                for head in ("verb", "noun", "action")
+            }
+            if any(dense_labels[head] < 0 for head in dense_labels if masks[head]):
+                raise EgoDatasetError(
+                    "A supervised partial-label field cannot have a negative dense id: "
+                    f"sample={self._sample_id(row, index)} labels={dense_labels} masks={masks}"
+                )
+            # Masked fields never contribute to the auxiliary loss.  Keep a
+            # valid placeholder id so the shared cache/collator schema stays
+            # dense and can be audited without special tensor shapes.
+            dense_labels = {
+                head: value if masks[head] else 0
+                for head, value in dense_labels.items()
+            }
+            verb_raw = int(row.get("verb_label", -1))
+            noun_raw = int(row.get("noun_label", -1))
+        else:
+            verb_raw = int(row["verb_label"])
+            noun_raw = int(row["noun_label"])
+            dense_labels = {
+                "verb": self._label_mapping.encode_verb(verb_raw),
+                "noun": self._label_mapping.encode_noun(noun_raw),
+                "action": self._label_mapping.encode_action(verb_raw, noun_raw),
+            }
 
         target_start = (
             float(row["target_start_sec"])
@@ -496,9 +538,9 @@ class Ego4DLTADataset(EgoActionAnticipationDataset):
         )
         result = {
             "video": video,
-            "verb_id": self._label_mapping.encode_verb(verb_raw),
-            "noun_id": self._label_mapping.encode_noun(noun_raw),
-            "action_id": self._label_mapping.encode_action(verb_raw, noun_raw),
+            "verb_id": dense_labels["verb"],
+            "noun_id": dense_labels["noun"],
+            "action_id": dense_labels["action"],
             "verb_id_raw": verb_raw,
             "noun_id_raw": noun_raw,
             "anticipation_time_sec": self.tau_a,
@@ -509,6 +551,16 @@ class Ego4DLTADataset(EgoActionAnticipationDataset):
             "video_id": str(row["clip_uid"]),
             "scenario": str(row["scenario"]),
         }
+        if has_partial_labels:
+            result.update(
+                {
+                    f"{head}_mask": masks[head]
+                    for head in ("verb", "noun", "action")
+                }
+            )
+            result["supervision_source"] = str(
+                row.get("supervision_source", "lta_aux")
+            )
         if self.sampling_strategy == "adaptive_multirate":
             annotation_level = str(row.get("annotation_level", ""))
             if annotation_level not in {"step", "substep"}:
