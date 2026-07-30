@@ -1,0 +1,4 @@
+video_uid: 43d01891-033e-49f1-8d6b-56cacad34462
+scenario_tag: Climbing
+narration_hits: 93 (range 0.0-1262.1s)
+source_file: figure/videos_raw/clm2_43d01891-033e-49f1-8d6b-56cacad34462.mp4

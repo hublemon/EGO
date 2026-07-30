@@ -1,0 +1,4 @@
+video_uid: 503b03fe-37f1-47cd-b9c9-2aecdb7ed900
+scenario_tag: Climbing
+narration_hits: 128 (range 0.0-986.6s)
+source_file: figure/videos_raw/clm1_503b03fe-37f1-47cd-b9c9-2aecdb7ed900.mp4

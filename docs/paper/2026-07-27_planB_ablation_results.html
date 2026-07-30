@@ -1,0 +1,367 @@
+<title>Plan B + ablation 결과 — EGO</title>
+<style>
+:root{
+  --bg:#f7f8fa; --panel:#fff; --panel2:#f0f3f7; --line:#e0e5ed; --ink:#14181e; --dim:#5c6472;
+  --accent:#1a6d88; --ok:#2c7a51; --warn:#8f6410; --bad:#a5382f; --zero:#aeb6c2;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0e1116; --panel:#161a21; --panel2:#1c222b; --line:#272e39; --ink:#e5e8ee; --dim:#8b94a3;
+  --accent:#4fb6d2; --ok:#57ab7d; --warn:#d5a445; --bad:#e07b70; --zero:#4a5361;}}
+:root[data-theme="dark"]{--bg:#0e1116;--panel:#161a21;--panel2:#1c222b;--line:#272e39;--ink:#e5e8ee;
+  --dim:#8b94a3;--accent:#4fb6d2;--ok:#57ab7d;--warn:#d5a445;--bad:#e07b70;--zero:#4a5361;}
+:root[data-theme="light"]{--bg:#f7f8fa;--panel:#fff;--panel2:#f0f3f7;--line:#e0e5ed;--ink:#14181e;
+  --dim:#5c6472;--accent:#1a6d88;--ok:#2c7a51;--warn:#8f6410;--bad:#a5382f;--zero:#aeb6c2;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;
+     line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto;padding:34px 20px 80px;display:flex;flex-direction:column;gap:30px}
+header{border-bottom:2px solid var(--ink);padding-bottom:14px;display:flex;flex-direction:column;gap:5px}
+.kicker{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+h1{margin:0;font-size:1.6rem;font-weight:640;letter-spacing:-.02em;text-wrap:balance}
+.meta{color:var(--dim);font-size:.83rem;font-family:var(--mono)}
+h2{margin:0;font-size:1.02rem;font-weight:640;letter-spacing:-.01em;
+   display:flex;align-items:baseline;gap:10px}
+h2 .num{font-family:var(--mono);font-size:.78rem;color:var(--accent);font-weight:700}
+h3{margin:0;font-size:.86rem;font-weight:640;color:var(--dim)}
+section{display:flex;flex-direction:column;gap:14px}
+p{margin:0;text-wrap:pretty}
+.verdicts{display:flex;flex-direction:column;gap:10px}
+.v{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);
+   border-radius:0 9px 9px 0;padding:14px 18px;display:flex;gap:14px;align-items:flex-start}
+.v.ok{border-left-color:var(--ok)} .v.warn{border-left-color:var(--warn)}
+.v .n{font-family:var(--mono);font-size:1.5rem;font-weight:700;color:var(--line);line-height:1;
+      flex-shrink:0;margin-top:2px}
+.v strong{font-weight:640}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+table{width:100%;border-collapse:collapse;font-size:.85rem;min-width:560px}
+caption{text-align:left;padding:11px 14px 0;font-size:.76rem;color:var(--dim);font-weight:600}
+th{text-align:left;font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);
+   font-weight:640;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+th.r,td.r{text-align:right}
+td{padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tr.hl td{background:color-mix(in srgb,var(--accent) 9%,transparent);font-weight:600}
+td.m{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ci{color:var(--dim);font-size:.9em}
+.tag{display:inline-block;font-family:var(--mono);font-size:.68rem;padding:1px 7px;border-radius:99px;
+     border:1px solid currentColor;font-weight:700;letter-spacing:.03em}
+.t-ok{color:var(--ok)} .t-bad{color:var(--bad)} .t-warn{color:var(--warn)} .t-dim{color:var(--dim)}
+.cibar{display:flex;align-items:center;gap:9px;min-width:190px}
+.cibar .track{position:relative;flex:1;height:16px}
+.cibar .zero{position:absolute;top:0;bottom:0;width:1px;background:var(--zero)}
+.cibar .rng{position:absolute;top:7px;height:2px;border-radius:2px;background:currentColor;opacity:.45}
+.cibar .pt{position:absolute;top:4px;width:8px;height:8px;border-radius:50%;background:currentColor;
+           margin-left:-4px}
+.callout{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:16px 18px;
+         display:flex;flex-direction:column;gap:8px}
+.callout .big{font-family:var(--mono);font-size:1.55rem;font-weight:700;font-variant-numeric:tabular-nums;
+              letter-spacing:-.02em}
+.note{color:var(--dim);font-size:.83rem}
+ul{margin:0;padding-left:1.15rem;display:flex;flex-direction:column;gap:6px}
+li::marker{color:var(--dim)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:720px){.two{grid-template-columns:1fr}}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:15px 17px;
+     display:flex;flex-direction:column;gap:9px}
+.box h3{margin-bottom:2px}
+.box.no{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+q{quotes:"「" "」";font-style:normal}
+.quote{border-left:2px solid var(--line);padding-left:14px;color:var(--dim);font-size:.88rem}
+code{font-family:var(--mono);font-size:.86em;background:var(--panel2);padding:1px 5px;border-radius:4px}
+.strike{text-decoration:line-through;color:var(--dim)}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="kicker">Plan B + ablation · 실행 완료</div>
+  <h1>belief 주장 확정, 본문 약속 이행, 그리고 제목 하향</h1>
+  <div class="meta">2026-07-26 17:12 → 2026-07-27 00:5x UTC · 단일 H200 · 7시간 40분 · 모든 수치 실측</div>
+</header>
+
+<section class="verdicts">
+  <div class="v ok"><div class="n">1</div><div><strong>belief 주장이 확정됐다.</strong>
+    교란 통제 프로토콜에서 <code>sft_r15_c</code>의 belief 감수성이 base보다 <strong>+0.180
+    [0.127, 0.233]</strong>, θ<sub>CE</sub>보다 <strong>+0.137 [0.083, 0.190]</strong> 높다.
+    G<sub>CC2</sub> <span class="tag t-ok">PASS</span>. 문체 교란은 전체 효과의 13.5%에 그쳤다.</div></div>
+  <div class="v ok"><div class="n">2</div><div><strong>본문이 약속한 ablation 두 개가 모두 채워졌다.</strong>
+    ρ=0 대조군은 replay anchor가 prospective 능력을 실제로 지킨다는 것을 보였고(SelAcc +2.3pp,
+    G₁ +7.0pp), K ablation은 경계 크기의 효과를 정량화했다.</div></div>
+  <div class="v warn"><div class="n">3</div><div><strong>사전등록 규칙이 발동했다 — 제목의 <code>embodied</code>를 내린다.</strong>
+    이미지를 제거해도 Cand.-CE의 GT-only 대비 우위가 <strong>+5.48pp [+2.03, +9.57]</strong>로
+    유지된다(원조건의 71%). rebuttal이 아니라 본문에서 먼저 내린다.</div></div>
+</section>
+
+<section>
+  <h2><span class="num">01</span> Plan B — belief 주장 확정</h2>
+  <p class="note"><code>harden_paired</code> · 전 arm 공통 300건 동일 순서 · donor=base 동일 문자열 ·
+    base 모델 1회 생성 의역 공유 · 프레임 포함 vision-grounded 채점.</p>
+
+  <div class="scroll"><table>
+  <caption>arm별 belief 개입 결과</caption>
+  <thead><tr><th>arm</th><th class="r">swap_b<br><span style="font-weight:400;text-transform:none">arm 내부 문체</span></th>
+  <th class="r">swap_b_shared<br><span style="font-weight:400;text-transform:none">전 arm 동일 문자열</span></th>
+  <th class="r">문체 교란 Δ</th><th class="r">U_b · belief 단독 효용</th><th class="r">acc_own</th></tr></thead>
+  <tbody>
+  <tr><td>base</td><td class="m r">0.0333 <span class="ci">[.010,.060]</span></td>
+      <td class="m r">0.0333 <span class="ci">[.010,.060]</span></td><td class="m r t-dim">— <span class="ci">donor</span></td>
+      <td class="m r">+0.0090 <span class="ci">[−.004,+.022]</span></td><td class="m r">0.2267</td></tr>
+  <tr><td>θ<sub>CE</sub></td><td class="m r">0.0867 <span class="ci">[.057,.120]</span></td>
+      <td class="m r">0.0767 <span class="ci">[.047,.107]</span></td><td class="m r">+0.0100</td>
+      <td class="m r">+0.0309 <span class="ci">[+.014,+.048]</span></td><td class="m r">0.3367</td></tr>
+  <tr><td>sft_r15 <span class="ci">fp</span></td><td class="m r">0.0733 <span class="ci">[.047,.107]</span></td>
+      <td class="m r">0.0733 <span class="ci">[.047,.107]</span></td><td class="m r">+0.0000</td>
+      <td class="m r">+0.0232 <span class="ci">[+.011,+.035]</span></td><td class="m r">0.2933</td></tr>
+  <tr class="hl"><td>sft_r15_c <span class="ci">최종</span></td><td class="m r">0.2467 <span class="ci">[.190,.300]</span></td>
+      <td class="m r">0.2133 <span class="ci">[.160,.260]</span></td><td class="m r">+0.0334</td>
+      <td class="m r">+0.0460 <span class="ci">[+.030,+.062]</span></td><td class="m r">0.3233</td></tr>
+  </tbody></table></div>
+
+  <div class="callout">
+    <h3>문체 교란은 전체 효과의 13.5%였다 — Plan B를 돌린 이유</h3>
+    <p>C의 belief 어휘가 927→1,143으로 가장 다양해 교란도 가장 컸지만(+0.0334), 전 arm 동일
+      문자열로 통제한 뒤에도 <strong>0.2133 [0.160, 0.260]</strong>이 남는다. 사전에 어휘 거리
+      층화로 논증했던 <q>정보량 교란이 아니다</q>가 정식 통제에서 확인됐다.</p>
+  </div>
+
+  <h3>arm 간 paired 차이 — <code>harden_s3</code>로는 불가능했던 것</h3>
+  <p class="note">같은 300건, 같은 순서. 문체 통제 후(shared) 기준. 막대는 95% CI, 세로선은 0.</p>
+  <div class="scroll"><table>
+  <thead><tr><th>비교</th><th class="r">belief 감수성 (통제 후)</th><th>CI</th>
+  <th class="r">U_b</th><th class="r">acc_own</th></tr></thead>
+  <tbody id="pairedRows"></tbody></table></div>
+
+  <div class="two">
+    <div class="box"><h3>G<sub>CC2</sub> 정식 판정</h3>
+      <div class="m" style="font-family:var(--mono);font-size:.86rem;line-height:1.75">
+        delta&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= +0.2133 [+0.157, +0.270]<br>
+        delta_shared = +0.1800 [+0.127, +0.233]</div>
+      <div><span class="tag t-ok">PASS</span> <span class="tag t-ok">PASS (shared)</span></div>
+      <p class="note">학습 arm의 belief 감수성이 동일 셋 base보다 유의하게 높은가 — 두 정의 모두 통과.</p></div>
+    <div class="box"><h3>인과 채널이 belief로 이동했다</h3>
+      <div class="m" style="font-family:var(--mono);font-size:.84rem;line-height:1.75">
+        sft_r15&nbsp;&nbsp;&nbsp; belief 0.0733 · reasoning <strong>0.4700</strong><br>
+        sft_r15_c&nbsp; belief <strong>0.2467</strong> · reasoning 0.3333</div>
+      <p class="note">reasoning 감수성 차이 <span class="m">−0.1367 [−0.210, −0.060]</span>로 유의.
+        fp에서 reasoning에 쏠려 있던 인과가 belief로 옮겨온 것이 두 프로토콜에서 독립적으로 확인됐다.</p></div>
+  </div>
+
+  <div class="box no"><h3>정직하게 함께 보고할 한계</h3><ul>
+    <li><code>flip_para</code>가 C에서 <span class="m">0.0500</span>으로 가장 높다(다른 arm 0.003~0.013).
+      감수성 계산에서 차감되지만 <strong>표면 문구 민감도도 함께 올랐다</strong>는 사실은 써야 한다.</li>
+    <li><code>U_b</code>의 C − θ<sub>CE</sub>는 <span class="m">+0.0151 [−0.007, +0.036]</span>로 0을 포함.
+      belief가 <strong>행동을 바꾸는 정도</strong>는 유의하게 높지만
+      <strong>정답을 지지하는 정도</strong>는 아니다.</li>
+    <li><code>acc_own</code>의 C − θ<sub>CE</sub>는 <span class="m">−0.0133 [−0.073, +0.047]</span> —
+      정확도를 잃지 않았다는 뜻이지 <q>더 정확하다</q>는 뜻이 아니다.</li>
+    <li><code>harden_paired</code>와 <code>harden_s3</code>는 <strong>절대값 비교 불가</strong>.
+      논문에서 표를 반드시 분리할 것.</li>
+  </ul></div>
+</section>
+
+<section>
+  <h2><span class="num">02</span> ρ ablation — <code>main.tex</code> L205 약속 이행</h2>
+  <p class="quote">the effect of the anchor can be isolated by an ablation with ρ=0 in the experiments.</p>
+  <p>ρ=0 arm을 신규 학습했다(294 스텝, 17분). 세 arm이 <strong>같은 <code>chosen_train.jsonl</code>을
+    공유</strong>하므로 단일변수가 보장된다.</p>
+
+  <div class="scroll"><table>
+  <caption>replay 비율 곡선 · belief 인과는 harden_s3 프로토콜 (Plan B와 절대값 비교 불가)</caption>
+  <thead><tr><th>ρ</th><th class="r">SelAcc</th><th class="r">G₁ 유지</th><th class="r">G₂ (GADR)</th>
+  <th class="r">malformed</th><th class="r">belief 인과</th><th class="r">G-ACC1</th></tr></thead>
+  <tbody>
+  <tr><td class="m">0</td><td class="m r">0.2620</td><td class="m r">0.3471</td><td class="m r">0.2348</td>
+      <td class="m r">0.009</td><td class="m r"><strong>0.4825</strong> <span class="ci">[.428,.533]</span></td>
+      <td class="m r">+2.12pp <span class="ci">[−2.7,+6.7]</span></td></tr>
+  <tr class="hl"><td class="m">0.15 <span class="ci">기본</span></td><td class="m r">0.2850</td><td class="m r">0.4174</td>
+      <td class="m r">0.2427</td><td class="m r">0.028</td><td class="m r">0.3825 <span class="ci">[.333,.432]</span></td>
+      <td class="m r">+5.35pp <span class="ci">[−0.2,+10.6]</span></td></tr>
+  <tr><td class="m">0.30</td><td class="m r">0.2760</td><td class="m r">0.4050</td><td class="m r">0.2348</td>
+      <td class="m r">0.045</td><td class="m r">0.3700 <span class="ci">[.320,.417]</span></td>
+      <td class="m r">+4.40pp <span class="ci">[−0.6,+9.1]</span></td></tr>
+  <tr><td class="m t-dim">θ<sub>CE</sub> 참조</td><td class="m r t-dim">0.2880</td><td class="m r t-dim">0.3554</td>
+      <td class="m r t-dim">0.2665</td><td class="m r t-dim">0.043</td><td class="m r t-dim">0.0925</td>
+      <td class="m r t-dim">+6.06pp</td></tr>
+  </tbody></table></div>
+
+  <div class="two">
+    <div class="box"><h3>본문 주장이 실측으로 지지된다</h3>
+      <p>앵커를 빼면 <q>1단계에서 얻은 candidate discrimination을 덮어쓴다</q>는 L205의 서술이
+        정확히 관측된다.</p>
+      <div class="m" style="font-family:var(--mono);font-size:.86rem;line-height:1.8">
+        SelAcc&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>−2.3pp</strong> (0.2850 → 0.2620)<br>
+        G₁ 유지&nbsp;&nbsp;&nbsp;<strong>−7.0pp</strong> (0.4174 → 0.3471) ←<br>
+        G-ACC1 여유 <strong>−3.2pp</strong> (+5.35 → +2.12)</div></div>
+    <div class="box"><h3>대가도 함께 보고한다</h3>
+      <p>ρ=0의 belief 인과가 <strong>0.4825로 가장 높다.</strong> 앵커는 prospective 능력을 지키는
+        대신 retrospective belief 인과를 일부 희생한다.</p>
+      <p class="note">정확도는 ρ=0.15에서 정점을 갖는 역U자, belief 인과는 ρ에 대해 단조 감소.
+        ρ=0.30은 앵커를 2.4배로 늘려도 어느 축도 개선하지 못했다. <strong>최적점이 있는 곡선</strong>이라
+        단조 곡선보다 설명력이 크다.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">03</span> K ablation — <code>main.tex</code> L289 약속 이행</h2>
+  <p class="quote">This ablation directly validates one of this work's core claims — that the
+    boundary materially affects judgment.</p>
+
+  <div class="scroll"><table>
+  <thead><tr><th>arm</th><th class="r">K</th><th class="r">Coverage@K</th><th class="r">조건부 SelAcc</th>
+  <th class="r">WM Top-1 (L0)</th><th class="r">SelAcc − L0</th><th class="r">full-set 환산</th><th class="r">malformed</th></tr></thead>
+  <tbody>
+  <tr><td>θ<sub>CE</sub></td><td class="m r">10</td><td class="m r">43.43%</td><td class="m r">0.2880</td><td class="m r">0.2420</td><td class="m r">+4.60pp</td><td class="m r">0.1251</td><td class="m r">0.043</td></tr>
+  <tr><td>θ<sub>CE</sub></td><td class="m r">5</td><td class="m r">30.34%</td><td class="m r">0.3820</td><td class="m r">0.3420</td><td class="m r">+4.00pp</td><td class="m r">0.1159</td><td class="m r">0.042</td></tr>
+  <tr><td>θ<sub>CE</sub></td><td class="m r">3</td><td class="m r">21.97%</td><td class="m r">0.5080</td><td class="m r">0.4590</td><td class="m r">+4.90pp</td><td class="m r">0.1116</td><td class="m r">0.056</td></tr>
+  <tr class="hl"><td>sft_r15_c</td><td class="m r">10</td><td class="m r">43.43%</td><td class="m r">0.2850</td><td class="m r">0.2420</td><td class="m r">+4.30pp</td><td class="m r">0.1238</td><td class="m r">0.028</td></tr>
+  <tr class="hl"><td>sft_r15_c</td><td class="m r">5</td><td class="m r">30.34%</td><td class="m r">0.4020</td><td class="m r">0.3420</td><td class="m r"><strong>+6.00pp</strong></td><td class="m r">0.1220</td><td class="m r">0.026</td></tr>
+  <tr class="hl"><td>sft_r15_c</td><td class="m r">3</td><td class="m r">21.97%</td><td class="m r">0.5390</td><td class="m r">0.4590</td><td class="m r"><strong>+8.00pp</strong></td><td class="m r">0.1184</td><td class="m r">0.018</td></tr>
+  </tbody></table></div>
+
+  <p>세 가지를 동시에 보아야 한다.</p>
+  <ul>
+    <li><strong>조건부 SelAcc는 K가 줄면 급등하지만(0.285→0.539) WM 바닥도 같이 오른다</strong>(0.242→0.459).
+      조건부 수치만 보면 오독이다.</li>
+    <li><strong>full-set 환산은 거의 평평하다</strong>(0.1238→0.1220→0.1184). 경계를 좁히면 변별은
+      쉬워지고 커버리지는 줄어드는데 둘이 거의 상쇄된다. K=10이 미세하게 최선.</li>
+    <li><strong>바닥 대비 마진이 arm마다 다르게 반응한다.</strong> θ<sub>CE</sub>는 K와 무관하게
+      +4~5pp로 평평한 반면 sft_r15_c는 K가 줄수록 커진다(+4.3→+6.0→+8.0). malformed도 C만
+      함께 줄어든다(0.028→0.018). <strong>회고 학습 arm이 좁은 경계를 더 잘 활용한다.</strong></li>
+  </ul>
+
+  <div class="box no"><h3>사전등록 규칙에 대한 판정 — 주의가 필요하다</h3>
+    <p>규칙은 <q>K에 따라 SelAcc가 단조이거나 무반응이면 하향</q>이었다. 문자 그대로면 조건부
+      SelAcc는 단조이므로 하향 대상이다. 그러나 그 단조성은 <strong>커버리지 감소가 만드는 기계적
+      산물</strong>이며, 규칙을 쓸 때 이 교란을 예상하지 못한 것이 규칙의 결함이다. 권장 서술:</p>
+    <p class="quote">경계 크기는 조건부 변별 난이도를 크게 바꾸지만 end-to-end 성능은 거의 바꾸지
+      않는다. 다만 회고 학습 arm은 경계가 좁아질수록 바닥 대비 마진이 커져, 경계 정보를 실제로
+      활용함을 보인다.</p></div>
+</section>
+
+<section>
+  <h2><span class="num">04</span> Tier 1 교란 — 제목 판정</h2>
+  <p class="note">4 arm × 3 조건 × n=1000 covered. Δacc = 원조건 − 교란조건(양수면 그 입력을 사용).
+    후보 집합·<code>wm_scores</code>·WM Top-1은 <strong>모든 조건에서 불변</strong> — 정책 경로에만 개입.</p>
+
+  <div class="scroll"><table>
+  <thead><tr><th>arm</th><th class="r">no-image</th><th class="r">no-hist</th>
+  <th class="r">no-image ∧ no-hist</th><th class="r">other-video hist</th></tr></thead>
+  <tbody>
+  <tr><td>base</td><td class="m r">+6.30 <span class="ci">[3.2,9.3]</span></td><td class="m r">+2.90 <span class="ci">[−0.1,5.7]</span></td>
+      <td class="m r">+14.10 <span class="ci">[11.0,17.0]</span></td>
+      <td class="m r t-dim">+1.10 <span class="ci">[−1.7,3.8]</span></td></tr>
+  <tr><td>cand_free <span class="ci">GT-only</span></td><td class="m r">+6.30 <span class="ci">[3.3,9.3]</span></td><td class="m r">+4.50 <span class="ci">[1.5,7.3]</span></td>
+      <td class="m r">+10.70 <span class="ci">[7.7,13.5]</span></td>
+      <td class="m r t-dim">+2.20 <span class="ci">[−0.6,5.0]</span></td></tr>
+  <tr><td>θ<sub>CE</sub></td><td class="m r">+8.30 <span class="ci">[5.3,11.3]</span></td><td class="m r">+10.10 <span class="ci">[6.8,13.3]</span></td>
+      <td class="m r">+20.50 <span class="ci">[17.2,23.7]</span></td>
+      <td class="m r"><strong>+10.00</strong> <span class="ci">[6.8,13.2]</span></td></tr>
+  <tr class="hl"><td>sft_r15_c</td><td class="m r">+7.20 <span class="ci">[3.9,10.7]</span></td><td class="m r">+9.80 <span class="ci">[6.7,12.9]</span></td>
+      <td class="m r">+18.50 <span class="ci">[15.1,21.9]</span></td>
+      <td class="m r"><strong>+10.60</strong> <span class="ci">[7.4,13.7]</span></td></tr>
+  </tbody></table></div>
+
+  <div class="callout">
+    <h3>A4 / Q2가 결정적으로 닫혔다 — 이번 실행 최대 성과</h3>
+    <p>공격의 핵심은 <q>history 제거는 OOD intervention이라 학습 효과인지 취약성인지 구분되지
+      않는다</q>였다. other-video history는 <strong>형식은 완전히 정상이고 의미만 틀린</strong>
+      개입이라 이 둘을 분리한다.</p>
+    <div class="two" style="gap:10px">
+      <div><div class="big t-dim">+1.1 / +2.2</div><p class="note">base · GT-only — 둘 다 CI가 0을 포함.
+        형식이 유지되면 학습 안 된 모델은 영향을 받지 않는다 → <strong>포맷 shift 설명 완전 배제.</strong></p></div>
+      <div><div class="big" style="color:var(--ok)">+10.0 / +10.6</div><p class="note">θ<sub>CE</sub> · sft_r15_c — 둘 다 유의.
+        더욱이 <strong>no-history 손실(+10.1 / +9.8)과 사실상 같다</strong> → 틀린 history는 없는
+        history와 똑같이 나쁘다 → <strong>의미를 읽는다.</strong></p></div>
+    </div>
+  </div>
+
+  <div class="scroll"><table>
+  <caption>사전등록 규칙 — 이미지를 지워도 candidate alignment 우위가 남는가</caption>
+  <thead><tr><th>조건</th><th class="r">θ<sub>CE</sub> − GT-only</th><th>CI</th><th class="r">판정</th></tr></thead>
+  <tbody id="titleRows"></tbody></table></div>
+
+  <div class="box no"><h3>규칙 발동 — 제목·abstract의 <code>embodied</code>를 내린다</h3>
+    <p>원조건 우위 +7.70pp의 <strong>71%가 이미지 없이도 살아남는다.</strong> v2의
+      <q>정직한 사전 선언</q>에서 예상한 그대로이며, rebuttal이 아니라 본문에서 먼저 내린다.</p>
+    <p>동시에 병기할 것 — <strong>이미지는 분명히 기여한다.</strong> 전 arm이 6.3~8.3pp를 잃고,
+      θ<sub>CE</sub>의 손실(8.3pp)이 base(6.3pp)보다 크다. 정확한 서술:</p>
+    <p class="quote">Vision contributes to absolute accuracy for every arm, but the advantage that
+      candidate-aware training confers is not vision-dependent — 71% of it survives with the
+      frames removed.</p></div>
+</section>
+
+<section>
+  <h2><span class="num">05</span> 쓸 수 있는 문장 / 못 쓰는 문장</h2>
+  <div class="two">
+    <div class="box"><h3 style="color:var(--ok)">쓸 수 있다</h3>
+      <p class="quote">회고 학습 arm의 task belief는 base보다 <strong>+0.18 [0.127, 0.233]</strong>,
+        prospection 체크포인트보다 <strong>+0.137 [0.083, 0.190]</strong> 더 강하게 행동 선택을
+        좌우한다.</p>
+      <p class="quote">다른 비디오의 history를 주입하면 학습된 정책은 <strong>−10.0 / −10.6pp</strong>를
+        잃는 반면 base와 GT-only는 영향을 받지 않는다. 형식은 보존되고 의미만 파괴되므로 손실은
+        history의 의미 사용에서 온다.</p>
+      <p class="quote">Replay anchor를 제거하면 SelAcc가 <strong>−2.3pp</strong>, G₁ 유지가
+        <strong>−7.0pp</strong> 하락한다.</p></div>
+    <div class="box no"><h3 style="color:var(--bad)">못 쓴다</h3>
+      <p class="strike">belief가 정답을 지지하는 정도가 θ_CE보다 높다</p>
+      <p class="note">U_b 차이 +0.0151 [−0.007, +0.036]로 무의.</p>
+      <p class="strike">embodied visual reasoning</p>
+      <p class="note">사전등록 규칙 발동.</p>
+      <p class="strike">최종 arm이 θ_CE보다 정확하다</p>
+      <p class="note">acc_own −0.0133 [−0.073, +0.047].</p>
+      <p class="strike">boundary가 판단을 좌우한다 (현재 표현)</p>
+      <p class="note">full-set 환산이 거의 평평. §03 권장 서술로 조정.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span> 남은 일 — 전부 GPU 불필요</h2>
+  <div class="scroll"><table>
+  <thead><tr><th class="r">#</th><th>작업</th><th>닫는 공격</th></tr></thead>
+  <tbody>
+  <tr><td class="m r">1</td><td>제목·abstract <code>embodied</code> 하향, <code>visually grounded boundary</code> → <code>observation- and history-conditioned proposal boundary</code></td><td class="m">A1 · Q3</td></tr>
+  <tr><td class="m r">2</td><td><code>tab:kablation</code> 채우고 L289 문구 조정</td><td class="m">본문 약속</td></tr>
+  <tr><td class="m r">3</td><td>ρ 곡선 표 추가, L205 서술을 실측에 맞춤</td><td class="m">본문 약속</td></tr>
+  <tr><td class="m r">4</td><td>G-NH 검정력 서술 (마진 −1pp가 설계 해상도 4.06pp보다 작다)</td><td class="m">A3</td></tr>
+  <tr><td class="m r">5</td><td><code>harden_paired</code>/<code>harden_s3</code> 표 분리, 절대값 비교 금지 명시</td><td class="m">무결성</td></tr>
+  <tr><td class="m r">6</td><td>full-set 12.5% 병기, Figure 1(b)에 replay 26.4% 실측점</td><td class="m">A2 · A3</td></tr>
+  <tr><td class="m r">7</td><td><code>tools/text_baselines.py</code> 구현 + 실행</td><td class="m">A1 잔여</td></tr>
+  <tr><td class="m r">8</td><td>estimand 통일 — <code>paired_boot.py</code> 코드 수정 (플래그 아님)</td><td class="m">A2 · Q5</td></tr>
+  </tbody></table></div>
+  <p class="note">전문: <code>docs/paper/2026-07-27_planB_ablation_results_handoff.md</code> ·
+    실측 소요 — Plan B arm당 53.4분, ρ=0 학습 17분, K 셀당 9분, no-image 셀당 6.5분(프레임 추출 없음),
+    other-video 셀당 10분.</p>
+</section>
+</div>
+
+<script>
+const PAIRED = [
+  {n:"C − base",      s:{p:0.1800,lo:0.1267,hi:0.2333}, u:"+0.0369 [+.021,+.054]", a:"+0.0967 [+.043,+.153]"},
+  {n:"C − θ_CE",      s:{p:0.1367,lo:0.0833,hi:0.1900}, u:"+0.0151 [−.007,+.036]", a:"−0.0133 [−.073,+.047]"},
+  {n:"C − sft_r15",   s:{p:0.1400,lo:0.0867,hi:0.1933}, u:"+0.0228 [+.006,+.039]", a:"+0.0300 [−.030,+.090]"},
+];
+const TITLE = [
+  {n:"원조건", p:7.70, lo:3.73, hi:11.93},
+  {n:"no-image", p:5.48, lo:2.03, hi:9.57, hl:true},
+  {n:"no-image · C − GT-only", p:6.64, lo:3.04, hi:10.46},
+];
+function bar(p, lo, hi, dom){
+  const x = v => (100*(v-dom[0])/(dom[1]-dom[0])).toFixed(2)+"%";
+  const cls = lo > 0 ? "t-ok" : (hi < 0 ? "t-bad" : "t-warn");
+  return '<div class="cibar ' + cls + '"><div class="track">' +
+    '<div class="zero" style="left:' + x(0) + '"></div>' +
+    '<div class="rng" style="left:' + x(lo) + ';width:' + (100*(hi-lo)/(dom[1]-dom[0])).toFixed(2) + '%"></div>' +
+    '<div class="pt" style="left:' + x(p) + '"></div></div></div>';
+}
+document.getElementById("pairedRows").innerHTML = PAIRED.map(r =>
+  '<tr><td>' + r.n + '</td><td class="m r"><strong>+' + r.s.p.toFixed(4) + '</strong> <span class="ci">[+' +
+  r.s.lo.toFixed(3) + ',+' + r.s.hi.toFixed(3) + ']</span></td><td>' +
+  bar(r.s.p, r.s.lo, r.s.hi, [-0.05, 0.28]) + '</td><td class="m r">' + r.u + '</td><td class="m r">' + r.a + '</td></tr>'
+).join("");
+document.getElementById("titleRows").innerHTML = TITLE.map(r =>
+  '<tr' + (r.hl ? ' class="hl"' : '') + '><td>' + r.n + '</td><td class="m r"><strong>+' + r.p.toFixed(2) +
+  'pp</strong> <span class="ci">[+' + r.lo.toFixed(2) + ',+' + r.hi.toFixed(2) + ']</span></td><td>' +
+  bar(r.p, r.lo, r.hi, [-2, 13]) + '</td><td class="r"><span class="tag t-ok">유의</span></td></tr>'
+).join("");
+</script>

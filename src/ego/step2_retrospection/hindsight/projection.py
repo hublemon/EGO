@@ -22,23 +22,41 @@ from ego.step2_retrospection.hindsight import quality_gate as qg
 from ego.step2_retrospection.hindsight.teacher import parse_h, teacher_messages
 from ego.step2_retrospection.runtime import StatusWriter, append_jsonl, read_jsonl, runs_root, write_marker
 
+# 2026-07-25 1인칭 일원화 — SFT 타깃 문체의 실제 출처. 관찰자("a careful observer") 프레임을
+# 행위자(1인칭 "I") 회고로 교체. STRICT RULES·형식은 불변 (내용 규칙은 person-neutral 유지).
 PROJ_SYSTEM = (
-    "You write a decision-time rationale for an egocentric video. You see frames from the last "
-    "8 seconds BEFORE a decision point, the person's completed actions, and a shuffled candidate "
-    "list of next actions. You are also given (a) a hindsight analysis of the procedure inferred "
-    "from what happened later, and (b) the action the person actually did next.\n"
-    "Write what a careful observer could have concluded AT the decision point, using ONLY "
-    "evidence visible in the frames and the completed-action history.\n"
+    "You write a decision-time rationale in the first person, as the camera wearer of an "
+    "egocentric video. You see frames from the last 8 seconds BEFORE a decision point, the "
+    "actions you completed so far, and a shuffled candidate list of next actions. You are also "
+    "given (a) a hindsight analysis of the procedure inferred from what happened later, and "
+    "(b) the action you actually did next.\n"
+    "Write what you could have concluded AT the decision point, speaking as 'I', using ONLY "
+    "evidence visible in the frames and your completed-action history.\n"
     "STRICT RULES:\n"
     "1. Never mention or imply events after the decision point (no future actions, objects or "
     "outcomes that are not visible).\n"
     "2. Never say the next action is already happening or done.\n"
     "3. If the visible evidence is ambiguous, keep the belief at the level of the local "
     "procedural stage - do not overclaim the exact goal.\n"
-    "4. <task_belief> must NOT contain the next action's verb-noun label or a direct paraphrase "
-    "of it.\n"
-    "5. <reasoning> should compare candidates against the evidence and conclude toward the "
-    "actual next action naturally.\n"
+    # 2026-07-26 규칙 4·5 수정 — 근거는 docs/experiments/2026-07-26_cesft_v2_fp_full_run_synthesis_handoff.md.
+    #   규칙 4 (구): 의도형 문법 전체를 금지하고 긍정 예문을 하나만 제시 → 1인칭 프레임에서
+    #     타깃의 87.5% 가 그 예문("I am in the middle …")을 그대로 복제. belief 어휘가 붕괴하고
+    #     belief-swap 인과가 .291(3인칭) → .098(1인칭) 로 무너졌다. 3인칭에서는 같은 금지문이
+    #     어휘 불일치로 작동하지 않아(의도형 37.7% 잔존) 문제가 드러나지 않았을 뿐이다.
+    #     → 금지를 "다음 행동의 명명/환언"이라는 **원래 의도 범위**로 좁히고, 예문을 제거하고,
+    #        변별력에 대한 긍정 요구를 추가한다. 인칭·시간 계약·프레임 수·출력 형식은 불변.
+    #   규칙 5 (구): "compare candidates … conclude toward the actual next action" → reasoning 이
+    #     판단을 독식하는 소거 절차가 되어 근거 인용을 밀어냈다(근거화 타깃 12.8%, 제거화법 24.8%).
+    #     → 증거 인용을 명시적으로 요구하고, 후보 전수 소거를 금지한다.
+    "4. <task_belief> states the procedural stage you are IN, not what you will do next. It "
+    "must NOT name the next action's verb-noun label or restate that action in other words, "
+    "in any grammatical form. Within that limit, make it specific enough to tell this moment "
+    "apart from a neighbouring one: say which sub-goal is underway and how far it has got. "
+    "Vary the wording naturally - do not reuse a fixed opening phrase.\n"
+    "5. <reasoning> must cite the concrete evidence you are judging from - including the "
+    "actions you have already completed, whenever they bear on the choice - and state what "
+    "that evidence implies about the current stage. Do not merely re-describe the scene, and "
+    "do not turn the passage into a checklist that dismisses each candidate in turn.\n"
     "Respond in EXACTLY this format:\n"
     "<reasoning>\n3-6 sentences.\n</reasoning>\n"
     "<task_belief>\nOne sentence about the current local procedure/subgoal.\n</task_belief>"
@@ -49,7 +67,7 @@ def proj_messages(rec: dict, h: dict, images) -> list[dict]:
     gt = f"{rec['gt_verb']} {rec['gt_noun']}"
     content = [{"type": "image", "image": im} for im in images]
     content.append({"type": "text", "text": (
-        f"Completed actions so far (oldest to newest):\n{vlm.fmt_history(rec)}\n\n"
+        f"Your completed actions so far (oldest to newest):\n{vlm.fmt_history(rec)}\n\n"
         f"Candidate next actions (shuffled):\n{vlm.fmt_candidates(rec['candidates'])}\n\n"
         f"Hindsight analysis (from later events - do NOT cite it as evidence):\n"
         f"{json.dumps(h, ensure_ascii=False)}\n\n"

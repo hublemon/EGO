@@ -1,0 +1,4 @@
+video_uid: 9164a62a-31c9-4610-8d7e-85bf3f3ea56e
+scenario_tag: BasketBall
+narration_hits: 173 (range 0.7-563.2s)
+source_file: figure/videos_raw/bb1_9164a62a-31c9-4610-8d7e-85bf3f3ea56e.mp4

@@ -1,0 +1,523 @@
+\documentclass[letterpaper]{article}
+\usepackage{iftex}
+\ifPDFTeX
+  % 한글 미리보기 빌드에는 XeLaTeX 또는 LuaLaTeX를 사용한다.
+  \errmessage{Korean version requires XeLaTeX or LuaLaTeX}
+\else
+  % AAAI 지면 및 2단 편집 형식을 따르는 휴대용 국문 미리보기.
+  % 투고본이 아니라 국문 검토용이다. 정본은
+  % 2026-07-26_embodied_reasoning_results.tex 이며, 수치는 전부 그 파일과 일치시킨다.
+  \usepackage[margin=0.75in,columnsep=0.375in]{geometry}
+  \usepackage{authblk}
+  \setlength{\affilsep}{0pt}
+  \twocolumn
+  \usepackage{fontspec}
+  % Noto Sans CJK KR에는 이탤릭·스몰캡스 자형이 없다. 기울임은 합성으로 채우고,
+  % 스몰캡스가 필요한 자리는 아래 \scmark(대문자)로 대체한다.
+  \IfFontExistsTF{Noto Sans CJK KR}{
+    \setmainfont[AutoFakeBold=2,AutoFakeSlant=0.2]{Noto Sans CJK KR}
+    \setsansfont[AutoFakeBold=2,AutoFakeSlant=0.2]{Noto Sans CJK KR}
+  }{
+    \IfFontExistsTF{NanumMyeongjo}{
+      \setmainfont{NanumMyeongjo}
+      \setsansfont{NanumGothic}
+    }{
+      \setmainfont{DejaVu Sans}
+      \setsansfont{DejaVu Sans}
+    }
+  }
+  \XeTeXlinebreaklocale "ko"
+  \XeTeXlinebreakskip=0pt plus 1pt
+\fi
+\usepackage[hyphens]{url}
+\usepackage{graphicx}
+\urlstyle{rm}
+\def\UrlFont{\rm}
+\usepackage{natbib}
+\usepackage{caption}
+\renewcommand{\figurename}{그림}
+\renewcommand{\tablename}{표}
+\frenchspacing
+
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{xcolor}
+\usepackage{tikz}
+
+% 초안 색상 규약:
+%   파랑 = 측정값, 빨강 = 최종 결과로 기각된 사전등록 주장.
+\definecolor{measuredblue}{RGB}{0,73,160}
+\definecolor{pendingred}{RGB}{190,35,35}
+\newcommand{\obs}[1]{\textcolor{measuredblue}{#1}}
+\newcommand{\rejected}[1]{\textcolor{pendingred}{#1}}
+\newcommand{\pp}{\,\mathrm{pp}}
+\newcommand{\method}{\textsc{EGO}}
+\newcommand{\cmark}{\checkmark}
+% 국문 폰트에 스몰캡스가 없으므로 규칙 트리거 어휘는 대문자로 표시한다.
+\newcommand{\scmark}[1]{\MakeUppercase{#1}}
+
+\setcounter{secnumdepth}{0}
+\title{실험 초안: 근거 기반 선택으로서의 체화 추론}
+\author{익명 투고}
+\affil{익명 소속}
+\date{2026년 7월 26일 \\ \small 국문 검토본 --- 정본은 영문
+  \texttt{2026-07-26\_embodied\_reasoning\_results.tex}}
+
+\begin{document}
+\setlength{\emergencystretch}{1em}
+\maketitle
+
+\section{실험}
+\subsection{체화 추론}
+\label{sec:er-capability}
+
+\paragraph{평가 프로토콜과 증거 제시 순서.}
+Ego4D GoalStep 홀드아웃 분할의 예측 시점에서 평가한다.
+동결된 월드 모델은 관측과 완료 행동 이력을 입력받은 뒤 순서를 무작위로 섞은
+Top-$K$ 행동 경계를 제안하며, 월드 모델의 점수와 순위는 정책에 공개하지 않는다.
+별도 언급이 없는 한, 모든 비교는 동일한 1인칭 평가 코호트와 공통 커버 집합
+($a_t^{\mathrm{GT}}\!\in D_t$; \obs{$n{=}1{,}000$})을 사용한다.
+증거는 결과에서 메커니즘으로 이어지는 순서로 구성한다. 먼저 통제된 선택 비교를
+제시하고, 다음으로 역량을 분해하며, 마지막으로 이력과 과업 믿음에 대한 쌍별
+개입을 수행한다. 이 순서는 \emph{무엇을 선택하는가}의 개선과
+\emph{추론 흔적을 어떻게 작성하는가}의 피상적 변화를 구분한다.
+
+\subsubsection{정답 전용 감독이 아니라 후보 정렬이 선택을 개선한다}
+\label{sec:er-selection}
+
+주요 비교에서는 백본, 예시, 학습 예산, 평가 프롬프트를 통제하며, 유일한 차이는
+학습 중 월드 모델 후보 집합을 노출하는지 여부이다. 후보 정렬
+($\theta_{\mathrm{CE}}$)의 선택 정확도는 \obs{$28.8\%$}로, 정답 전용 감독
+(GT-only)의 \obs{$21.9\%$}보다 높다. 형식 오류를 제외한 공식 쌍별 집합
+(\obs{$n{=}948$}, 비디오 클러스터 85개)에서 두 조건의 차이는
+\obs{$+7.70\pp$}이며, 비디오 클러스터 부트스트랩
+\obs{$95\%$ 신뢰구간은 $[+3.73,+11.93]$}이다.
+반면 GT-only와 비정렬 정책의 차이는 \obs{$+0.9\pp$}에 불과하다
+(\obs{$95\%$ 신뢰구간 $[-2.0,+3.7]$}). 후보 정렬은 동결된 월드 모델의
+Top-\obs{$1$} 정책도 넘어선다(\obs{$28.8\%$} 대 \obs{$24.2\%$}; 엄격 기준
+\obs{$+4.6\pp$}). 공식 쌍별 게이트로는 \obs{$+6.06\pp$}이다
+(\obs{$95\%$ 신뢰구간 $[+0.87,+11.22]$}; \obs{$n{=}957$}, 클러스터 86개).
+따라서 이러한 향상은 정답을 추가로 노출했거나 월드 모델의
+순위를 복사했기 때문으로 설명할 수 없다. 시각적으로 그럴듯한 대안들 사이를
+판별하는 법을 학습해야만 얻을 수 있는 향상이다.
+그림~\ref{fig:capability}b는 분기하는 학습 경로를 따라 SelAcc를 추적한다.
+후보 정렬이 정책을 월드 모델 기준선 너머로 옮기는 단계이다.
+
+\begin{figure*}[t]
+\centering
+\resizebox{0.96\textwidth}{!}{%
+\begin{tikzpicture}[x=1cm,y=1cm,font=\small]
+  % 패널 (a): 제목, 범례, 도표 영역을 분리한다.
+  \node[anchor=west,font=\bfseries] at (0,6.15)
+    {(a) 올바른 사전예측의 유지와 오류의 교정};
+  \fill[measuredblue] (0.25,5.45) circle (2.5pt);
+  \node[anchor=west] at (0.45,5.45) {$G_1$: WM 정답 유지};
+  \fill[measuredblue!35] (4.15,5.45) circle (2.5pt);
+  \node[anchor=west] at (4.35,5.45) {$G_2$: WM 오답 교정};
+
+  \foreach \x/\lab in {1.5/0,2.75/10,4.0/20,5.25/30,6.5/40}{
+    \draw[gray!30] (\x,0.85) -- (\x,4.65);
+    \node[anchor=north,text=measuredblue] at (\x,0.72) {\lab};
+  }
+  \node[anchor=north] at (4.0,0.15) {조건부 선택 정확도 (\%)};
+  \node[anchor=east] at (1.15,4.45) {기본};
+  \node[anchor=east] at (1.15,3.40) {GT-only};
+  \node[anchor=east] at (1.15,2.35) {후보-CE};
+  \node[anchor=east] at (1.15,1.30) {\method{}};
+
+  \foreach \y/\gOne/\gTwo in {
+    4.45/5.2125/3.8375,
+    3.40/4.8125/4.10,
+    2.35/6.175/4.975,
+    1.30/6.8125/4.70}{
+    \draw[line width=2.2pt,gray!45] (\gTwo,\y)--(\gOne,\y);
+    \fill[measuredblue!35] (\gTwo,\y) circle (2.5pt);
+    \fill[measuredblue] (\gOne,\y) circle (2.5pt);
+  }
+  \node[above=2pt,text=measuredblue] at (5.2125,4.45) {\obs{$29.7$}};
+  \node[below=2pt,text=measuredblue] at (3.8375,4.45) {\obs{$18.7$}};
+  \node[above=2pt,text=measuredblue] at (4.8125,3.40) {\obs{$26.5$}};
+  \node[below=2pt,text=measuredblue] at (4.10,3.40) {\obs{$20.8$}};
+  \node[above=2pt,text=measuredblue] at (6.175,2.35) {\obs{$37.4$}};
+  \node[below=2pt,text=measuredblue] at (4.975,2.35) {\obs{$27.8$}};
+  \node[above=2pt,text=measuredblue] at (6.8125,1.30) {\obs{$42.5$}};
+  \node[below=2pt,text=measuredblue] at (4.70,1.30) {\obs{$25.6$}};
+
+  % 패널 (b): 학습 스텝 대비 SelAcc. 색 계열은 패널 (a)와 공유한다.
+  % x는 옵티마이저 스텝 0--900을 1.05--7.15cm로 사상한다: x(s) = 1.05 + s*0.0067778
+  %   (s=522 -> 4.588 = theta_CE 인계 지점, s=890 -> 7.082 = Retrospection 종료).
+  % y는 19--30%를 0.85--4.65cm로 사상한다: y(v) = 0.85 + (v-19)*0.345455.
+  % 마커는 실제 평가된 상태만 표시하며, 곡선은 그 사이를 보간한다.
+  \begin{scope}[xshift=9.05cm]
+    \node[anchor=west,font=\bfseries] at (0,6.15)
+      {(b) 학습 경로에 따른 선택 정확도};
+
+    \begin{scope}[font=\footnotesize]
+      \draw[black!45,dotted,line width=1.2pt] (0.88,5.45) -- (1.26,5.45);
+      \node[anchor=west] at (1.32,5.45) {기본};
+      \draw[measuredblue!45,line width=1.5pt] (2.16,5.45) -- (2.54,5.45);
+      \fill[measuredblue!45] (2.35,5.45) circle (2.2pt);
+      \node[anchor=west] at (2.60,5.45) {GT-only};
+      \draw[measuredblue,line width=1.7pt] (3.94,5.45) -- (4.32,5.45);
+      \fill[measuredblue] (4.13,5.45) circle (2.4pt);
+      \node[anchor=west] at (4.38,5.45) {후보-CE};
+      \draw[measuredblue!70!black,line width=2.3pt] (5.90,5.45) -- (6.28,5.45);
+      \fill[measuredblue!70!black] (6.09,5.45) circle (2.6pt);
+      \node[anchor=west] at (6.34,5.45) {\method{}};
+    \end{scope}
+
+    \foreach \y/\lab in {1.1955/20,2.9227/25,4.65/30}{
+      \draw[gray!30] (1.05,\y) -- (7.15,\y);
+      \node[anchor=east,text=measuredblue] at (0.92,\y) {\lab};
+    }
+    \node[rotate=90,anchor=south] at (0.08,2.75)
+      {엄격 SelAcc@Top-$K$ (\%, $\uparrow$)};
+    \foreach \x/\lab in {1.05/0,2.744/250,4.439/500,6.133/750}{
+      \node[anchor=north,text=measuredblue] at (\x,0.72) {\lab};
+    }
+    \node[anchor=north] at (4.10,0.08)
+      {Prospection $\rightarrow$ Retrospection 학습 스텝};
+
+    % 두 Retrospection 실행은 동일한 theta_CE 어댑터에서 분기한다.
+    \draw[gray!45,dashed,line width=0.7pt] (4.588,0.85) -- (4.588,3.85);
+    \node[anchor=south west,font=\scriptsize,text=black!55,fill=white,
+          fill opacity=0.85,text opacity=1,inner sep=1pt]
+      at (4.66,0.92) {$\theta_{\mathrm{CE}}$ 인계};
+
+    % 동결 월드 모델 Top-1 기준선.
+    \draw[black!60,dashed,line width=1.0pt] (1.05,2.6464) -- (7.15,2.6464);
+    \node[anchor=north east,font=\footnotesize,fill=white,fill opacity=0.86,
+          text opacity=1,inner sep=1.5pt] at (7.12,2.60)
+      {동결 WM Top-1 $L_0=\obs{24.2\%}$};
+
+    % 기본: 백본 동결. 정의상 상수이며 모든 조건의 공통 출발점이다.
+    \draw[black!45,dotted,line width=1.2pt] (1.05,1.5409) -- (7.15,1.5409);
+    \fill[black!55] (1.05,1.5409) circle (2.6pt);
+    \node[anchor=north west,inner sep=2pt,text=black!65,fill=white,
+          fill opacity=0.85,text opacity=1] at (1.00,1.49) {기본 \obs{$21.0$}};
+
+    % GT-only: Prospection 구간의 정답 전용 선택 CE.
+    \draw[measuredblue!45,line width=1.7pt]
+      (1.05,1.5409) .. controls (2.10,1.70) and (3.40,1.82) .. (4.588,1.8518);
+    \fill[measuredblue!45] (4.588,1.8518) circle (2.8pt);
+    \node[anchor=south east,inner sep=2pt,text=measuredblue]
+      at (4.54,1.90) {GT-only \obs{$21.9$}};
+
+    % 후보-CE: 동일 구간의 후보 정렬 선택 CE.
+    \draw[measuredblue,line width=1.9pt]
+      (1.05,1.5409) .. controls (2.10,3.30) and (3.40,4.05) .. (4.588,4.2455);
+    \fill[measuredblue] (4.588,4.2455) circle (2.9pt);
+    \node[above=3pt,text=measuredblue] at (4.30,4.2455) {후보-CE \obs{$28.8$}};
+    \node[font=\scriptsize,fill=white,inner sep=1pt,text=measuredblue]
+      at (1.92,3.62) {\obs{$+7.8\pp$}};
+
+    % EGO: 재생 및 근거화 오버샘플을 적용한 Retrospection.
+    \draw[measuredblue!70!black,line width=2.5pt]
+      (4.588,4.2455) -- (7.082,4.2455);
+    \fill[measuredblue!70!black] (7.082,4.2455) circle (3.1pt);
+    \node[anchor=south east,inner sep=2pt,text=measuredblue]
+      at (7.14,4.31) {\method{} \obs{$28.8$}};
+  \end{scope}
+\end{tikzpicture}
+}
+\caption{\textbf{후보 정렬은 정답 사전분포가 아니라 근거 기반 선택을 학습시킨다.}
+(a) $G_1$은 월드 모델 Top-\obs{$1$}이 정답일 때의 유지를 평가하고,
+$G_2$는 오답일 때의 교정을 평가한다. 후보 정렬은 둘 모두를 개선하지만,
+GT-only는 정답을 보았음에도 $G_1$을 저하시킨다. 최종 \method{} 모델의 유지율은
+\obs{$42.5\%$}에 이른다. (b) 분기하는 학습 경로에서 학습 스텝 대비 엄격
+SelAcc@Top-$K$를 표시한다. 모든 조건은 동일한 동결 출발점(\obs{$21.0\%$})을
+공유한다. Prospection 구간(선택 CE \obs{$522$} 스텝)에서 후보 정렬은
+\obs{$28.8\%$}에 도달하는 반면 정답 전용 대조군은 \obs{$21.9\%$}에 그친다.
+이어 \method{}는 $\theta_{\mathrm{CE}}$ 어댑터에서 분기해
+Retrospection-with-Replay($\rho{=}0.15$)를 \obs{$368$} 스텝 더 학습하며
+\obs{$28.8\%$}를 유지한다. 기본 모델은 동결되어 있으므로 정의상 상수이다.
+선은 시각적 안내선이다. 후보 정렬이 정책을 점선으로 표시한 동결 WM Top-1 기준
+$L_0=\obs{24.2\%}$ 너머로 옮기는 단계이며(\obs{$+7.8\pp$}),
+Retrospection은 그 위치를 보존한다.}
+\label{fig:capability}
+\end{figure*}
+
+\subsubsection{향상이 나타나는 지점: 다섯 가지 역량 축}
+\label{sec:er-axes}
+
+집계 정확도만으로는 정책이 올바른 예측 사전분포를 보존하는지, 아니면 잘못된
+사전분포를 교정하는지 알 수 없다. 따라서 선택을 $G_1$ 유지(월드 모델
+Top-\obs{$1$}이 정답)와 $G_2$ 교정(월드 모델 Top-\obs{$1$}이 오답)으로
+나눈다. 그림~\ref{fig:capability}a와 표~\ref{tab:capability}에서 보듯,
+후보 정렬은 $G_1$을 \obs{$29.7\%$}에서 \obs{$37.4\%$}로, $G_2$를
+\obs{$18.7\%$}에서 \obs{$27.8\%$}로 높인다. 반면 GT-only는 $G_2$를
+\obs{$20.8\%$}로 소폭 높이지만 $G_1$은 \obs{$26.5\%$}로 낮춘다.
+최종 \method{} 모델은 $G_1$을 \obs{$42.5\%$}까지 더 높이는 한편
+$G_2$는 \obs{$25.6\%$}에 자리 잡는다.
+따라서 추론 시점에 예측 경계를 제공하는 것만으로는 충분하지 않다. 정책은 그
+경계의 선두 가설을 언제 유지하고 언제 기각해야 하는지를 학습해야 한다.
+
+\begin{table*}[t]
+\centering
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{p{0.245\textwidth}ccccc}
+\toprule
+역량 지표 & 기본 & GT-only & 후보-CE & \method{} & 평가 대상 \\
+\midrule
+SelAcc@Top-$K$ (\%, $\uparrow$)
+  & \obs{$21.0$} & \obs{$21.9$} & \textbf{\obs{$28.8$}}
+  & \textbf{\obs{$28.8$}} & 전체 근거 기반 선택 \\
+$G_1$: WM 정답 유지 (\%, $\uparrow$)
+  & \obs{$29.7$} & \obs{$26.5$} & \obs{$37.4$}
+  & \textbf{\obs{$42.5$}} & 유효한 예측 사전분포 보존 \\
+$G_2$: WM 오답 교정 (\%, $\uparrow$)
+  & \obs{$18.7$} & \obs{$20.8$} & \textbf{\obs{$27.8$}}
+  & \obs{$25.6$} & WM Top-\obs{$1$} 이외 재선택 \\
+연속 행동 재현율 (\%, $\uparrow$)
+  & \obs{$28.4$} & \obs{$32.9$} & \obs{$43.5$}
+  & \textbf{\obs{$48.4$}} & 궤적과 일관된 행동 복원 \\
+연속 행동 정밀도 (\%)
+  & \obs{$72.7$} & \obs{$71.3$} & \obs{$71.1$}
+  & \obs{$68.2$} & 신호 신뢰도(통제) \\
+증거 유용성 (정확도 \(\Delta\), pp, $\uparrow$)
+  & \obs{$+13.5$} & \obs{$+3.2$} & \obs{$+12.3$}
+  & \textbf{\obs{$+18.3$}} & 증거--의사결정 결합 \\
+증거 언급률 (\%)
+  & \obs{$22.4$} & \obs{$37.8$} & \obs{$32.4$}
+  & \obs{$17.5$} & 표면 빈도(통제) \\
+믿음--행동 반복 (\%, $\downarrow$)
+  & \obs{$0.0$} & \obs{$28.8$} & \obs{$2.1$}
+  & \textbf{\obs{$0.0$}} & 행동 복사를 넘어선 믿음 내용 \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{공통 커버 집합의 역량 프로파일}
+(\obs{$n{=}1{,}000$}). 각 열은 차례로 비정렬 정책, 정답 전용 대조군,
+후보 정렬 정책, 최종 \method{} 모델에 대응한다.
+연속 행동은 집합의 \obs{$31.0\%$}
+(\obs{$310/1{,}000$})를 이룬다. 안정적인 정밀도는 주된 한계가 더 잡음이 많은
+연속 행동 추측이 아니라 복원임을 보여준다. 증거 유용성은 이전 행동 패턴을
+명시적으로 활용한 추론 흔적과 그렇지 않은 추론 흔적 사이의 SelAcc 차이로,
+인과 효과가 아닌 관찰적 지표이다. 월드 모델 후보 풀은 홀드아웃 예측 시점의
+\obs{$43.4\%$}를 포괄하므로, \obs{$28.8\%$}의 전체 집합 환산값은
+\obs{$12.5\%$}이며 WM Top-\obs{$1$} 정책의 \obs{$10.5\%$}와 대비된다.
+최종 \method{} 체크포인트도 같은 코호트에서
+측정한다. SelAcc에는 엄격한 분모를 사용하고, 조건부 역량 축에서는 위 정의에
+따라 형식이 잘못된 추론 흔적을 제외한다.}
+\label{tab:capability}
+\end{table*}
+
+궤적 연속성에서도 동일한 패턴이 나타난다. 바로 앞의 행동을 이어가는 정답 행동은
+평가 집합의 \obs{$31.0\%$}를 차지한다. 후보 정렬은 그중 \obs{$43.5\%$}를
+복원하는 반면, 기본 모델은 \obs{$28.4\%$}, GT-only는 \obs{$32.9\%$}를
+복원하며, 최종 \method{} 모델은 \obs{$48.4\%$}에 이른다.
+한편 연속 행동 정밀도는 평가한 모든 모델 상태에서 \obs{$68$--$73\%$} 범위에
+머문다. 정밀도가 비교적 안정적이라는 사실은 이전 행동을 더 느슨하게 반복하는
+경향으로 결과를 설명할 수 없음을 뜻한다. 정렬은 주로 고정밀 시간 단서의
+재현율을 개선한다.
+
+\subsubsection{인과 검정: 학습된 이점은 행동 이력을 통해 전달된다}
+\label{sec:er-history}
+
+다음으로 이미지, 후보 집합, 체크포인트는 고정한 채 완료 행동 이력을 제거한다.
+후보 정렬의 성능은 \obs{$10.1\pp$} 감소한다
+(\obs{$28.8\%\!\rightarrow18.7\%$};
+\obs{$95\%$ 신뢰구간 $[+6.8,+13.3]$}). 반면 기본 모델과 GT-only의 감소폭은
+각각 \obs{$2.9\pp$}와 \obs{$4.5\pp$}이고, 재생 체크포인트는 \obs{$6.4\pp$}
+감소한다. 이 개입은 최종 체크포인트에서는 재실행하지 않았다.
+더 중요한 점은 이력이 없을 때
+후보 정렬이 기본 모델(\obs{$+0.6\pp$}, \obs{$95\%$ 신뢰구간
+$[-1.8,+3.0]$}) 및 GT-only(\obs{$+1.3\pp$}, \obs{$95\%$ 신뢰구간
+$[-1.2,+3.9]$})와 구분되지 않는다는 것이다. 이 쌍별 추정값은 이러한 붕괴를
+정량화한다. 학습이 단순히 더 나은 행동 사전분포를 주입했다면
+이력을 가린 뒤에도 이점이 남아야 한다. 그러나 이점은 사라지며, 이는 후보 정렬이
+모델에 궤적을 읽고 이를 활용하여 월드 모델 제안 중 하나를 선택하도록
+학습시킨다는 것을 보여준다.
+
+\subsubsection{더 많은 증거가 아니라 유용한 증거}
+\label{sec:er-evidence}
+
+마지막으로 생성된 추론 흔적이 의사결정과 관련된 상태를 포함하는지, 아니면
+설득력 있는 표현만 담는지를 묻는다. GT-only 감독에서는 이전 행동 패턴을
+언급하는 빈도가 높아지지만(\obs{$22.4\%\!\rightarrow37.8\%$}), 그러한 언급과
+연관된 정확도 격차는 \obs{$+13.5\pp$}에서 \obs{$+3.2\pp$}로 붕괴한다.
+후보 정렬도 언급 빈도를 \obs{$32.4\%$}로 높이지만, 훨씬 큰
+\obs{$+12.3\pp$}의 증거 유용성을 유지한다. 최종 \method{} 체크포인트는
+그러한 증거를 오히려 덜 언급하지만(\obs{$17.5\%$}), 조건부 유용성은
+\obs{$+18.3\pp$}까지 높인다. 따라서 핵심적인 차이는 모델이
+시간적 증거를 사용했다고 \emph{말하는지}가 아니라, 인용한 증거가 올바른
+의사결정과 잘못된 의사결정을 구분하는지에 있다.
+
+\begin{table}[t]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{lcccc}
+\toprule
+메커니즘 진단 & 기본 & GT-only & 후보-CE & \method{} \\
+\midrule
+증거 언급 (\%) & \obs{$22.4$} & \obs{$37.8$} & \obs{$32.4$} & \obs{$17.5$} \\
+언급 시 정확도 (\%) & \obs{$31.8$} & \obs{$24.1$} & \obs{$38.4$} & \obs{$44.7$} \\
+미언급 시 정확도 (\%) & \obs{$18.4$} & \obs{$21.0$} & \obs{$26.1$} & \obs{$26.4$} \\
+증거 유용성 (pp) & \obs{$+13.5$} & \obs{$+3.2$} & \obs{$+12.3$} & \obs{$+18.3$} \\
+\midrule
+믿음--행동 반복 (\%) & \obs{$0.0$} & \obs{$28.8$} & \obs{$2.1$} & \obs{$0.0$} \\
+믿음 교환 민감도 & \obs{$0.073$} & \obs{$0.085$} & \obs{$0.093$} & --- \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{표면적 및 개입적 진단.} 증거 유용성은 조건부 연관성이며
+기술적으로 해석한다. 믿음 교환 민감도는 개입적 지표이다. 추론은 고정한 채
+믿음 접두부만 교환하고, 재서술 통제 조건의 선택 변화율을 차감한다
+(기본, GT-only, 후보-CE에 대해 \obs{$n{=}400$}).
+최종 \method{} 모델에는 믿음 교환 평가를 수행하지 않았으므로, 직전
+체크포인트의 값을 옮겨 적지 않고 빈칸으로 둔다.
+후보 정렬에서 낮은 반복률은 믿음 필드가 선택된 행동을
+단순히 복사한 것이 아님을 보여준다.}
+\label{tab:mechanism}
+\end{table}
+
+믿음 채널은 보완적인 통제를 제공한다. 정답 전용 감독에서 과업 믿음은 추론 흔적의
+\obs{$28.8\%$}에서 선택된 행동과 동일해진다. 기본 모델은 \obs{$0.0\%$},
+후보 정렬 이후에는 \obs{$2.1\%$}이며, 최종 \method{} 모델도 반복률은
+\obs{$0.0\%$}이다. 그러나 추론 텍스트를 고정한 채 믿음을
+교환하면 후보 정렬 예시의 \obs{$9.5\%$}에서 선택된 행동이 바뀌며, 재서술
+자기통제에서는 \obs{$0.25\%$}가 바뀐다. 이 통제값을 차감한 믿음 교환 민감도는
+\obs{$9.3\%$}이다. 낮은 반복률과 0이 아닌
+개입 민감도를 함께 고려하면, 믿음 필드는 행동의 재진술로 퇴화하지 않으면서
+의사결정 관련 상태를 전달할 수 있다. 관찰적 증거 분할은 인과적으로 해석하지
+않는다. 믿음 주장에 대한 개입은 쌍별 믿음 교환만이 제공한다.
+표~\ref{tab:trace-echo}은 하나의 예측 시점을 처음부터 끝까지 보여주며,
+반복된 믿음과 교정된 믿음이 생성된 추론 흔적에서 어떻게 드러나는지를 제시한다.
+
+\begin{table*}[t]
+\footnotesize
+\setlength{\parindent}{0pt}
+\textbf{조리 예측 사례.} 관측 구간
+\obs{$3620.4$--$3628.4$}\,초, 목표 시점 \obs{$3631.0$}\,초,
+가용 이력의 완료 행동 \obs{$122$}개.\par
+\smallskip
+\textbf{WM 후보 집합} (무작위 순서, 점수와 순위는 정책에 비공개):
+check heat (정답, WM \obs{$3$}위) \textperiodcentered{} flip flatbread
+\textperiodcentered{} transfer flatbread \textperiodcentered{} cook flatbread
+\textperiodcentered{} press dough \textperiodcentered{} roll dough
+\textperiodcentered{} knead dough (WM \obs{$1$}위) \textperiodcentered{}
+sprinkle flour \textperiodcentered{} shape dough \textperiodcentered{} cut
+dough.\par
+\smallskip
+\textbf{완료 행동 이력} (최근 \obs{$8$}개): \ldots{} $\rightarrow$ roll
+dough $\rightarrow$ flip ingredient $\rightarrow$ check heat $\rightarrow$ roll
+dough $\rightarrow$ check heat $\rightarrow$ flip ingredient $\rightarrow$ press
+dough $\rightarrow$ cook flatbread.\par
+\medskip
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{@{}p{0.115\textwidth}p{0.845\textwidth}@{}}
+\toprule
+모델 & 추론 $\rightarrow$ 믿음 $\rightarrow$ 행동 \\
+\midrule
+기본
+  & \emph{``The current frame \scmark{shows} the flatbread being cooked on the
+    hot surface, and the person's hand is positioned to flip it\ldots{}
+    Flipping the flatbread is the logical next step to ensure even cooking.''}
+    \newline
+    \textbf{믿음} --- Flipping the flatbread to cook the other side.
+    \newline
+    $\rightarrow$ \textbf{flip flatbread} $\times$
+    \quad{\scriptsize[``shows''를 통한 장면 묘사]} \\
+GT-only
+  & \emph{``The current frame \scmark{shows} the flatbread being cooked on the
+    hot surface\ldots{} The most logical next step, given the context of
+    cooking flatbread, is to flip it\ldots{} This aligns with
+    \underline{the previous actions} of checking heat and flipping the
+    flatbread.''}
+    \newline
+    \textbf{믿음} --- \textbf{flip flatbread}
+    \quad{\scriptsize[행동을 복사한 믿음]}
+    \newline
+    $\rightarrow$ \textbf{flip flatbread} $\times$
+    \quad{\scriptsize[``shows''를 통한 장면 묘사]} \\
+후보-CE
+  & \emph{``The current frame \scmark{shows} the flatbread being cooked on the
+    hot surface, and \underline{the previous action} was flipping the
+    ingredient. The next logical step is to continue cooking the flatbread, as
+    it is still on the fire and needs to be cooked through.''}
+    \newline
+    \textbf{믿음} --- Cook the flatbread on the fire.
+    \newline
+    $\rightarrow$ \textbf{cook flatbread} $\times$
+    \quad{\scriptsize[``shows''를 통한 장면 묘사]} \\
+\method{}
+  & \emph{``\textbf{I have just finished pressing the dough and am now
+    observing the fire to assess the heat for cooking. The flames are visible
+    and active, indicating the stove is ready.} I need to ensure the heat is
+    suitable before proceeding with the next step in cooking.''}
+    \newline
+    \textbf{믿음} --- I am in the middle of assessing the heat level for
+    cooking the flatbread.
+    \newline
+    $\rightarrow$ \textbf{check heat} \cmark
+    \quad{\scriptsize[상태를 담은 믿음, 이전 행동에 대한 명시적 언급 없음]} \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{상태를 담은 믿음은 교정을 가능하게 하지만, 행동을 복사한
+믿음은 그렇지 못하다.} 평가한 네 정책은 동일한 관측, 완료 행동 이력, 무작위
+순서의 후보 집합, 프롬프트를 받는다. 생성된 추론 흔적은 원문 그대로 옮기며,
+생략한 부분은 \ldots{}로 표시한다. 일화적 선택을 피하기 위해 공통 커버 집합에
+고정된 기준을 적용한다. 네 추론 흔적이 모두 유효해야 하고, GT-only는 선택한
+행동을 믿음 필드에 그대로 복사하면서 오답이어야 하며, \method{}는 정답이어야
+한다. 이 기준을 만족하는 지점은 \obs{$915$}개 중 \obs{$31$}개이며, 제시한
+사례는 후보-CE도 오답인 \obs{$18$}개 중 하나이다.
+\underline{밑줄}은 언급률 분석과 동일한 규칙으로 이전 행동을 명시적으로 참조한
+구간이고, \textbf{굵은 글씨}는 모델이 현재 과업 상태를 표현한 구간이다.
+추론 흔적은 모델이 영어로 생성한 원문이므로 번역하지 않는다.}
+\label{tab:trace-echo}
+\end{table*}
+
+\subsubsection{확립된 것과 확립되지 않은 것}
+\label{sec:er-scope}
+
+현재 동일 코호트의 증거는 세 가지 주장을 확립한다. 첫째, 후보 제약 학습은 월드
+모델 Top-\obs{$1$} 정책과 정답 전용 감독 모두를 넘어 선택을 개선한다. 둘째,
+개선은 하나의 쉬운 부분집합에만 나타나는 것이 아니라 유지와 교정 모두에서
+나타난다. 셋째, 이러한 이득은 완료 행동 이력에 인과적으로 의존한다. 이 결과들은
+논문의 모듈식 설명을 지지한다. 즉, 월드 모델은 시각적으로 근거가 있는 행동
+경계를 정의하고, 언어 정책은 그 경계 안에서 과업과 궤적 맥락을 해석하는 법을
+학습한다.
+
+최종 학습 단계는 Retrospection-with-Replay에 근거화 오버샘플링을 더한다.
+학습 집합 크기를 고정한 채 근거화 예시의 비율을 \obs{$12.8\%$}에서
+\obs{$32.0\%$}로 높여 최적화 예산을 보존한다. 그 결과 \method{} 모델은
+SelAcc \obs{$28.8\%$}, $G_1$ \obs{$42.5\%$}, $G_2$ \obs{$25.6\%$},
+연속 행동 재현율 \obs{$48.4\%$}, 증거 유용성 \obs{$+18.3\pp$}, 믿음 반복
+\obs{$0.0\%$}에 도달하며, 직전 Retrospection-with-Replay 단계에서 잃었던
+선택 정확도(\obs{$26.4\%$})를 대부분 회복한다. 그럼에도
+$\theta_{\mathrm{CE}}$ 대비 사전등록된 \obs{$1\pp$} 비열화 마진은 충족하지
+못한다. 공식 쌍별 집합(\obs{$n{=}937$}, 비디오 클러스터 86개)에서
+SelAcc 변화는 \obs{$-0.64\pp$}(\obs{$95\%$ 신뢰구간
+$[-3.88,+2.91]$}), $G_2$ 변화는 \obs{$-2.53\pp$}
+(\obs{$95\%$ 신뢰구간 $[-6.98,+2.29]$})이다. 두 구간 모두 0을 포함하며
+통상적인 \obs{$4\pp$} 마진이라면 충족하겠지만, 그러한 해석은 사후적이다.
+따라서 Retrospection이
+Prospection을 성능 저하 없이 보존한다고 주장하지 않고 최종 모델을 보고한다.
+
+{\color{pendingred}
+\paragraph{최종 단계 개입의 한계.}
+근거화 오버샘플링 이후 믿음 교환 평가를 수행하지 않았으므로, 최종 \method{}
+모델에 대해 축 5는 확립되지 않았다. 직전 Retrospection-with-Replay 모델의
+믿음 교환 민감도는 $0.098$로 사전등록된 $0.20$ 임계값보다 낮았던 반면,
+추론 교환 민감도는 $0.483$으로 평가한 조건 가운데 가장 높았다.
+즉 개입 질량이 사라진 것이 아니라 추론 채널로 이동했다.
+최종 믿음--행동 반복률은 $0.0\%$이지만, 반복률만으로는 개입 검정이 되지
+않는다. 따라서 긍정적인 믿음 유용성 진단은 탐색적 관찰로만 유지한다.
+\par}
+
+{\color{pendingred}
+\paragraph{제외한 대리 지표.}
+1인칭 표현은 의도적으로 역량 프로파일에서 제외한다. GT-only 대조군에서는 후보가
+제시된 경우 $30.7\%$였던 비율이 후보 없는 생성에서는 $91.0\%$로
+변하며, GT-only 추론 흔적 내에서도 정확도를 양으로 예측하지 않는다
+(1인칭 시작 $16.1\%$ 대 주석 스타일 시작 $29.7\%$).
+따라서 이는 체화 추론의 증거가 아니라 프롬프트와 템플릿에 민감한 표면 형식이다.
+대조 접속 표현도 마찬가지로 제외한다. 기본 모델 추론 흔적의 $0.3\%$,
+최종 모델 추론 흔적의 $1.9\%$에서만 나타나며, 조건 내 정확도 연관성은
+재생 단계와 근거화 단계 사이에서 불안정하다(각각 $+19.2\pp$와
+$-7.6\pp$, 최종 단계 추론 흔적은 $18$건뿐). 이는 소표본 잡음과 일관된다.
+어느 대리 지표도 논문의 주장을 뒷받침하는 데 사용하지 않는다.
+\par}
+
+\end{document}

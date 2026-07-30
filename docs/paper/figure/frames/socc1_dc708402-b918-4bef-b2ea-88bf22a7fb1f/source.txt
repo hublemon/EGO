@@ -1,0 +1,8 @@
+video_uid: dc708402-b918-4bef-b2ea-88bf22a7fb1f
+scenario_tag: Football (soccer, per narration: "kicks the ball", "runs in the field")
+s3_path: s3://ego4d-kaust/public/v1/full_scale/dc708402-b918-4bef-b2ea-88bf22a7fb1f
+video_duration_sec: 429.67
+fps: 30
+sampling: 100 CONSECUTIVE native frames (every frame, no skipping), t=58.90s-62.20s (3.3s window)
+narration_context: "58.9 #C C kicks the ball." / "65.8 #O A man F kicks the ball." / "68.8 #O A man F runs in the field."
+source_file: figure/videos_raw/socc1_dc708402-b918-4bef-b2ea-88bf22a7fb1f.mp4 (deleted after extraction)

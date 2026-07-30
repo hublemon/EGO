@@ -1,0 +1,4 @@
+video_uid: 2f0035c9-7efb-4229-9d94-4dcb3752da20
+scenario_tag: Cycling / jogging
+narration_hits: 23 (range 97.8-284.7s)
+source_file: figure/videos_raw/cyc1_2f0035c9-7efb-4229-9d94-4dcb3752da20.mp4

@@ -49,7 +49,7 @@ def lora_wrap(model, r: int = 16):
 def sft_step(model, processor, rec, rec_c, video_root, device):
     """projected-trace span-normalized SFT loss (sft_r1 과 동일 경로)."""
     imgs = vlm.extract_frames(video_root, rec["video_uid"],
-                              rec["obs_start_sec"], rec["obs_end_sec"])
+                              rec["obs_start_sec"], rec["obs_end_sec"], rec=rec)
     p_in = C.build_prompt_inputs(processor, vlm.build_messages(rec, imgs), device)
     comp_ids, field_of = C.encode_completion(processor.tokenizer, {
         "reasoning": rec_c["reasoning"], "task_belief": rec_c["task_belief"],
@@ -166,7 +166,7 @@ def main() -> None:
             if do_ce and ce_pool:
                 rec = rng.choice(ce_pool)
                 ce_imgs = vlm.extract_frames(video_root, rec["video_uid"],
-                                             rec["obs_start_sec"], rec["obs_end_sec"])
+                                             rec["obs_start_sec"], rec["obs_end_sec"], rec=rec)
                 loss, m = SCE.selection_ce_step(model, processor, rec, ce_imgs, device, args.ce_tau,
                                                 "wm_cand", [], rng)
                 per = {"sel_ce": m.get("sel_ce")}

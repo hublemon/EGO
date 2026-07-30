@@ -1,0 +1,20 @@
+video_uid: f2f4eeaa-49a2-4c01-9ad8-1d43e0ab7e93
+scenario_tag: Cycling / jogging (daytime, verified via sampled frames — outdoor park path + street riding, GoPro Hero Black 8)
+s3_path: s3://ego4d-bristol/public/v1/full_scale/f2f4eeaa-49a2-4c01-9ad8-1d43e0ab7e93
+video_duration_sec: 715.13
+fps: 30
+resolution: 1920x1440
+
+sampling: 5 randomly chosen, non-overlapping groups of 20 CONSECUTIVE native frames each
+(100 frames total). Random start frames drawn uniformly from [5s, duration-5s] with a
+minimum 10s gap enforced between groups; each group is then 20 sequential frames
+(0.667s) at native fps with no skipping.
+
+groups:
+  g1: t=72.73s-73.40s
+  g2: t=100.03s-100.70s
+  g3: t=286.07s-286.73s
+  g4: t=470.13s-470.80s
+  g5: t=610.10s-610.77s
+
+source_file: figure/videos_raw/cyc3_f2f4eeaa-49a2-4c01-9ad8-1d43e0ab7e93.mp4 (deleted after extraction)
